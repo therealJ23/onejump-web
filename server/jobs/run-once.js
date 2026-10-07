@@ -1,6 +1,6 @@
 // Runs the nightly radar + automations for every workspace right now: `npm run jobs:nightly`
 import { hourly, processJobs } from './nightly.js';
-import { disconnectPrisma } from '../db/prisma.js';
+import { closeDb as disconnectPrisma } from '../db/system.js';
 
 const r = await hourly(new Date(), { forceRadar: true });
 const j = await processJobs();

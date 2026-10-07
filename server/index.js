@@ -2,7 +2,7 @@
 import { config, assertProductionConfig } from './config.js';
 import { createApp } from './app.js';
 import { startJobs } from './jobs/nightly.js';
-import { disconnectPrisma } from './db/prisma.js';
+import { closeDb as disconnectPrisma } from './db/system.js';
 
 assertProductionConfig();
 const app = createApp();

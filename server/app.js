@@ -110,6 +110,7 @@ export function createApp({ sessionStore } = {}) {
   app.get(['/admin', '/admin/{*rest}'], page('admin.html'));
   app.get(['/join/:slug', '/invite/:token'], page('join.html'));
   app.get('/login/magic', page('magic.html'));
+  app.get('/coach/:slug', page('coach.html'));
   if (!config.isProd) app.get('/dev/outbox', page('outbox.html'));
   app.get('/client-sw.js', (_req, res) => { res.set('Service-Worker-Allowed', '/client'); res.sendFile(path.join(publicDir, 'js', 'client', 'sw.js')); });
   app.use(express.static(publicDir, { extensions: ['html'], index: 'index.html', maxAge: config.isProd ? '1h' : 0 }));

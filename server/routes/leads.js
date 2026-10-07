@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
 router.post('/parse', body(z.object({ dm: z.string().trim().min(1).max(3000) })), async (req, res) => {
   const b = await req.db.business.findFirst({ select: { slug: true } });
   const plan = await req.db.clientPlan.findFirst({ where: { active: true, priceCents: { gt: 0 }, interval: 'month' }, orderBy: { createdAt: 'asc' } });
-  const ins = await leadReply(req.db, req.body.dm, { price: plan ? `$${Math.round(plan.priceCents / 100)}/month` : null, bookingLink: `${config.appUrl.replace(/^https?:\/\//, '')}/join/${b.slug}` });
+  const ins = await leadReply(req.db, req.body.dm, { price: plan ? `$${Math.round(plan.priceCents / 100)}/month` : null, bookingLink: `${config.appUrl.replace(/^https?:\/\//, '')}/coach/${b.slug}` });
   res.json({ insightId: ins.id, ...ins.draft });
 });
 
@@ -47,7 +47,7 @@ router.patch('/:id', body(z.object({ stage: z.enum(STAGES).optional(), goal: z.s
 router.get('/:id/draft', async (req, res) => {
   const l = must(await req.db.lead.findFirst({ where: { id: req.params.id } }), 'That lead');
   const b = await req.db.business.findFirst({ select: { slug: true } });
-  const link = `${config.appUrl.replace(/^https?:\/\//, '')}/join/${b.slug}`;
+  const link = `${config.appUrl.replace(/^https?:\/\//, '')}/coach/${b.slug}`;
   const first = l.name.split(' ')[0], goal = (l.goal || 'your goals').toLowerCase();
   if (l.stage === 'new' && l.firstMessage) {
     const ins = await leadReply(req.db, l.firstMessage, { bookingLink: link });

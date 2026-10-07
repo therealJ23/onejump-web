@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dev outbox · OneJump</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#12281F">
+<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/public.css">
+<script type="module" src="/js/public/outbox.js"></script>
+</head>
+<body>
+<main class="section"><div class="section-in" style="max-width:900px">
+  <div class="row between wrap"><div><div class="eyebrow">Development only</div><h1 class="h1">Email outbox</h1><p class="muted small">EMAIL_PROVIDER=console. Emails are printed to the server log and kept here (last 50). Nothing is really sent.</p></div><button class="btn sm" id="ob-refresh"><svg class="ico " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/></svg> Refresh</button></div>
+  <div id="ob-list" class="stack s8"></div>
+</div></main>
+</body>
+</html>

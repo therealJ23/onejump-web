@@ -8,7 +8,8 @@ import { body, z, email, name } from '../lib/validate.js';
 import { notFound, conflict, HttpError } from '../lib/errors.js';
 import { sha256, randomToken } from '../lib/crypto.js';
 import { establish } from './auth.js';
-import { csrfToken } from '../auth/middleware.js';
+import { csrfToken, effectivePlan } from '../auth/middleware.js';
+import { CLIENT_CAPS } from '../core/invites.js';
 import { ensureThread, notify } from '../core/messaging.js';
 import { EmailService } from '../email/EmailService.js';
 import { StorageService } from '../storage/StorageService.js';
@@ -69,6 +70,9 @@ router.post('/link/:slug', limiter, body(z.object({ name, email, goal: z.string(
   let client = await db.client.findFirst({ where: { email: req.body.email } });
   if (!client && user) client = await db.client.findFirst({ where: { userId: user.id } });
   if (!client) {
+    const full = await db.business.findFirst({ select: { plan: true, trialEndsAt: true } });
+    const active = await db.client.count({ where: { status: { in: ['NEW', 'ACTIVE', 'PAUSED'] } } });
+    if (active >= CLIENT_CAPS[effectivePlan(full)]) throw new HttpError(409, `${b.name} isn’t taking new clients through this link right now. Contact your coach directly.`);
     client = await db.client.create({ data: { name: req.body.name, email: req.body.email, goal: req.body.goal || null, status: 'NEW', payStatus: 'none' } });
     await ensureThread(db, client.id);
     await notify(db, { kind: 'client', title: `${client.name} joined through your link`, body: req.body.goal || 'New client', link: `/app/clients/${client.id}` });
@@ -82,4 +86,40 @@ router.post('/link/:slug', limiter, body(z.object({ name, email, goal: z.string(
   await magicLinks.create({ userId: user.id, businessId: b.id, tokenHash: sha256(token), ttlMinutes: 60 });
   await EmailService.sendMagicLink({ to: user.email, name: user.name, businessName: b.name, link: `${config.appUrl}/login/magic?token=${token}` });
   res.json({ ok: true, message: 'Check your email for a link to open your app.' });
+});
+
+// ---------------------------------------------------------------- booking page (Pro): onejumpfit.com/coach/[slug]
+async function bookable(slug) {
+  const b = await businesses.publicBySlug(slug);
+  if (!b) throw notFound('We couldn’t find that coach.');
+  const db = dbForBusiness(b.id);
+  const full = await db.business.findFirst({ select: { plan: true, trialEndsAt: true, specialties: true, availability: true, coachingType: true, timezone: true } });
+  const plan = effectivePlan(full);
+  return { b, db, full, enabled: ['TRIAL', 'PRO', 'STUDIO'].includes(plan) };
+}
+router.get('/coach/:slug', limiter, async (req, res) => {
+  const { b, db, full, enabled } = await bookable(req.params.slug);
+  const coach = await memberships.coachNameFor(b.id);
+  const plans = enabled ? await db.clientPlan.findMany({ where: { active: true }, orderBy: { createdAt: 'asc' }, select: { name: true, priceCents: true, interval: true, description: true } }) : [];
+  res.json({
+    enabled,
+    business: { ...(await brand(b)), coachingType: full.coachingType, specialties: full.specialties || [], timezone: full.timezone },
+    coach: coach ? { name: coach.name, title: coach.title, bio: coach.bio } : null,
+    packages: plans.filter(p => p.priceCents > 0).slice(0, 6),
+    availability: full.availability || { days: [1, 2, 3, 4, 5], from: 9, to: 17 },
+  });
+});
+const bookSchema = z.object({ name, email, goal: z.string().trim().max(160).optional(), when: z.string().trim().max(120).optional(), note: z.string().trim().max(1000).optional(), website: z.string().max(0).optional() });
+router.post('/coach/:slug/book', limiter, body(bookSchema), async (req, res) => {
+  const { b, db, enabled } = await bookable(req.params.slug);
+  if (!enabled) throw notFound('This coach isn’t taking bookings online right now.');
+  const d = req.body;
+  const recent = await db.lead.findFirst({ where: { contact: d.email, createdAt: { gte: new Date(Date.now() - 864e5) } } });
+  if (!recent) {
+    const plan = await db.clientPlan.findFirst({ where: { active: true, priceCents: { gt: 0 } }, orderBy: { createdAt: 'asc' } });
+    const lead = await db.lead.create({ data: { name: d.name, contact: d.email, source: 'booking_page', goal: d.goal || null, firstMessage: [d.when && `Preferred time: ${d.when}`, d.note].filter(Boolean).join('\n') || null, stage: 'consult', valueCents: plan?.priceCents || null } });
+    await notify(db, { kind: 'lead', title: `New consultation request: ${d.name}`, body: d.when ? `Prefers ${d.when}` : (d.goal || 'From your booking page'), link: '/app/leads' });
+    audit({ businessId: b.id, action: 'booking_request', target: lead.id, ip: req.ip });
+  }
+  res.json({ ok: true, message: `Thanks, ${d.name.split(' ')[0]}! ${b.name} will email you to confirm a time.` });
 });
