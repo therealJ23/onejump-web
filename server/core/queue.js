@@ -109,7 +109,7 @@ export async function buildToday(db, { tz = 'UTC', now = new Date() } = {}) {
       items.push({
         id: 'leads', cat: 'growth', sev: 'info', icon: 'funnel',
         title: newLeads.length ? `${plural(newLeads.length, 'new lead')} to answer` : `${plural(followUps.length, 'lead')} to follow up`,
-        sub: `${listNames([...newLeads, ...followUps].map(l => l.name))}. Replies are a tap away.`,
+        sub: [newLeads.length ? `${listNames(newLeads.map(l => l.name))} ${newLeads.length === 1 ? 'needs' : 'need'} a first reply` : '', followUps.length ? `${plural(followUps.length, 'follow-up')} due (${listNames(followUps.map(l => l.name))})` : ''].filter(Boolean).join(' · ') + '. Drafts are a tap away.',
         actions: [{ label: 'Open leads', go: '/app/leads', primary: true }],
       });
     }
@@ -117,10 +117,11 @@ export async function buildToday(db, { tz = 'UTC', now = new Date() } = {}) {
 
   // 7. Unread messages
   const threads = await db.thread.findMany({ where: { coachUnread: { gt: 0 } }, orderBy: { lastMessageAt: 'desc' } });
-  const order = { crit: 0, warn: 1, assist: 2, good: 3, info: 4 };
+  // Pain first, then cancellations, then check-ins, money, nudges, celebrations, growth.
+  const rank = i => i.id === 'checkins' && /pain|medical/.test(i.sub) ? 0 : i.sev === 'crit' ? 1 : i.id === 'checkins' ? 2 : i.id === 'payments' ? 3 : i.sev === 'warn' ? 4 : i.sev === 'assist' ? 5 : i.sev === 'good' ? 6 : 7;
   const open = items.filter(i => (i.status || 'pending') === 'pending');
   const doneItems = items.filter(i => (i.status || 'pending') !== 'pending');
-  open.sort((a, b) => order[a.sev] - order[b.sev]);
+  open.sort((a, b) => rank(a) - rank(b));
 
   // numbers
   const revenue = await revenueSummary(db, now);

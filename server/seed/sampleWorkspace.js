@@ -143,6 +143,7 @@ const THREADS = {
   c15: [['me', 10, '10:00', 'How are the hips feeling on the box squats?'], ['them', 9, '16:40', 'Better. Busy week with the grandkids.']],
 };
 const UNREAD = new Set(['c1', 'c8', 'c5']);
+const COACH_FILLER = ['How did today’s session feel?', 'Nice work this week. Keep it rolling.', 'Remember to log your weights so I can adjust next week.', 'Great consistency lately.', 'Any soreness from the last session?', 'Proud of the effort this week.'];
 const FILLER = ['Done!', 'Thanks!', 'Felt good today.', 'Logged it.', 'Got it, thanks coach.', 'That one was tough but done.', 'Will do.', 'Sounds good.', 'Finished the session.', 'Quick question answered, thanks!'];
 
 // Payments this month (prototype). daysAgo; negative = due in the future.
@@ -343,12 +344,18 @@ export async function loadSampleWorkspace(db, { now = new Date(), tz = 'America/
     if (s.status === 'ACTIVE' || s.status === 'NEW' || s.status === 'PAUSED') {
       // baseline: about 4 client messages per two weeks, 2–8 weeks ago
       const weeks = Math.min(8, Math.floor(s.startDays / 7));
-      for (let wk = 2; wk < weeks; wk++) for (let j = 0; j < 2; j++) rows.push({ senderRole: 'CLIENT', body: FILLER[Math.floor(r() * FILLER.length)], createdAt: at(now, wk * 7 + 1 + j * 3, '19:10') });
+      for (let wk = 2; wk < weeks; wk++) for (let j = 0; j < 2; j++) {
+        rows.push({ senderRole: 'COACH', body: COACH_FILLER[(wk * 2 + j) % COACH_FILLER.length], createdAt: at(now, wk * 7 + 1 + j * 3, '18:30') });
+        rows.push({ senderRole: 'CLIENT', body: FILLER[Math.floor(r() * FILLER.length)], createdAt: at(now, wk * 7 + 1 + j * 3, '19:10') });
+      }
       // recent: fewer if the prototype says messaging dropped
       if (s.sig && s.startDays >= 21) {
         const recentProto = proto.filter(m => m[0] === 'them' && m[1] < 14).length;
         const target = Math.round(4 * (1 - (s.sig.msgDrop || 0)));
-        for (let j = recentProto; j < target; j++) rows.push({ senderRole: 'CLIENT', body: FILLER[Math.floor(r() * FILLER.length)], createdAt: at(now, 3 + j * 3, '19:40') });
+        for (let j = recentProto; j < target; j++) {
+          rows.push({ senderRole: 'COACH', body: COACH_FILLER[(j + 3) % COACH_FILLER.length], createdAt: at(now, 3 + j * 3, '18:45') });
+          rows.push({ senderRole: 'CLIENT', body: FILLER[Math.floor(r() * FILLER.length)], createdAt: at(now, 3 + j * 3, '19:40') });
+        }
       }
     }
     for (const [from, ago, hhmm, text] of proto) rows.push({ senderRole: from === 'them' ? 'CLIENT' : 'COACH', senderUserId: from === 'me' ? coachUserId : (clientUsers[s.key] || null), body: text, createdAt: at(now, ago, hhmm) });

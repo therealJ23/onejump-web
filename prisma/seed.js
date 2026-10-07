@@ -39,7 +39,7 @@ export async function seed({ log = console.log, now = new Date() } = {}) {
   await db1.business.update({ where: { id: b1.id }, data: {
     timezone: 'America/New_York', coachingType: 'Hybrid', clientBand: '16–30', specialties: ['Fat loss', 'Strength', 'Beginners'], writingStyle: 'Supportive',
     goals: ['Save time', 'Keep clients longer'], availability: { days: [1, 2, 3, 4, 5], from: 6, to: 19 }, onboardedAt: now,
-    trialEndsAt: new Date(now.getTime() + 9 * 864e5),
+    trialEndsAt: new Date(now.getTime() + 9 * 864e5), stripeAccountId: 'acct_mock_reyes', stripeAccountStatus: 'active',
   } });
   await db1.membership.updateMany({ where: { userId: dani.id }, data: { title: 'Strength coach · NSCA-CSCS', bio: 'I coach busy adults who want to get genuinely strong, lose the extra weight and actually enjoy training. Online from anywhere, or in person at the studio.' } });
   await memberships.addClient(mike.id, b1.id);

@@ -80,7 +80,7 @@ function message(ctx) {
     missed: () => `Hey ${f}, I noticed a couple of sessions slipped this week. No stress, it happens to everyone. What got in the way? If your schedule changed, I can adjust the plan so it fits.`,
     'checkin-reminder': () => `Hey ${f}! Just checking in. I noticed you haven’t sent your weekly check-in yet. How are you feeling this week?`,
     payment: () => `Hi ${f}, your last payment didn’t go through. You can update your card in the app under Me → Billing. Thanks!`,
-    congrats: () => `${f}! Your next session is workout #${ctx.milestone || c.workoutsDone || 50} with me. That’s ${ctx.milestone || c.workoutsDone || 50} times you showed up. Huge.`,
+    congrats: () => `${f}! That was workout #${ctx.milestone || c.workoutsDone || 50} with me. That’s ${ctx.milestone || c.workoutsDone || 50} times you showed up. Huge.`,
     risk: () => riskDraft(ctx),
     'checkin-reply': () => `Thanks for the check-in, ${f}. Everything is moving in the right direction, so we’ll keep the plan as is.`,
     'reply-last': () => replyLast(f, lastClient?.text || ''),

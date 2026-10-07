@@ -76,7 +76,8 @@ export async function runAutomations(db, { tz = 'UTC', now = new Date(), only = 
     }
 
     if (by.milestone) {
-      const m = MILESTONES.filter(x => c.workoutsDone >= x && c.workoutsDone - x < 3).at(-1);
+      const recent = await db.workoutSession.count({ where: { clientId: c.id, completedAt: { gte: new Date(now.getTime() - 3 * 864e5) } } });
+      const m = MILESTONES.filter(x => c.workoutsDone >= x && c.workoutsDone - recent < x).at(-1);
       if (m) {
         const r = await once(db, by.milestone, `milestone:${c.id}:${m}`, c.id, async () => {
           const ins = await messageDraft(db, c, 'congrats', { kind: 'automation', source: 'automation', sourceId: 'milestone', extra: { title: `${first} hit workout #${m}`, milestone: m, rule: by.milestone.trigger }, minutes: 3 });

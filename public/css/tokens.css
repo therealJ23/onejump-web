@@ -1,0 +1,64 @@
+/* OneJump design tokens (from the prototype). Volt is for Assist and primary emphasis only. */
+/* Layout: a deep-green rail holding the Onejump wordmark, a bone working surface,
+   and Assist (the AI copilot) marked only by the logo's volt jump arc. */
+:root {
+  --deep: #12281F; --green: #2F5D4E; --bone: #F4F6F1; --stone: #C6D2C8; --soft: #5B6D63;
+  --volt: #D6FF3D; --volt-deep: #B4DE20;
+
+  --bg: #EDF0E9; --surface: #FFFFFF; --surface-2: #F5F7F2; --surface-3: #E7ECE3;
+  --ink: #12281F; --muted: #56685E; --faint: #84958A;
+  --line: rgba(18,40,31,.10); --line-strong: rgba(18,40,31,.20);
+  --rail: #12281F; --rail-2: #183428; --rail-ink: #ECF1E9; --rail-muted: rgba(236,241,233,.62);
+  --primary: #12281F; --primary-hover: #1E3B2E; --on-primary: #F4F6F1;
+  --assist: #D6FF3D; --on-assist: #12281F; --assist-ink: #4A6300;
+  --assist-tint: rgba(214,255,61,.26); --assist-soft: rgba(214,255,61,.12); --assist-line: rgba(122,160,0,.42);
+  --good: #2C7A4B; --good-tint: rgba(44,122,75,.12);
+  --warn: #9A620E; --warn-tint: rgba(214,150,40,.16);
+  --crit: #B23A26; --crit-tint: rgba(178,58,38,.10);
+  --info: #2F5D4E; --info-tint: rgba(47,93,78,.10);
+  --shadow-1: 0 1px 2px rgba(18,40,31,.05), 0 1px 1px rgba(18,40,31,.03);
+  --shadow-2: 0 12px 32px -8px rgba(18,40,31,.18), 0 2px 6px rgba(18,40,31,.06);
+  --scrim: rgba(10,22,17,.45);
+  --chart-1: #2F5D4E; --chart-2: #9DB89F; --chart-grid: rgba(18,40,31,.08);
+
+  --f-ui: 'Archivo', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
+  --rail-w: 248px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0A1611; --surface: #10201A; --surface-2: #142820; --surface-3: #1B3329;
+    --ink: #E6ECE3; --muted: #9FB3A7; --faint: #6E8478;
+    --line: rgba(230,236,227,.09); --line-strong: rgba(230,236,227,.18);
+    --rail: #07110D; --rail-2: #0F1F18; --rail-ink: #E6ECE3; --rail-muted: rgba(230,236,227,.55);
+    --primary: #D6FF3D; --primary-hover: #E2FF70; --on-primary: #12281F;
+    --assist-ink: #D6FF3D; --assist-tint: rgba(214,255,61,.14); --assist-soft: rgba(214,255,61,.07); --assist-line: rgba(214,255,61,.32);
+    --good: #63C68C; --good-tint: rgba(99,198,140,.14);
+    --warn: #E5AE52; --warn-tint: rgba(229,174,82,.14);
+    --crit: #F2826C; --crit-tint: rgba(242,130,108,.13);
+    --info: #9DC7B4; --info-tint: rgba(157,199,180,.12);
+    --shadow-1: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-2: 0 16px 40px -8px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
+    --scrim: rgba(0,0,0,.6);
+    --chart-1: #D6FF3D; --chart-2: #4E6E5F; --chart-grid: rgba(230,236,227,.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0A1611; --surface: #10201A; --surface-2: #142820; --surface-3: #1B3329;
+  --ink: #E6ECE3; --muted: #9FB3A7; --faint: #6E8478;
+  --line: rgba(230,236,227,.09); --line-strong: rgba(230,236,227,.18);
+  --rail: #07110D; --rail-2: #0F1F18; --rail-ink: #E6ECE3; --rail-muted: rgba(230,236,227,.55);
+  --primary: #D6FF3D; --primary-hover: #E2FF70; --on-primary: #12281F;
+  --assist-ink: #D6FF3D; --assist-tint: rgba(214,255,61,.14); --assist-soft: rgba(214,255,61,.07); --assist-line: rgba(214,255,61,.32);
+  --good: #63C68C; --good-tint: rgba(99,198,140,.14);
+  --warn: #E5AE52; --warn-tint: rgba(229,174,82,.14);
+  --crit: #F2826C; --crit-tint: rgba(242,130,108,.13);
+  --info: #9DC7B4; --info-tint: rgba(157,199,180,.12);
+  --shadow-1: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-2: 0 16px 40px -8px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
+  --scrim: rgba(0,0,0,.6);
+  --chart-1: #D6FF3D; --chart-2: #4E6E5F; --chart-grid: rgba(230,236,227,.08);
+  color-scheme: dark;
+}
+
