@@ -1,0 +1,574 @@
+// OneJump database schema: MySQL 8, Prisma 7 (JavaScript client + MariaDB driver adapter).
+//
+// Rules (see 02-mvp-build-plan.md):
+// - Every tenant-owned table carries businessId. Routes only reach the database
+//   through dbFor(session) in server/db/tenant.js, which adds it to every query.
+// - Money is stored in cents. Times are stored in UTC.
+// - Global tables (User, MagicLink, UserSession) are only touched by server/db/system.js.
+//
+// The SQL for this schema lives in prisma/migrations/. When you change this file,
+// add a new migration folder with the matching SQL (see README → Database).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Plan {
+  TRIAL
+  STARTER
+  PRO
+  STUDIO
+}
+
+enum Role {
+  OWNER
+  COACH
+  CLIENT
+}
+
+enum ClientStatus {
+  NEW
+  ACTIVE
+  PAUSED
+  INACTIVE
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ---------------------------------------------------------------- accounts
+
+model Business {
+  id                   String       @id @default(uuid())
+  name                 String
+  slug                 String       @unique
+  plan                 Plan         @default(TRIAL)
+  planStatus           String       @default("trialing") // trialing | active | past_due | canceled
+  trialEndsAt          DateTime?
+  planRenewsAt         DateTime?
+  cancelAtPeriodEnd    Boolean      @default(false)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  stripeAccountId      String? // Stripe Connect account that receives client payments
+  stripeAccountStatus  String       @default("none") // none | pending | active
+  brandColor           String?      @default("#D6FF3D")
+  logoUrl              String?
+  timezone             String       @default("America/New_York")
+  coachingType         String? // Online | In person | Hybrid
+  clientBand           String? // 0–5 | 6–15 | 16–30 | 31–60 | 60+
+  specialties          Json?
+  writingStyle         String       @default("Supportive")
+  goals                Json?
+  availability         Json?
+  settings             Json?
+  onboardedAt          DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  members              Membership[]
+  clients              Client[]
+}
+
+model User {
+  id              String       @id @default(uuid())
+  email           String       @unique
+  name            String
+  passwordHash    String?
+  totpSecret      String? // encrypted with SESSION_SECRET-derived key
+  totpEnabled     Boolean      @default(false)
+  isPlatformAdmin Boolean      @default(false)
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  memberships     Membership[]
+}
+
+model Membership {
+  id         String   @id @default(uuid())
+  userId     String
+  businessId String
+  role       Role
+  title      String?
+  bio        String?  @db.Text
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+  business   Business @relation(fields: [businessId], references: [id])
+
+  @@unique([userId, businessId])
+  @@index([businessId])
+}
+
+model MagicLink {
+  id         String    @id @default(uuid())
+  userId     String
+  businessId String?
+  tokenHash  String    @unique
+  purpose    String    @default("login")
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model UserSession {
+  sid       String   @id @db.VarChar(128)
+  data      String   @db.Text
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+// ---------------------------------------------------------------- clients
+
+model Client {
+  id               String       @id @default(uuid())
+  businessId       String
+  userId           String? // set when the client accepts the invite
+  coachUserId      String?
+  name             String
+  email            String?
+  phone            String?
+  goal             String?
+  goalType         String? // Fat loss | Strength | Muscle | Hybrid | Beginner | Athletic | General fitness
+  why              String?      @db.Text
+  targetWeight     Float?
+  birthYear        Int?
+  mode             String       @default("Online") // Online | Hybrid | In person
+  status           ClientStatus @default(ACTIVE)
+  programId        String?
+  programStartedAt DateTime?
+  clientPlanId     String?
+  payStatus        String       @default("none") // none | paid | due | failed | trial | paused | cancelled
+  riskScore        Int?
+  riskLevel        RiskLevel?
+  riskReasons      Json? // MySQL has no array type
+  riskUpdatedAt    DateTime?
+  adherence        Int?
+  workoutsDone     Int          @default(0)
+  tags             Json?
+  startedAt        DateTime     @default(now())
+  lastActiveAt     DateTime?
+  lastWorkoutAt    DateTime?
+  lastCheckinAt    DateTime?
+  pausedUntil      DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  business         Business     @relation(fields: [businessId], references: [id])
+
+  @@unique([businessId, email])
+  @@index([businessId, status])
+  @@index([userId])
+}
+
+model Invite {
+  id         String    @id @default(uuid())
+  businessId String
+  clientId   String
+  email      String?
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([businessId, clientId])
+}
+
+model Note {
+  id           String   @id @default(uuid())
+  businessId   String
+  clientId     String
+  authorUserId String
+  body         String   @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([businessId, clientId])
+}
+
+// ---------------------------------------------------------------- training
+
+model Exercise {
+  id         String   @id @default(uuid())
+  businessId String? // null = OneJump global library
+  name       String
+  muscle     String
+  equipment  String
+  level      String
+  pattern    String // squat, hinge, push, pull, lunge, core, carry, jump, cardio, iso
+  kneeLoad   Boolean  @default(false)
+  overhead   Boolean  @default(false)
+  videoUrl   String?
+  howTo      Json?
+  altIds     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Program {
+  id          String    @id @default(uuid())
+  businessId  String
+  name        String
+  weeks       Int
+  daysPerWeek Int
+  level       String?
+  description String?   @db.Text
+  source      String    @default("manual") // manual | assist
+  archived    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workouts    Workout[]
+
+  @@index([businessId])
+}
+
+model Workout {
+  id         String   @id @default(uuid())
+  businessId String
+  programId  String?
+  clientId   String? // set when the workout was tailored for one client
+  name       String
+  week       Int? // null = repeats every week
+  day        Int?
+  estMinutes Int?
+  blocks     Json // [{id, kind:'single'|'superset'|'circuit', items:[{id, exerciseId, tempo, notes, sets:[{reps,load,rpe,rest}]}]}]
+  source     String   @default("manual") // manual | assist
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  program    Program? @relation(fields: [programId], references: [id])
+
+  @@index([businessId, programId])
+}
+
+model WorkoutAssignment {
+  id           String   @id @default(uuid())
+  businessId   String
+  clientId     String
+  workoutId    String
+  scheduledFor DateTime // the local training day, stored as UTC midnight of that date
+  status       String   @default("scheduled") // scheduled | completed | skipped
+  coachNote    String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([businessId, clientId, scheduledFor])
+}
+
+model WorkoutSession {
+  id           String    @id @default(uuid())
+  businessId   String
+  clientId     String
+  workoutId    String
+  assignmentId String?
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  sets         Json // [{exerciseId, sets:[{weight, reps, done}]}]
+  volume       Float?
+  rpe          Int?
+  soreness     Int?
+  note         String?   @db.Text
+
+  @@index([businessId, clientId, completedAt])
+}
+
+// ---------------------------------------------------------------- check-ins and progress
+
+model CheckIn {
+  id              String    @id @default(uuid())
+  businessId      String
+  clientId        String
+  weekOf          DateTime
+  weight          Float?
+  sleepHours      Float?
+  energy          Int?
+  stress          Int?
+  soreness        Int?
+  nutrition       Int?
+  mood            Int?
+  workoutsDone    Int?
+  workoutsPlanned Int?
+  text            String?   @db.Text
+  status          String    @default("submitted") // submitted | reviewed
+  flagged         Boolean   @default(false) // pain, injury or medical words found by the safety guard
+  submittedAt     DateTime  @default(now())
+  reviewedAt      DateTime?
+
+  @@index([businessId, weekOf])
+  @@index([businessId, clientId])
+}
+
+model Measurement {
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  takenAt    DateTime @default(now())
+  weight     Float?
+  waist      Float?
+  hips       Float?
+  chest      Float?
+  arm        Float?
+  thigh      Float?
+  source     String   @default("client") // client | checkin | coach | import
+
+  @@index([businessId, clientId, takenAt])
+}
+
+model ProgressPhoto {
+  id          String   @id @default(uuid())
+  businessId  String
+  clientId    String
+  storageKey  String
+  pose        String   @default("front")
+  contentType String
+  size        Int
+  takenAt     DateTime @default(now())
+
+  @@index([businessId, clientId])
+}
+
+// ---------------------------------------------------------------- messaging
+
+model Thread {
+  id            String    @id @default(uuid())
+  businessId    String
+  clientId      String    @unique
+  lastMessageAt DateTime?
+  coachUnread   Int       @default(0)
+  clientUnread  Int       @default(0)
+  messages      Message[]
+
+  @@index([businessId])
+}
+
+model Message {
+  id           String    @id @default(uuid())
+  businessId   String
+  threadId     String
+  clientId     String
+  senderUserId String?
+  senderRole   String // COACH | CLIENT | SYSTEM
+  body         String    @db.Text
+  aiInsightId  String? // set when sent from an Assist draft
+  aiEdited     Boolean   @default(false)
+  readAt       DateTime?
+  createdAt    DateTime  @default(now())
+  thread       Thread    @relation(fields: [threadId], references: [id])
+
+  @@index([businessId, clientId, createdAt])
+}
+
+model Notification {
+  id         String    @id @default(uuid())
+  businessId String
+  kind       String // risk | checkin | message | payment | lead | missed | assist | client | automation
+  title      String
+  body       String?
+  link       String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+// ---------------------------------------------------------------- money
+
+model ClientPlan {
+  id               String   @id @default(uuid())
+  businessId       String
+  name             String
+  description      String?
+  priceCents       Int
+  interval         String // month | week | once
+  sessionsIncluded Int?
+  stripeProductId  String?
+  stripePriceId    String?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Subscription {
+  id                   String    @id @default(uuid())
+  businessId           String
+  clientId             String
+  clientPlanId         String
+  status               String // active | past_due | canceled | trialing
+  stripeSubscriptionId String?   @unique
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([businessId, clientId])
+}
+
+model Payment {
+  id                      String    @id @default(uuid())
+  businessId              String
+  clientId                String
+  clientPlanId            String?
+  amountCents             Int
+  currency                String    @default("usd")
+  status                  String // paid | failed | upcoming | refunded | pending
+  failureReason           String?
+  attempts                Int       @default(1)
+  remindedAt              DateTime?
+  dueAt                   DateTime?
+  paidAt                  DateTime?
+  stripeInvoiceId         String?   @unique
+  stripePaymentIntentId   String?
+  stripeCheckoutSessionId String?
+  createdAt               DateTime  @default(now())
+
+  @@index([businessId, status])
+  @@index([businessId, clientId])
+}
+
+// ---------------------------------------------------------------- growth
+
+model Lead {
+  id                String    @id @default(uuid())
+  businessId        String
+  name              String
+  handle            String?
+  contact           String?
+  source            String // instagram_dm | booking_page | referral | walk_in | google | other
+  goal              String?
+  firstMessage      String?   @db.Text
+  stage             String    @default("new") // new | contacted | consult | trial | active | retained | lost
+  valueCents        Int?
+  nextFollowUpAt    DateTime?
+  lastContactAt     DateTime?
+  convertedClientId String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([businessId, stage])
+}
+
+// ---------------------------------------------------------------- Assist
+
+model Automation {
+  id            String   @id @default(uuid())
+  businessId    String
+  key           String // missed_workouts | missing_checkin | inactive_7d | milestone | failed_payment
+  trigger       String
+  action        String
+  template      String?  @db.Text
+  needsApproval Boolean  @default(true)
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([businessId, key])
+}
+
+model AutomationRun {
+  id           String   @id @default(uuid())
+  businessId   String
+  automationId String
+  clientId     String?
+  dedupeKey    String   @unique
+  outcome      String // drafted | sent | notified | skipped
+  summary      String?
+  aiInsightId  String?
+  createdAt    DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+model AIInsight {
+  id            String    @id @default(uuid())
+  businessId    String
+  clientId      String?
+  kind          String // checkin_summary | message_draft | risk | workout | program | adjustment | automation | lead_reply
+  source        String? // checkin | risk | automation | inbox | builder | lead
+  sourceId      String?
+  summary       String?   @db.Text
+  draft         Json?
+  finalText     String?   @db.Text
+  status        String    @default("pending") // pending | approved | edited | dismissed | expired
+  minutesSaved  Int       @default(0)
+  model         String
+  promptVersion String
+  decidedAt     DateTime?
+  decidedBy     String?
+  createdAt     DateTime  @default(now())
+
+  @@index([businessId, status])
+  @@index([businessId, clientId])
+  @@index([businessId, source, sourceId])
+}
+
+model ClientEvent {
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  kind       String // app_open | workout_done | checkin | message | payment_failed | safety_flag | risk_change
+  at         DateTime @default(now())
+  data       Json?
+
+  @@index([businessId, clientId, at])
+}
+
+model AIUsage {
+  id           String   @id @default(uuid())
+  businessId   String
+  kind         String
+  provider     String
+  model        String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  costMicros   Int      @default(0) // USD × 1,000,000
+  createdAt    DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+// ---------------------------------------------------------------- platform
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  businessId  String?
+  actorUserId String?
+  action      String
+  target      String
+  ip          String?
+  meta        Json?
+  at          DateTime @default(now())
+
+  @@index([businessId, at])
+}
+
+model SupportRequest {
+  id         String   @id @default(uuid())
+  businessId String
+  kind       String // migration | support
+  body       String   @db.Text
+  status     String   @default("open")
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Job {
+  id        String   @id @default(uuid())
+  name      String
+  runAt     DateTime @default(now())
+  status    String   @default("queued") // queued | running | done | failed
+  attempts  Int      @default(0)
+  lastError String?  @db.Text
+  payload   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, runAt])
+}
