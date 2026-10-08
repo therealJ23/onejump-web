@@ -1,7 +1,7 @@
 // Coach workspace entry: checks the session, draws the shell, wires event delegation.
 import { applyTheme, toggleTheme } from '../shared/theme.js';
 import { api, setCsrf } from '../shared/api.js';
-import { esc, rel, plural, money } from '../shared/format.js';
+import { esc, rel, money } from '../shared/format.js';
 import { icon } from '../shared/icons.js';
 import { avatar } from '../shared/components.js';
 import { openModal, closeModal, modalHead, openDrawer, closeDrawer, toast, toastError, copyText, busy, showFieldErrors } from '../shared/ui.js';
@@ -154,4 +154,3 @@ document.addEventListener('keydown', e => {
   render();
 })();
 
-export { plural };

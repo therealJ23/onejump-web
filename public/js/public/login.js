@@ -3,6 +3,8 @@ import { api, $, showError, busy, validEmail, whoAmI, homeFor } from './common.j
 
 const me = await whoAmI();
 const params = new URLSearchParams(location.search);
+const next = (params.get('next') || '').match(/^\/(app|admin)(\/[\w\-/]*)?$/) ? params.get('next') : null;
+const go = r => { location.href = next && r !== '/onboarding' ? next : r; };
 if (me && !params.has('switch')) location.replace(homeFor(me));
 
 const tabs = { coach: [$('#tab-coach'), $('#coach-pane')], client: [$('#tab-client'), $('#client-pane')] };
@@ -25,7 +27,7 @@ lf.addEventListener('submit', async e => {
   try {
     const r = await api.post('/api/auth/login', { email: f.email.trim(), password: f.password });
     if (r.twoFactor) { lf.hidden = true; of.hidden = false; $('#li-code').focus(); busy(btn, false); return; }
-    location.href = r.redirect || '/app';
+    go(r.redirect || '/app');
   } catch (e2) {
     busy(btn, false);
     if (e2.data?.code === 'use_magic_link') { show('client'); $('#mg-email').value = f.email.trim(); showError($('#mg-err'), e2); return; }
@@ -37,7 +39,7 @@ of.addEventListener('submit', async e => {
   const code = $('#li-code').value.replace(/\s/g, '');
   if (code.length < 6) return showError(oe, { message: 'Enter the 6-digit code.', data: { fields: { code: 1 } } }, of);
   const btn = of.querySelector('[type=submit]'); busy(btn, true, 'Checking…'); showError(oe, '');
-  try { const r = await api.post('/api/auth/login/2fa', { code }); location.href = r.redirect || '/app'; }
+  try { const r = await api.post('/api/auth/login/2fa', { code }); go(r.redirect || '/app'); }
   catch (e2) { busy(btn, false); showError(oe, e2, of); }
 });
 $('#otp-back').addEventListener('click', () => { of.hidden = true; lf.hidden = false; $('#li-pass').value = ''; $('#li-email').focus(); });
@@ -54,3 +56,4 @@ mf.addEventListener('submit', async e => {
     d.textContent = `${r.message} It works once and expires in 30 minutes.`;
   } catch (e2) { busy(btn, false); showError(me2, e2, mf); }
 });
+document.body.dataset.ready = '1';

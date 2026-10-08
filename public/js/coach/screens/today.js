@@ -4,7 +4,7 @@ import { esc, money, plural, fmtLongDay, stamp, first } from '../../shared/forma
 import { icon, arc } from '../../shared/icons.js';
 import { avatar, assistBadge, riskPill, emptyState, lock } from '../../shared/components.js';
 import { toast, toastError, busy } from '../../shared/ui.js';
-import { state, ui, setUi, hasPlan, coachFirst } from '../state.js';
+import { state, ui, setUi, coachFirst } from '../state.js';
 import { refreshCounts } from '../shell.js';
 import { editDraft } from '../modals.js';
 
@@ -116,5 +116,4 @@ export default {
     async remindMissing(el, _e, ctx) { busy(el, true, 'Sending…'); try { const r = await api.post('/api/today/remind-missing', {}); toast(`${plural(r.sent, 'reminder')} sent`); await ctx.refresh(); refreshCounts(); } catch (e) { busy(el, false); toastError(e); } },
     async remindPayments(el, _e, ctx) { busy(el, true, 'Sending…'); try { const r = await api.post('/api/today/remind-payments'); toast(`${plural(r.sent, 'card-update reminder')} sent`); await ctx.refresh(); refreshCounts(); } catch (e) { busy(el, false); toastError(e); } },
   },
-  _h: hasPlan,
 };

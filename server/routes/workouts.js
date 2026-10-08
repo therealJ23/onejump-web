@@ -4,8 +4,7 @@ import { body, z, id as idRule } from '../lib/validate.js';
 import { must, badRequest, conflict } from '../lib/errors.js';
 import { normalizeBlocks, exerciseMap, countSets, estimateMinutes } from '../core/training.js';
 import { workoutDraft } from '../ai/drafts.js';
-import { notify } from '../core/messaging.js';
-import { ymdToDate, localYMD } from '../lib/time.js';
+import { ymdToDate } from '../lib/time.js';
 
 export const router = Router();
 
@@ -120,4 +119,3 @@ router.post('/generate/:insightId/dismiss', async (req, res) => {
   res.json({ ok: true });
 });
 
-export const _u = [notify, localYMD];

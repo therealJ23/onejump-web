@@ -131,7 +131,8 @@ export const admin = {
   aiDecisionsSince: since => db().aIInsight.groupBy({ by: ['status'], where: { createdAt: { gte: since } }, _count: { _all: true } }),
   totalClients: () => db().client.count({ where: { status: { in: ['NEW', 'ACTIVE'] } } }),
   openSupport: () => db().supportRequest.findMany({ where: { status: 'open' }, select: { id: true, kind: true, createdAt: true, businessId: true }, orderBy: { createdAt: 'desc' }, take: 20 }),
-  recentAudit: () => db().auditLog.findMany({ where: { businessId: null }, orderBy: { at: 'desc' }, take: 30, select: { action: true, target: true, at: true } }),
+  // Platform-level events only, without targets: they can hold client emails.
+  recentAudit: () => db().auditLog.findMany({ where: { businessId: null }, orderBy: { at: 'desc' }, take: 30, select: { action: true, at: true } }),
 };
 
 // ------------------------------------------------------------- global exercise library

@@ -65,3 +65,5 @@ if (kind === 'invite') {
     });
   } catch (e) { fail(e.message); }
 }
+
+document.body.dataset.ready = '1';

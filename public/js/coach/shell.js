@@ -1,6 +1,6 @@
 // The coach workspace shell from the prototype: deep-green rail, top bar, mobile tab bar.
 import { esc, fmtSaved, planName, plural } from '../shared/format.js';
-import { icon, arc, wordmark } from '../shared/icons.js';
+import { icon, wordmark } from '../shared/icons.js';
 import { avatar, lock } from '../shared/components.js';
 import { api } from '../shared/api.js';
 import { state, hasPlan } from './state.js';
@@ -91,4 +91,3 @@ export async function refreshCounts() {
   clearTimeout(timer);
   timer = setTimeout(refreshCounts, 60e3);
 }
-export { arc };

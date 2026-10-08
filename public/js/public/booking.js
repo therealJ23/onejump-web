@@ -78,3 +78,5 @@ if (form) {
   });
 }
 
+
+document.body.dataset.ready = '1';

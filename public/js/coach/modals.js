@@ -1,6 +1,6 @@
 // Modals used from several screens: CSV import, new package, new program, add lead, edit a draft.
 import { api } from '../shared/api.js';
-import { esc, money, plural } from '../shared/format.js';
+import { esc, plural } from '../shared/format.js';
 import { icon, arc } from '../shared/icons.js';
 import { assistBadge, thinking } from '../shared/components.js';
 import { openModal, closeModal, modalHead, toast, toastError, busy, showFieldErrors, copyText } from '../shared/ui.js';
@@ -152,4 +152,3 @@ export function newLead() {
   });
 }
 
-export { money };

@@ -1,6 +1,6 @@
 // Programs: multi-week templates of workouts, assigned to clients.
 import { Router } from 'express';
-import { body, z, name, id as idRule } from '../lib/validate.js';
+import { body, z, name } from '../lib/validate.js';
 import { must, conflict } from '../lib/errors.js';
 import { countSets } from '../core/training.js';
 
@@ -57,4 +57,3 @@ router.post('/:id/duplicate', async (req, res) => {
   res.status(201).json({ program: copy });
 });
 
-export const _unused = idRule;

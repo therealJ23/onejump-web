@@ -35,7 +35,8 @@ export function requireClient(req, _res, next) {
   next();
 }
 export function requirePlatformAdmin(req, _res, next) {
-  if (!req.auth || !req.auth.isPlatformAdmin) return next(forbidden());
+  if (!req.auth) return next(unauthorized());
+  if (!req.auth.isPlatformAdmin) return next(forbidden());
   next();
 }
 

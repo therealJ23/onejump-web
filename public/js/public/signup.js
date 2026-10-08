@@ -17,3 +17,5 @@ form.addEventListener('submit', async e => {
     location.href = r.redirect || '/onboarding';
   } catch (e2) { busy(btn, false); showError(err, e2, form); }
 });
+
+document.body.dataset.ready = '1';

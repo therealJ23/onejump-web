@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import { config } from '../config.js';
 import { audit } from '../db/system.js';
-import { body, query, z, name, email, id as idRule } from '../lib/validate.js';
+import { body, z, name, email, id as idRule } from '../lib/validate.js';
 import { badRequest, conflict, must, paymentRequired } from '../lib/errors.js';
 import { effectivePlan, requireOwner } from '../auth/middleware.js';
 import { clientList, clientProfile } from '../core/clientViews.js';

@@ -1,6 +1,6 @@
 // Clients: cards or table, filters, search, sort (prototype V.clients).
 import { api } from '../../shared/api.js';
-import { esc, rel, money, interval } from '../../shared/format.js';
+import { esc, rel } from '../../shared/format.js';
 import { icon } from '../../shared/icons.js';
 import { avatar, statusPill, payPill, emptyState, small } from '../../shared/components.js';
 import { ui, setUi } from '../state.js';
@@ -83,5 +83,4 @@ export default {
   inputs: {
     cSearch(el, _e, ctx) { setUi('cq', el.value); document.getElementById('client-results').innerHTML = results(filtered(ctx.data, ctx.params), ctx.data); },
   },
-  _u: [money, interval],
 };
