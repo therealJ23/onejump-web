@@ -90,7 +90,7 @@ Going live with real money later is the same steps with Test mode off, plus Stri
 ### 4. Resend (sends invites and login links) — 10 min + DNS wait
 1. Go to **resend.com** and sign up.
 2. **Domains → Add Domain** → enter `onejumpfit.com` → Add.
-3. Resend shows a few DNS records (MX, TXT/SPF, DKIM). Log in where you bought onejumpfit.com (GoDaddy, Namecheap, Cloudflare…), open **DNS settings**, and add each record exactly as shown.
+3. Resend shows a few DNS records (MX and TXT for a `send` subdomain, plus a DKIM TXT). Your domain is on Cloudflare: open **dash.cloudflare.com → onejumpfit.com → DNS → Records → Add record** and add each one exactly as shown (set Proxy status to **DNS only**). They don’t touch your Zoho email records.
 4. Back in Resend click **Verify DNS Records** (can take a few minutes to an hour).
 5. **API Keys → Create API Key** → name `onejump-prod`, permission **Sending access** → Add → copy the key (starts with `re_`).
 6. Send me the key. Emails will come from `OneJump <hello@onejumpfit.com>` unless you want a different address.
@@ -114,8 +114,9 @@ Going live with real money later is the same steps with Test mode off, plus Stri
 7. Send me the two connection strings and the CA certificate file. I’ll put them in the app’s encrypted settings, never in code.
 
 ### 7. Your domain — 5 min (after the app is deployed)
-1. In DigitalOcean: **Apps → onejump → Settings → Domains → Add domain** → `onejumpfit.com` (and `www.onejumpfit.com`).
-2. It shows a CNAME or nameserver option. Add that record at your domain registrar’s DNS settings.
-3. Tell me when it’s done; I’ll set `APP_URL=https://onejumpfit.com` and check HTTPS works.
+Your client-facing website (the `Website` folder) already uses onejumpfit.com, so I’ve set this app up for **app.onejumpfit.com** (booking pages become `app.onejumpfit.com/coach/dani`). Tell me if you’d rather use something else.
+1. In DigitalOcean: **Apps → onejump → Settings → Domains → Add domain** → `app.onejumpfit.com` → choose **You manage your domain**.
+2. Copy the CNAME target it shows. In **dash.cloudflare.com → onejumpfit.com → DNS → Records → Add record**: Type **CNAME**, Name `app`, Target = what DigitalOcean showed, Proxy status **DNS only** → Save.
+3. Tell me when it’s done; I’ll check HTTPS works and the links in emails point to it.
 
 **As soon as I have each key** I’ll: switch that service from mock to real, run the tests against it, deploy, and tell you what to click to try it yourself.

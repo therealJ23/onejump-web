@@ -19,7 +19,7 @@ services:
     envs:
       - { key: NODE_ENV, value: production }
       - { key: PORT, value: "3000" }
-      - { key: APP_URL, value: "https://onejumpfit.com" }
+      - { key: APP_URL, value: "https://app.onejumpfit.com" }
       - { key: DATABASE_URL, type: SECRET }
       - { key: MIGRATE_DATABASE_URL, type: SECRET }
       - { key: DATABASE_CA_CERT, type: SECRET }

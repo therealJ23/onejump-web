@@ -56,3 +56,9 @@ Choices made while building the MVP, and why. Newest last.
 35. **Workout logging is saved on the phone as you go** (localStorage), so a lost signal or closed tab doesn’t lose sets; it’s sent when the client taps Save.
 36. **The workout builder autosaves** about a second after each change.
 37. **The client app’s service worker caches the app shell only.** API responses and photos are never cached (private and must be fresh).
+
+## Deployment
+
+38. **The coach software lives at `app.onejumpfit.com`.** The existing client-facing website already uses `onejumpfit.com`, so the app gets its own subdomain (booking pages: `app.onejumpfit.com/coach/[slug]`). Emails still come from `hello@onejumpfit.com` (Resend uses its own `send` subdomain records, so Zoho mail is unaffected).
+39. **DigitalOcean App Platform** runs `npm start`; a pre-deploy job runs `npm run db:migrate`, so a failed migration stops the deploy instead of breaking the live app. In production the server refuses to start without a database URL and a 32+ character `SESSION_SECRET`, and warns loudly if email, storage or payments are still on their development stand-ins.
+
