@@ -62,4 +62,7 @@ export function assertProductionConfig() {
   if (config.ai.provider === 'anthropic' && !config.ai.anthropicKey) missing.push('ANTHROPIC_API_KEY');
   if (config.email.provider === 'resend' && !config.email.resendKey) missing.push('RESEND_API_KEY');
   if (missing.length) throw new Error(`Missing production settings: ${missing.join(', ')}`);
+  if (config.email.provider === 'console') console.warn('[config] EMAIL_PROVIDER=console in production: invites and login links are NOT emailed. Set up Resend.');
+  if (config.storage?.provider === 'local') console.warn('[config] STORAGE_PROVIDER=local in production: uploaded photos are lost on every deploy. Set up Cloudflare R2.');
+  if (config.payments.provider === 'mock') console.warn('[config] PAYMENTS_PROVIDER=mock in production: no real payments.');
 }
