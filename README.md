@@ -9,19 +9,13 @@ Coaching software for personal trainers and online coaches. **Assist**, the AI c
 
 ## Run it on your computer (Mac)
 
-You need **Node.js 20.19 or newer** and **MySQL 8**.
+You need **Node.js 20.19 or newer** (nodejs.org → LTS) and a **MySQL 8 server** (the one MySQL Workbench connects to is fine).
 
-1. Install the tools (once). In Terminal:
-   ```bash
-   brew install node mysql
-   brew services start mysql
-   ```
-2. Open this folder in VS Code (**File → Open Folder… → onejump-app**), then open the terminal in VS Code (**Terminal → New Terminal**).
-3. Create the databases and users (once):
-   ```bash
-   mysql -u root < scripts/setup-local-db.sql
-   ```
-   (If your MySQL root user has a password, use `mysql -u root -p < scripts/setup-local-db.sql`.)
+1. Check the tools in a terminal: `node -v` should print v20.19 or higher, and MySQL Workbench should connect to your local instance.
+2. Open this folder in VS Code: **File → Open Folder…** → Desktop → Onejump → **web-app**. Then open the terminal in VS Code: **Terminal → New Terminal**.
+3. Create the databases and users (once). Either:
+   - **MySQL Workbench:** File → Open SQL Script… → `scripts/setup-local-db.sql` → click the lightning bolt, or
+   - **Terminal:** `mysql -u root -p < scripts/setup-local-db.sql`
 4. Create your settings file and install packages:
    ```bash
    cp .env.example .env
