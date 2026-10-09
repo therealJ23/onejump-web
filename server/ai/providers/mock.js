@@ -1,7 +1,10 @@
 // MockProvider: deterministic, offline drafts with the same shape the real models return.
 // It's the default (AI_PROVIDER=mock) so the whole product works without an API key, and
 // its outputs double as test fixtures. It reads the same structured context the prompts embed.
+import { createHash } from 'node:crypto';
+import jpeg from 'jpeg-js';
 import { REFERRAL, checkText, isPain } from '../safety.js';
+import { splitFoods, parseSet } from '../../../public/js/shared/parse.js';
 
 const r1 = n => Math.round(n * 10) / 10;
 const plural = (n, w, p) => `${n} ${n === 1 ? w : (p || w + 's')}`;
@@ -242,7 +245,67 @@ function lead(ctx) {
   return { name, goal: goal ? cap(goal) : '', reply: `Hey${name ? ' ' + name : ''}! ${goal ? `${cap(goal)} is a great goal. ` : 'Thanks for reaching out! '}${price}Want to hop on a free 20-minute call?${link}` };
 }
 
-const TASKS = { checkin, message, risk, workout, adjust, progress, lead };
+// ------------------------------------------------------------------ nutrition (fixtures)
+export const MEAL_PHOTOS = [
+  { title: 'Chicken & rice bowl', items: [['Grilled chicken breast', 170, 'about 6 oz', 'high', [281, 52.7, 0, 6.1]], ['White rice, cooked', 158, 'about 1 cup', 'medium', [205, 4.3, 44.6, 0.5]], ['Broccoli, cooked', 90, 'about ½ cup', 'medium', [32, 2.2, 6.5, 0.4]]] },
+  { title: 'Eggs, toast and avocado', items: [['Eggs, scrambled', 100, '2 eggs', 'high', [155, 12.6, 1.1, 10.6]], ['Whole-wheat toast', 64, '2 slices', 'high', [161, 7.9, 27.3, 2.2]], ['Avocado', 75, 'about ½ avocado', 'medium', [120, 1.5, 6.4, 11]]] },
+  { title: 'Salmon salad', items: [['Salmon, cooked', 140, 'about 5 oz', 'medium', [288, 30.8, 0, 16.8]], ['Mixed salad greens', 85, 'about 2 cups', 'high', [14, 1.3, 2.8, 0.2]], ['Olive oil dressing', 14, 'about 1 tbsp', 'low', [124, 0, 0, 14]]] },
+  { title: 'Greek yogurt bowl', items: [['Greek yogurt, plain', 170, '1 container', 'high', [100, 17.3, 6.1, 0.7]], ['Blueberries', 75, 'about ½ cup', 'medium', [43, 0.5, 10.9, 0.2]], ['Granola', 30, 'about ¼ cup', 'low', [141, 3, 19.2, 6]]] },
+  { title: 'Burger and fries', items: [['Cheeseburger', 120, '1 burger', 'high', [316, 16.8, 32.4, 13.2]], ['French fries', 117, '1 medium serving', 'medium', [365, 4, 48, 17.6]]] },
+];
+/** Offline photo "analysis": a near-uniform image (blank, dark, a wall) isn't food; otherwise a fixture picked from the image bytes. */
+function meal_photo(ctx) {
+  const buf = ctx.image;
+  let isFood = true;
+  try {
+    const img = jpeg.decode(buf, { useTArray: true, maxResolutionInMP: 20, maxMemoryUsageInMB: 256 });
+    let n = 0, sum = 0, sq = 0;
+    for (let i = 0; i < img.data.length; i += 4 * 37) { const l = 0.299 * img.data[i] + 0.587 * img.data[i + 1] + 0.114 * img.data[i + 2]; sum += l; sq += l * l; n++; }
+    const sd = Math.sqrt(Math.max(0, sq / n - (sum / n) ** 2));
+    isFood = sd > 12;
+  } catch { isFood = false; }
+  if (!isFood) return { is_food: false, title: '', items: [], note: 'Portions are estimated from the photo.' };
+  const pick = MEAL_PHOTOS[parseInt(createHash('sha1').update(buf).digest('hex').slice(0, 8), 16) % MEAL_PHOTOS.length];
+  return { is_food: true, title: pick.title, items: pick.items.map(([name, grams, portion_text, confidence, [c, p, cb, f]]) => ({ name, grams, portion_text, confidence, estimate: { calories: c, protein_g: p, carbs_g: cb, fat_g: f } })), note: 'Portions are estimated from the photo.' };
+}
+function food_text(ctx) {
+  return { items: splitFoods(ctx.text).map(x => ({ name: x.food, qty: x.qty, unit: x.unit, grams: x.unit === 'g' ? x.qty : x.unit === 'oz' ? Math.round(x.qty * 28.35) : null })) };
+}
+function set_text(ctx) {
+  const r = parseSet(ctx.text);
+  return { reps: r?.reps ?? null, weight: r?.weight ?? null, bodyweight: !!r?.bodyweight };
+}
+function nutrition_summary(ctx) {
+  const f = ctx.client?.first || 'They', w = ctx.week, t = ctx.targets || {};
+  const logged = `${f} logged food on ${w.daysLogged} of 7 days`;
+  const protein = t.proteinG && w.daysLogged ? ` and reached the protein target on ${w.proteinHitDays} of them` : '';
+  const cal = t.calories && w.avgCalories ? ` Calories averaged about ${w.avgCalories.toLocaleString('en-US')} on logged days (target ${t.calories.toLocaleString('en-US')}).` : '';
+  const wins = [], focus = [];
+  if (w.daysLogged >= 5) wins.push(`Logged ${w.daysLogged} days this week`);
+  if (t.proteinG && w.proteinHitDays >= 4) wins.push(`Protein target reached on ${w.proteinHitDays} days`);
+  if (w.photos >= 3) wins.push('Uses photo logging regularly');
+  if (w.daysLogged < 3) focus.push('Logging on more days so the picture is clearer');
+  if (t.proteinG && w.daysLogged >= 3 && w.proteinHitDays * 2 < w.daysLogged) focus.push('Adding a protein source to breakfast and lunch');
+  if (ctx.habits?.some(h => h.daysThisWeek <= 2)) focus.push(`Habit to revisit: ${ctx.habits.find(h => h.daysThisWeek <= 2).title}`);
+  return { summary: `${logged}${protein}.${cal}`, wins: wins.slice(0, 3), focus: focus.slice(0, 3) };
+}
+function nutrition_nudge(ctx) {
+  const f = ctx.client?.first || 'there';
+  return { text: styleWrap(ctx.coach?.style,
+    `Hey ${f}! Quick nutrition note: protein has been on the lighter side most days this week. An easy win is adding a palm-sized portion to breakfast and lunch, like eggs, Greek yogurt, chicken or tofu. Want me to send a few quick ideas that fit your week?`,
+    `${f}, protein was light most days this week. Add a palm-sized portion at breakfast and lunch. Want a few easy options?`,
+    `${f}, protein came in under target on most logged days this week. Adding one portion at breakfast and one at lunch would close most of the gap. Want a short list of options?`,
+    `${f}! Your protein has been playing hide and seek this week. Let’s find it: a palm-sized portion at breakfast and lunch does the trick. Want some easy ideas?`) };
+}
+function voice_summary(ctx) {
+  const s = sentences(ctx.text || '').map(x => x.replace(/^(hey|hi|hello)[ ,]+\w+[ ,]+/i, '').replace(/^(so|um|uh|okay|ok)[ ,]+/i, '')).filter(Boolean);
+  const ask = s.find(x => /\?|can we|could we|can i|should i|is it ok|move|swap|reschedul/i.test(x)) || s[0] || 'Voice note';
+  const line = ask.replace(/[.!?]+$/, '');
+  return { summary: (line.length > 120 ? line.slice(0, 117) + '…' : cap(line)) };
+}
+function briefing(ctx) { return { lines: ctx.facts.lines }; }
+
+const TASKS = { checkin, message, risk, workout, adjust, progress, lead, meal_photo, food_text, set_text, nutrition_summary, nutrition_nudge, voice_summary, briefing };
 
 export class MockProvider {
   constructor() { this.name = 'mock'; this.model = 'mock-assist-1'; }

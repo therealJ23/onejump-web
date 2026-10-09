@@ -36,3 +36,29 @@ export function guardDraft(text, { contextTexts = [], firstName = '' } = {}) {
   }
   return { text: out, safety: { flagged: ctx.flagged || own.flagged, term: ctx.term || own.term, rewritten } };
 }
+
+// ---------------------------------------------------------------- nutrition
+import { checkNutritionLanguage, flagReplyText } from '../nutrition/language.js';
+export const DIETITIAN = 'That’s a question for your doctor or a registered dietitian.';
+const SUPPLEMENT_OR_MEDICAL = /\b(supplements?|fat[- ]?burners?|diet pills?|appetite suppress\w*|creatine|pre-?workouts?|detox|cleanse|keto pills?|weight[- ]loss pills?|ozempic|semaglutide|wegovy|mounjaro|diabet\w*|blood sugar|insulin|kidney\w*|pregnan\w*|breastfeed\w*|medications?|allerg\w*|celiac|ibs|cholesterol|thyroid|eating disorder)\b/i;
+const RECOMMENDS_SUPPLEMENT = /\b(take|try|use|start|add|recommend|grab|buy)\b.{0,25}\b(supplements?|fat[- ]?burners?|diet pills?|creatine|pre-?workout|detox|cleanse|appetite suppress\w*|weight[- ]loss pills?)\b/i;
+const JUDGING = /\b(bad|junk|cheat|guilty|naughty|clean eating|dirty) (food|foods|meal|meals|day|eating)\b|\b(junk food|cheat meal|cheat day)\b/i;
+
+/**
+ * Nutrition safety on a client-facing draft:
+ *  - food language that suggests compensating, purging, earning food, restriction or risk in the
+ *    client's words → the warm, number-free reply (the coach still decides whether to send it)
+ *  - supplements or medical nutrition (diabetes, kidney disease, pregnancy, medications, allergies)
+ *    → never advise; refer to a doctor or registered dietitian
+ *  - judging words about food are softened away by replacing the draft
+ */
+export function guardNutrition(text, { contextTexts = [], firstName = 'there' } = {}) {
+  let out = String(text || '').trim();
+  const flag = contextTexts.map(checkNutritionLanguage).find(r => r.flagged);
+  if (flag) return { text: flagReplyText(firstName || 'there', flag.category), nutritionFlag: flag.category, rewritten: true };
+  const asked = contextTexts.some(t => SUPPLEMENT_OR_MEDICAL.test(String(t || '')));
+  if (RECOMMENDS_SUPPLEMENT.test(out)) out = `Thanks for asking, ${firstName || 'there'}. I don’t recommend supplements. ${DIETITIAN} In the meantime, regular meals with some protein are a great place to focus.`;
+  else if (asked && !/doctor|dietitian|qualified professional/i.test(out)) out = `Good question, ${firstName || 'there'}. ${DIETITIAN} I’m happy to work your training and habits around whatever they suggest.`;
+  if (JUDGING.test(out)) out = out.replace(JUDGING, 'that meal');
+  return { text: out, nutritionFlag: null, rewritten: out !== String(text || '').trim() };
+}

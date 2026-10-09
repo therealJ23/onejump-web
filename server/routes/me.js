@@ -18,6 +18,7 @@ import { runAutomations } from '../core/automations.js';
 import { StorageService, sniffImage } from '../storage/StorageService.js';
 import { exportClientData } from '../core/clientData.js';
 import { payments } from '../payments/PaymentService.js';
+import { raiseFlag } from '../nutrition/flags.js';
 
 export const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 1 } });
@@ -85,7 +86,7 @@ router.get('/today', async (req, res) => {
   const w = weights.map(x => x.value);
   const checkinThisWeek = lastCheckin && new Date(lastCheckin.submittedAt) >= addDays(today, -6);
   res.json({
-    client: { name: client.name, first: client.name.split(' ')[0], goal: client.goal, targetWeight: client.targetWeight, habits: (client.tags || []).filter(t => /sleep|protein|steps|water|habit/i.test(t)) },
+    client: { name: client.name, first: client.name.split(' ')[0], goal: client.goal, targetWeight: client.targetWeight },
     business: { name: b.name, brandColor: b.brandColor, logoUrl: b.logoUrl ? await StorageService.signedUrl(b.logoUrl) : null },
     coach: { name: coachInfo?.name || b.name, first: (coachInfo?.name || b.name).split(' ')[0] },
     program: program ? { name: program.name, week: Math.min(program.weeks, programWeek(client) || 1), weeks: program.weeks } : null,
@@ -158,6 +159,7 @@ router.post('/checkins', body(z.object({
   await refreshClientStats(coach, client.id, { tz });
   await clientEvent(coach, client.id, 'checkin', { flagged: s.flagged });
   await notify(coach, { kind: 'checkin', title: `${client.name} sent a check-in`, body: s.flagged ? `Mentions ${s.term} · review first` : `Soreness ${req.body.soreness}/10 · sleep ${req.body.sleepHours} h`, link: `/app/checkins/${k.id}` });
+  await raiseFlag(coach, { clientId: client.id, clientName: client.name, businessId: req.auth.businessId, sourceType: 'checkin', sourceId: k.id, text: req.body.text });
   await enqueue('checkin_summary', { businessId: req.auth.businessId, checkInId: k.id });
   res.status(201).json({ ok: true, id: k.id });
 });
@@ -179,6 +181,7 @@ router.post('/messages', body(z.object({ body: z.string().trim().min(1).max(3000
   await clientEvent(coach, client.id, 'message');
   const s = checkText(req.body.body);
   await notify(coach, { kind: 'message', title: `${client.name}: “${req.body.body.slice(0, 60)}${req.body.body.length > 60 ? '…' : ''}”`, body: s.flagged ? `Mentions ${s.term}` : 'New message', link: `/app/inbox/${client.id}` });
+  await raiseFlag(coach, { clientId: client.id, clientName: client.name, businessId: req.auth.businessId, sourceType: 'message', sourceId: m.id, text: req.body.body });
   res.status(201).json({ message: { id: m.id, from: 'me', body: m.body, at: m.createdAt } });
 });
 
@@ -262,7 +265,7 @@ router.post('/billing/portal', async (req, res) => {
 router.get('/export', async (req, res) => {
   const { coach } = await ctx(req);
   const data = await exportClientData(coach, req.auth.clientId);
-  delete data.aIInsight; delete data.clientEvent; delete data.note; // coach-private
+  delete data.aIInsight; delete data.clientEvent; delete data.note; delete data.nutritionFlag; // coach-private
   audit({ businessId: req.auth.businessId, actorUserId: req.auth.userId, action: 'client_self_export', target: req.auth.clientId });
   res.set('Content-Disposition', 'attachment; filename="my-onejump-data.json"');
   res.json(data);

@@ -64,6 +64,43 @@ export const SCHEMAS = {
     description: 'Read a message from a prospective client and draft the coach’s reply.',
     zod: z.object({ name: z.string().max(80), goal: z.string().max(160), reply: str(800) }),
   },
+  meal_photo: {
+    description: 'Identify the foods in a meal photo and estimate the grams of each. Do not judge the food.',
+    zod: z.object({
+      is_food: z.boolean(),
+      title: z.string().trim().max(80).default(''),
+      items: z.array(z.object({
+        name: str(80), grams: z.number().min(0).max(3000), portion_text: z.string().trim().max(60).default(''),
+        confidence: z.enum(['high', 'medium', 'low']),
+        estimate: z.object({ calories: z.number().min(0).max(5000), protein_g: z.number().min(0).max(500), carbs_g: z.number().min(0).max(800), fat_g: z.number().min(0).max(500) }).optional().nullable(),
+      })).max(12),
+      note: z.string().trim().max(200).default('Portions are estimated from the photo.'),
+    }),
+  },
+  food_text: {
+    description: 'Turn what a client said they ate into separate foods with a quantity each.',
+    zod: z.object({ items: z.array(z.object({ name: str(80), qty: z.number().min(0).max(100), unit: z.string().max(20).optional().nullable(), grams: z.number().min(0).max(3000).optional().nullable() })).max(12) }),
+  },
+  set_text: {
+    description: 'Read reps and weight from what a client said while logging one set.',
+    zod: z.object({ reps: z.number().int().min(0).max(100).nullable(), weight: z.number().min(0).max(2000).nullable(), bodyweight: z.boolean().default(false) }),
+  },
+  nutrition_summary: {
+    description: 'Summarize a client’s week of food logging for their coach, in neutral words.',
+    zod: z.object({ summary: str(600), wins: z.array(str(160)).max(3), focus: z.array(str(160)).max(3) }),
+  },
+  nutrition_nudge: {
+    description: 'Draft a short, friendly, number-free nutrition nudge from a coach to their client.',
+    zod: z.object({ text: str(800) }),
+  },
+  voice_summary: {
+    description: 'Summarize a client’s voice note for their coach in one short line.',
+    zod: z.object({ summary: str(160) }),
+  },
+  briefing: {
+    description: 'Word a coach’s morning briefing from the facts given. Only use those facts.',
+    zod: z.object({ lines: z.array(str(240)).min(2).max(8) }),
+  },
 };
 
 /** Minimal JSON Schema generation from the zod validators (for provider tool definitions). */

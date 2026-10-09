@@ -14,7 +14,10 @@ const hello = () => { const h = new Date().getHours(); return h < 12 ? 'Morning'
 export default {
   tab: 'today',
   title: () => 'Today',
-  load: () => api.get('/api/me/today'),
+  async load() {
+    const [d, n] = await Promise.all([api.get('/api/me/today'), api.get('/api/me/nutrition/today').catch(() => null)]);
+    return { ...d, nutrition: n };
+  },
   render(d) {
     const t = d.today, n = d.next;
     const wk = d.week.planned ? `${d.week.done} of ${d.week.planned} workouts this week` : '';
@@ -30,7 +33,7 @@ export default {
     ${d.coachNote ? `<div class="card pad stack s8" style="border-left:3px solid var(--volt-deep)"><div class="row" style="gap:8px"><span class="av xs" style="background:var(--volt);color:#12281F" aria-hidden="true">${esc(d.coach.first[0] || '')}</span><span class="tiny strong">Note from ${esc(d.coach.first)}</span></div><div class="small">${esc(d.coachNote.text)}</div>${t?.note ? '' : `<a class="tiny" href="/client/chat">Reply</a>`}</div>` : ''}
     ${d.checkin.doneThisWeek ? `<div class="card pad row" style="gap:12px"><span class="q-icon good">${icon('check')}</span><div class="grow small"><b>Check-in sent.</b> Next one due Sunday.</div></div>` : `<a class="card pad row" style="gap:12px;text-decoration:none;color:inherit" href="/client/checkin"><span class="q-icon assist">${icon('clipboard')}</span><div class="grow"><div class="strong">Weekly check-in</div><div class="tiny muted">Due Sunday · about 2 minutes</div></div>${icon('chevR')}</a>`}
     ${goalCard(d)}
-    ${d.client.habits?.length ? `<div class="card pad stack s8"><div class="strong small">Daily habits</div>${d.client.habits.map(h => `<div class="row small" style="gap:8px">${icon('check')}<span>${esc(h)}</span></div>`).join('')}</div>` : ''}
+    ${nutritionCard(d.nutrition)}
     ${wk ? `<div class="tiny muted" style="text-align:center">${wk}</div>` : ''}`;
   },
 };
@@ -43,6 +46,16 @@ function goalCard(d) {
     return `<div class="card pad stack s8"><div class="row between"><span class="strong small">Goal: ${esc(d.client.goal)}</span><span class="small strong nowrap">${Math.round(doneAmt * 10) / 10} lb ${w.start > tw ? 'down' : 'up'}</span></div><div class="bar"><i style="width:${pct}%"></i></div><div class="tiny muted">${w.start} → ${w.current} lb · target ${tw} lb</div></div>`;
   }
   return `<div class="card pad stack s4"><span class="strong small">Your goal</span><span class="small">${esc(d.client.goal)}</span>${d.workoutsDone ? `<span class="tiny muted">${plural(d.workoutsDone, 'workout')} done so far</span>` : ''}</div>`;
+}
+
+function nutritionCard(n) {
+  if (!n) return '';
+  const habits = n.habits || [], done = habits.filter(h => h.done).length, meals = n.entries.length;
+  const t = n.targets, tot = n.totals;
+  const bar = (label, v, target, unit) => `<div class="macro ${target && v > target ? 'over' : ''}"><div class="row between tiny"><span class="strong">${label}</span><span class="num">${Math.round(v).toLocaleString('en-US')}${unit}${target ? ` / ${Math.round(target).toLocaleString('en-US')}${unit}` : ''}</span></div>${target ? `<div class="bar"><i style="width:${Math.min(100, v / target * 100)}%"></i></div>` : ''}</div>`;
+  const body = tot && t && (t.calories || t.proteinG) ? `<div class="stack s8">${t.calories ? bar('Calories', tot.calories, t.calories, '') : ''}${t.proteinG ? bar('Protein', tot.proteinG, t.proteinG, ' g') : ''}</div>`
+    : `<div class="tiny muted">${meals ? `${meals} meal${meals === 1 ? '' : 's'} logged` : 'Nothing logged yet'}${habits.length ? ` · ${done} of ${habits.length} habits done` : ''}</div>`;
+  return `<a class="card pad stack s8" href="/client/nutrition" style="text-decoration:none;color:inherit"><div class="row between"><span class="row strong small" style="gap:8px">${icon('utensils')} Nutrition today</span><span class="btn sm">${icon('plus')} Log food</span></div>${body}${habits.length && tot && t ? `<div class="tiny muted">${done} of ${habits.length} habits done</div>` : ''}</a>`;
 }
 
 function hasDraft(id) { try { return !!localStorage.getItem(`oj.workout.${id}`); } catch { return false; } }

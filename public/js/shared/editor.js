@@ -4,12 +4,13 @@ import { esc } from './format.js';
 import { arc } from './icons.js';
 import { api } from './api.js';
 import { toastError } from './ui.js';
+import { micButton } from './dictation.js';
 
 export const REWRITES = [['motivate', 'More motivational'], ['professional', 'More professional'], ['shorter', 'Shorter'], ['consistency', 'Explain consistency'], ['recovery', 'Recovery advice']];
 
 /** @param {string} idp id prefix; the textarea is #${idp}-text  @param {string|null} clientId */
 export function editorBlock(idp, text, clientId, { label = 'Message', rows = 6 } = {}) {
-  return `<div class="field"><label for="${idp}-text">${esc(label)}</label><textarea class="textarea" id="${idp}-text" rows="${rows}">${esc(text)}</textarea></div>
+  return `<div class="field"><div class="row between"><label for="${idp}-text">${esc(label)}</label>${micButton(`${idp}-text`, { cls: 'btn ghost icon sm', label: 'Dictate into the message' })}</div><textarea class="textarea" id="${idp}-text" rows="${rows}">${esc(text)}</textarea></div>
     ${clientId ? `<div class="assist-bar" role="toolbar" aria-label="Assist rewrite">${arc()}${REWRITES.map(([k, l]) => `<button type="button" class="chip" data-act="rewrite" data-intent="${k}" data-target="${idp}-text" data-client="${esc(clientId)}">${l}</button>`).join('')}</div>` : ''}`;
 }
 

@@ -14,6 +14,8 @@ import { disconnectPrisma } from '../server/db/prisma.js';
 import { hashPassword } from '../server/auth/password.js';
 import { EXERCISES, HOWTO } from '../server/seed/exercises.js';
 import { loadSampleWorkspace } from '../server/seed/sampleWorkspace.js';
+import { loadOtherNutrition } from '../server/seed/sampleNutrition.js';
+import { runNutrition } from '../server/nutrition/nightly.js';
 import { ensureAutomations } from '../server/core/automationTemplates.js';
 import { runRadar } from '../server/core/radar.js';
 import { runAutomations } from '../server/core/automations.js';
@@ -70,6 +72,7 @@ export async function seed({ log = console.log, now = new Date() } = {}) {
   await db2.payment.create({ data: { clientId: x.x3.id, amountCents: 19900, status: 'failed', failureReason: 'Card declined' } });
   await db2.lead.create({ data: { name: 'Northside lead', source: 'walk_in', goal: 'Get strong' } });
   await db2.note.create({ data: { clientId: x.x1.id, authorUserId: alex.id, body: 'Northside private note.' } });
+  await loadOtherNutrition(db2, x.x1.id, { now, businessId: b2.id });
   log('[seed] Northside Barbell: 3 clients');
 
   // Platform admin
@@ -80,6 +83,9 @@ export async function seed({ log = console.log, now = new Date() } = {}) {
   const r1 = await runRadar(db1, { tz: 'America/New_York', now });
   const a1 = await runAutomations(db1, { tz: 'America/New_York', now, only: ['milestone', 'missed_workouts'] });
   await runRadar(db2, { tz: 'America/Chicago', now });
+  const n1 = await runNutrition(db1, { tz: 'America/New_York', now });
+  await runNutrition(db2, { tz: 'America/Chicago', now });
+  log(`[seed] nutrition: ${n1.nudges} protein nudges drafted`);
   log(`[seed] radar scored ${r1.scored} clients, drafted ${r1.created} outreach messages; automations drafted ${a1.runs}`);
   log(`[seed] done. Log in at /login as dani@reyesstrength.com / ${DEMO_PASSWORD} (dev only).`);
   return { b1, b2, dani, mike, alex, ops };

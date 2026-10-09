@@ -27,6 +27,8 @@ function system(ctx) {
 
 const json = o => JSON.stringify(o, null, 0);
 
+const NUTRITION_RULES = 'Nutrition rules: neutral words only (no “good” or “bad” foods, no judgment, no “cheat” or “guilty”), no medical advice, no supplement advice, no diet prescriptions. The coach sets every target.';
+
 export const PROMPTS = {
   checkin: ctx => ({
     system: system(ctx),
@@ -51,6 +53,34 @@ export const PROMPTS = {
   progress: ctx => ({
     system: system(ctx),
     prompt: `Describe this client’s progress trends for the coach in up to 4 short items (weight trend, key lift, adherence, measurements). Describe trends only. Add a one-line note that this is based only on data logged in OneJump.\n\nCONTEXT\n${json(ctx)}`,
+  }),
+  meal_photo: () => ({
+    system: `You identify foods in meal photos for a food log. ${NUTRITION_RULES} If the photo isn’t clearly food, set is_food false and return no items.`,
+    prompt: 'List each separate food in this photo with an estimated weight in grams, a plain portion description (e.g. “about 1 cup”), your confidence (high, medium or low), and an estimate of calories, protein, carbs and fat for that portion. Give the meal a short neutral title.',
+  }),
+  food_text: ctx => ({
+    system: `You turn a client’s description of what they ate into food log items. ${NUTRITION_RULES}`,
+    prompt: `Split this into separate foods with a quantity each (and a unit or grams if they said one). Use plain food names a nutrition database would know.\n\nTEXT\n${json({ text: ctx.text })}`,
+  }),
+  set_text: ctx => ({
+    system: 'You read workout set logs. Return null for anything that wasn’t said.',
+    prompt: `The client said this while logging one set. Return the reps and the weight in pounds (convert kg), or bodyweight=true.\n\nTEXT\n${json({ text: ctx.text })}`,
+  }),
+  nutrition_summary: ctx => ({
+    system: `${system(ctx)}\n${NUTRITION_RULES}`,
+    prompt: `Summarize this client’s week of food logging for the coach in 2 sentences (how often they logged, how protein and calories compared with the coach’s targets, any pattern). Then up to 3 wins and up to 3 focus points, all in neutral words. Use only the numbers given.\n\nCONTEXT\n${json(ctx)}`,
+  }),
+  nutrition_nudge: ctx => ({
+    system: `${system(ctx)}\n${NUTRITION_RULES}`,
+    prompt: `Draft a short (2–3 sentence) friendly message from the coach to the client about protein this week. No numbers, no calories, no judgment. Offer one easy, concrete idea and ask a simple question.\n\nCONTEXT\n${json(ctx)}`,
+  }),
+  voice_summary: ctx => ({
+    system: 'You summarize voice notes from clients for their coach. One short line, plain words. Never diagnose.',
+    prompt: `Summarize this voice note in one line (what they want or report).\n\nTRANSCRIPT\n${json({ text: ctx.text })}`,
+  }),
+  briefing: ctx => ({
+    system: `${system(ctx)}\nYou word a spoken morning briefing. Never mention health details (pain, injuries, conditions, food behaviours); say a check-in or client “is flagged for you” instead.`,
+    prompt: `Word this coach’s morning briefing as 5–7 short spoken lines, under 120 words total, using only these facts: greeting with the day, number of open items, the most urgent client, check-ins (flagged first, without details), failed payments, today’s workouts, one piece of good news.\n\nFACTS\n${json(ctx.facts)}`,
   }),
   lead: ctx => ({
     system: system(ctx),

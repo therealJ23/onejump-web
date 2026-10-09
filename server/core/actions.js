@@ -5,7 +5,7 @@ import { conflict, must, badRequest } from '../lib/errors.js';
 import { todayKey, addDays } from '../lib/time.js';
 import { exerciseMap, tailorWorkoutForClient } from './training.js';
 
-const SENDABLE = new Set(['message_draft', 'risk', 'automation', 'checkin_summary']);
+const SENDABLE = new Set(['message_draft', 'risk', 'automation', 'checkin_summary', 'nutrition_nudge']);
 export const draftText = i => (i.draft && (i.draft.text ?? i.draft.draft ?? i.draft.reply)) || '';
 
 /**
@@ -68,9 +68,10 @@ export async function applyOp(db, auth, client, op, { tz = 'UTC' } = {}) {
     return { changed: 1, message: 'Note added to the profile.' };
   }
   if (op.type === 'add_tag') {
-    const tags = Array.isArray(client.tags) ? client.tags : [];
-    if (op.text && !tags.includes(op.text)) await db.client.update({ where: { id: client.id }, data: { tags: [...tags, op.text] } });
-    return { changed: 1, message: `Added “${op.text}” to ${client.name.split(' ')[0]}’s habits.` };
+    // "Add a 7-hour sleep target to their habits": a daily habit the client ticks off in the app.
+    const title = String(op.text || '').slice(0, 80);
+    if (title && !(await db.habit.findFirst({ where: { clientId: client.id, title, active: true } }))) await db.habit.create({ data: { clientId: client.id, title, sortOrder: await db.habit.count({ where: { clientId: client.id } }) } });
+    return { changed: 1, message: `Added “${title}” to ${client.name.split(' ')[0]}’s daily habits.` };
   }
   if (op.type === 'fewer_days' || op.type === 'pause_exercise') {
     await db.note.create({ data: { clientId: client.id, authorUserId: auth.userId, body: op.type === 'fewer_days' ? 'Assist suggested fewer, shorter sessions. Change the program in the builder when ready.' : 'Paused a painful movement until assessed.' } });

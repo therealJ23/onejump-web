@@ -6,6 +6,7 @@
 // The risk picture (who's drifting and why) is NOT hard-coded: it's produced by the real
 // radar from the generated data, the same way it will be for real clients.
 import { randomUUID } from 'node:crypto';
+import { loadSampleNutrition } from './sampleNutrition.js';
 import { todayKey, addDays, weekStart, trainingWeekdays, DAY } from '../lib/time.js';
 import { pickWorkout } from '../core/training.js';
 import { ensureAutomations } from '../core/automationTemplates.js';
@@ -428,6 +429,9 @@ export async function loadSampleWorkspace(db, { now = new Date(), tz = 'America/
   // Kevin's failed payment was already reminded by the automation
   const kevinPay = await db.payment.findFirst({ where: { clientId: cl.c18.id, status: 'failed' } });
   if (kevinPay) await db.automationRun.create({ data: { automationId: autos.failed_payment.id, clientId: cl.c18.id, dedupeKey: `${bizId}:payment:${kevinPay.id}`, outcome: 'sent', summary: 'Card-update reminder sent to Kevin', createdAt: at(now, 1, '10:05') } });
+
+  // nutrition: plans, a week of food logs, habits, photos, a meal plan template, one private flag
+  await loadSampleNutrition(db, cl, { now, tz, businessId: cl.c1.businessId });
 
   return { clients: cl, programs: prog, packages: pkg };
 }

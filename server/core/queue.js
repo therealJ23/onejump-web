@@ -4,6 +4,7 @@ import { draftText } from './actions.js';
 import { revenueSummary } from './money.js';
 import { fillTemplate } from './automationTemplates.js';
 import { effectivePlan } from '../auth/middleware.js';
+import { missingCheckinClients } from './checkinStatus.js';
 
 const plural = (n, w, p) => `${n} ${n === 1 ? w : (p || w + 's')}`;
 const firstOf = n => String(n || '').split(' ')[0];
@@ -74,8 +75,7 @@ export async function buildToday(db, { tz = 'UTC', now = new Date() } = {}) {
   // 4. Missing check-ins → friendly reminders
   const auto = await db.automation.findFirst({ where: { key: 'missing_checkin' } });
   const remindedToday = new Set((await db.automationRun.findMany({ where: { createdAt: { gte: dayStart }, dedupeKey: { contains: ':checkin:' } }, select: { clientId: true } })).map(r => r.clientId));
-  const recentCheckins = new Set((await db.checkIn.findMany({ where: { submittedAt: { gte: addDays(now, -7) } }, select: { clientId: true } })).map(k => k.clientId));
-  const missing = active.filter(c => (now - new Date(c.startedAt)) / 864e5 >= 7 && !recentCheckins.has(c.id));
+  const missing = await missingCheckinClients(db, now);
   const notReminded = missing.filter(c => !remindedToday.has(c.id));
   if (missing.length && (notReminded.length || missing.length)) {
     const template = auto?.template || 'Hey {first}! Quick reminder to send your weekly check-in. Takes 2 minutes and it’s how I adjust next week.';

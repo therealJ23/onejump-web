@@ -52,6 +52,21 @@ export function requirePlan(plan, feature = 'This feature') {
     } catch (e) { next(e); }
   };
 }
+/** Plan gating for voice and nutrition features (spec: Starter gets 403 with an upgrade message). */
+export function requireFeature(plan, feature) {
+  return async (req, _res, next) => {
+    try {
+      const b = await req.db.business.findFirst({ select: { plan: true, planStatus: true, trialEndsAt: true } });
+      if (RANK[effectivePlan(b)] >= RANK[plan]) return next();
+      const who = req.auth?.role === 'CLIENT' ? 'Ask your coach about it.' : 'Upgrade in Plan & billing to use it.';
+      next(new HttpError(403, `${feature} is part of OneJump ${plan === 'PRO' ? 'Pro' : 'Studio'}. ${who}`, { upgrade: plan, code: 'upgrade', feature }));
+    } catch (e) { next(e); }
+  };
+}
+export async function planOf(db) {
+  return effectivePlan(await db.business.findFirst({ select: { plan: true, planStatus: true, trialEndsAt: true } }));
+}
+export const isPro = plan => RANK[plan] >= RANK.PRO;
 /** An expired trial behaves like Starter until the coach picks a plan. */
 export function effectivePlan(b) {
   if (!b) return 'STARTER';

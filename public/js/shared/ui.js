@@ -72,10 +72,12 @@ export function showFieldErrors(root, fields = {}) {
     el.closest('.field')?.appendChild(e);
   }
 }
+const busyButtons = new Set();
+/** Shows a working label on a button. busy(null, false) (e.g. ev.currentTarget after an await) releases every busy button. */
 export function busy(btn, on, label = 'Saving…') {
-  if (!btn) return;
-  if (on) { btn.dataset.label = btn.innerHTML; btn.disabled = true; btn.innerHTML = esc(label); }
-  else { btn.disabled = false; if (btn.dataset.label) btn.innerHTML = btn.dataset.label; }
+  if (!btn) { if (!on) for (const b of [...busyButtons]) busy(b, false); return; }
+  if (on) { if (!busyButtons.has(btn)) btn.dataset.label = btn.innerHTML; btn.disabled = true; btn.innerHTML = esc(label); busyButtons.add(btn); }
+  else { btn.disabled = false; if (btn.dataset.label) btn.innerHTML = btn.dataset.label; busyButtons.delete(btn); }
 }
 export async function copyText(t) {
   try { await navigator.clipboard.writeText(t); toast('Copied'); } catch { toast(t, { ms: 8000 }); }

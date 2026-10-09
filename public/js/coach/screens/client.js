@@ -8,8 +8,10 @@ import { openModal, closeModal, modalHead, toast, toastError, busy, confirmDialo
 import { state, hasPlan } from '../state.js';
 import { refreshCounts } from '../shell.js';
 import { editDraft } from '../modals.js';
+import { nutritionTab, mountNutritionTab, nutritionActions, nutritionInputs, nutritionForms } from '../nutritionTab.js';
+import { micButton } from '../../shared/dictation.js';
 
-const TABS = [['overview', 'Overview'], ['goals', 'Goals'], ['program', 'Program'], ['progress', 'Progress'], ['measurements', 'Measurements'], ['photos', 'Photos'], ['checkins', 'Check-ins'], ['messages', 'Messages'], ['notes', 'Notes'], ['payments', 'Payments'], ['insights', 'Assist insights']];
+const TABS = [['overview', 'Overview'], ['goals', 'Goals'], ['program', 'Program'], ['progress', 'Progress'], ['measurements', 'Measurements'], ['photos', 'Photos'], ['checkins', 'Check-ins'], ['messages', 'Messages'], ['nutrition', 'Nutrition'], ['notes', 'Notes'], ['payments', 'Payments'], ['insights', 'Assist insights']];
 const TAB_DATA = {
   overview: id => api.get(`/api/clients/${id}/progress`),
   progress: id => api.get(`/api/clients/${id}/progress`),
@@ -19,6 +21,7 @@ const TAB_DATA = {
   checkins: id => api.get(`/api/clients/${id}/checkins`),
   messages: id => api.get(`/api/clients/${id}/messages?limit=8`),
   notes: id => api.get(`/api/clients/${id}/notes`),
+  nutrition: id => api.get(`/api/clients/${id}/nutrition`),
   payments: id => api.get(`/api/clients/${id}/payments`),
   insights: id => api.get(`/api/clients/${id}/insights`),
 };
@@ -32,6 +35,7 @@ function weightChart(p, height = 200) {
 }
 
 const T = {
+  nutrition: nutritionTab,
   overview(d, td) {
     const c = d.client, pr = d.program;
     const icons = { checkin: 'clipboard', workout: 'dumbbell', open: 'user', payment: 'card' };
@@ -49,12 +53,11 @@ const T = {
   },
   goals(d) {
     const c = d.client;
-    const habits = (c.tags || []).filter(t => /sleep|protein|steps|water|habit/i.test(t));
     return `<div class="grid g2">
       <section class="card pad stack s16"><div class="eyebrow">Main goal</div><div class="h2">${esc(c.goal || 'No goal set')}</div><div class="small muted">Set ${fmtFullDate(c.startedAt)} · ${esc(c.goalType || 'No goal type')}</div>
         ${c.targetWeight ? `<div class="small">Target weight: <b>${c.targetWeight} lb</b></div>` : ''}
         <div><button class="btn sm" data-act="editClient">${icon('edit')} Edit goal</button></div></section>
-      <section class="card pad stack s16"><div class="eyebrow">Daily habits</div>${habits.length ? habits.map(h => `<div class="row between small"><span>${esc(h)}</span><span class="pill">Shown in their app</span></div>`).join('') : '<p class="small muted">No habits yet. Assist suggests them from check-ins (for example a sleep target), or add one in Edit.</p>'}</section>
+      <section class="card pad stack s16"><div class="eyebrow">Daily habits</div><p class="small muted">Habits ${esc(first(c.name))} ticks off each day live on the Nutrition tab, with 7-day streaks. Assist can suggest one from a check-in (for example a sleep target).</p><div><a class="btn sm" href="/app/clients/${c.id}/nutrition">${icon('check')} Manage habits</a></div></section>
       <section class="card pad stack s8" style="grid-column:1/-1"><div class="eyebrow">Why it matters to ${esc(first(c.name))}</div><p>${c.why ? `“${esc(c.why)}”` : '<span class="muted">Not recorded yet. Ask on your onboarding call and add it in Edit.</span>'}</p></section>
     </div>`;
   },
@@ -92,7 +95,7 @@ const T = {
     return `<section class="card"><div class="card-head"><div class="h3">Recent messages</div><a class="btn sm" href="/app/inbox/${d.client.id}">Open conversation</a></div><div class="pad stack s8">${td.messages.length ? td.messages.map(m => `<div class="bubble ${m.senderRole === 'CLIENT' ? 'them' : 'me'}">${esc(m.body)}<span class="time">${stamp(m.createdAt)}${m.aiInsightId ? ' · from an Assist draft' : ''}</span></div>`).join('') : '<p class="muted">No messages yet.</p>'}</div></section>`;
   },
   notes(d, td) {
-    return `<section class="card"><div class="card-head"><div class="h3">Private notes</div><span class="pill">${icon('lock')} Only you</span></div><form class="pad stack s8" data-form="note"><label class="sr" for="note-new">New note</label><textarea class="textarea" id="note-new" name="body" rows="3" placeholder="Add a note about ${esc(first(d.client.name))}…"></textarea><div><button class="btn primary sm" type="submit">Save note</button></div></form><div class="list">${td.notes.map(n => `<div class="li"><div class="grow small" style="white-space:pre-wrap">${esc(n.body)}</div><span class="tiny faint nowrap">${fmtDate(n.createdAt)}</span></div>`).join('') || '<div class="pad-sm small muted">No notes yet.</div>'}</div></section>`;
+    return `<section class="card"><div class="card-head"><div class="h3">Private notes</div><span class="pill">${icon('lock')} Only you</span></div><form class="pad stack s8" data-form="note"><label class="sr" for="note-new">New note</label><div class="row top"><textarea class="textarea grow" id="note-new" name="body" rows="3" placeholder="Add a note about ${esc(first(d.client.name))}…"></textarea>${micButton('note-new')}</div><div><button class="btn primary sm" type="submit">Save note</button></div></form><div class="list">${td.notes.map(n => `<div class="li"><div class="grow small" style="white-space:pre-wrap">${esc(n.body)}</div><span class="tiny faint nowrap">${fmtDate(n.createdAt)}</span></div>`).join('') || '<div class="pad-sm small muted">No notes yet.</div>'}</div></section>`;
   },
   payments(d, td) {
     const failed = td.payments.find(p => p.status === 'failed');
@@ -148,7 +151,7 @@ function editClientModal(ctx) {
       <div class="field"><label for="ec-mode">Coaching</label><select class="select" id="ec-mode" name="mode">${['Online', 'Hybrid', 'In person'].map(x => `<option ${c.mode === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div></div>
       <div class="grid g2"><div class="field"><label for="ec-by">Birth year</label><input class="input" id="ec-by" name="birthYear" type="number" value="${c.birthYear ?? ''}"></div><div class="field"><label for="ec-phone">Phone</label><input class="input" id="ec-phone" name="phone" value="${esc(c.phone || '')}"></div></div>
       <div class="field"><label for="ec-why">Why it matters to them</label><textarea class="textarea" id="ec-why" name="why" rows="2">${esc(c.why || '')}</textarea></div>
-      <div class="field"><label for="ec-tags">Tags and habits</label><input class="input" id="ec-tags" name="tags" value="${esc((c.tags || []).join(', '))}"><span class="hint">Comma-separated. Habits like “Sleep 7+ hours” show on their Today screen.</span></div>
+      <div class="field"><label for="ec-tags">Tags and habits</label><input class="input" id="ec-tags" name="tags" value="${esc((c.tags || []).join(', '))}"><span class="hint">Comma-separated, for you only. Daily habits are on the Nutrition tab.</span></div>
     </form>
     <div class="modal-foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" id="ec-save">Save</button></div>`, { wide: true, label: 'Edit client' });
   m.querySelector('#ec-save').addEventListener('click', async ev => {
@@ -195,8 +198,10 @@ export default {
     <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<a class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" href="/app/clients/${c.id}${k === 'overview' ? '' : '/' + k}" style="text-decoration:none">${l}${k === 'insights' ? ' ' + small(arc(), 14) : ''}</a>`).join('')}</div>
     <div id="tab-body">${T[tab] ? T[tab](d, d.td) : ''}</div>`;
   },
-  mount(root, d, params) { loadAssist(root, d, params); },
+  mount(root, d, params) { loadAssist(root, d, params); if ((params.tab || 'overview') === 'nutrition') mountNutritionTab(root, d); },
+  inputs: { ...nutritionInputs },
   actions: {
+    ...nutritionActions,
     editClient(_el, _e, ctx) { editClientModal(ctx); },
     async riskSend(el, _e, ctx) {
       busy(el, true, 'Sending…');
@@ -283,6 +288,7 @@ export default {
     },
   },
   forms: {
+    ...nutritionForms,
     async note(form, _e, ctx) {
       const body = form.body.value.trim(); if (!body) { form.body.focus(); return; }
       await api.post(`/api/clients/${ctx.data.client.id}/notes`, { body });

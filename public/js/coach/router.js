@@ -19,6 +19,8 @@ const ROUTES = [
   ['/app/leads', 'leads'],
   ['/app/settings', 'settings'], ['/app/settings/:tab', 'settings'],
   ['/app/billing', 'billing'],
+  ['/app/assist', 'assist'],
+  ['/app/nutrition', 'nutrition'],
 ];
 const LOADERS = {
   today: () => import('./screens/today.js'), clients: () => import('./screens/clients.js'), client: () => import('./screens/client.js'),
@@ -26,6 +28,7 @@ const LOADERS = {
   program: () => import('./screens/program.js'), builder: () => import('./screens/builder.js'), library: () => import('./screens/library.js'),
   payments: () => import('./screens/payments.js'), automations: () => import('./screens/automations.js'), leads: () => import('./screens/leads.js'),
   settings: () => import('./screens/settings.js'), billing: () => import('./screens/billing.js'),
+  assist: () => import('./screens/assist.js'), nutrition: () => import('./screens/nutrition.js'),
 };
 
 function match(pathname) {

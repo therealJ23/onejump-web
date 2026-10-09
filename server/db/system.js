@@ -154,4 +154,16 @@ export const library = {
     return all.length;
   },
 };
+// ------------------------------------------------------------- public food data cache (USDA, Open Food Facts)
+// Not tenant data: it holds public nutrition facts only, shared by every workspace.
+export const foodCache = {
+  get: (source, externalId) => db().foodCache.findUnique({ where: { source_externalId: { source, externalId: String(externalId).slice(0, 190) } } }),
+  put: (source, externalId, data) => db().foodCache.upsert({
+    where: { source_externalId: { source, externalId: String(externalId).slice(0, 190) } },
+    create: { source, externalId: String(externalId).slice(0, 190), data, fetchedAt: new Date() },
+    update: { data, fetchedAt: new Date() },
+  }),
+  prune: olderThan => db().foodCache.deleteMany({ where: { fetchedAt: { lt: olderThan } } }),
+};
+
 export { disconnectPrisma as closeDb } from './prisma.js';

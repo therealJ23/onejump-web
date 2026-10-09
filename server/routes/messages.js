@@ -7,6 +7,7 @@ import { messageDraft } from '../ai/drafts.js';
 import { fillTemplate } from '../core/automationTemplates.js';
 import { programWeek } from '../core/training.js';
 import { DAY } from '../lib/time.js';
+import { missingCheckinClients } from '../core/checkinStatus.js';
 
 export const router = Router();
 
@@ -79,21 +80,16 @@ router.post('/broadcast', body(z.object({ segment: z.enum(SEGMENTS), programId: 
   const where = { status: { in: ['NEW', 'ACTIVE'] } };
   if (req.body.segment === 'online') where.mode = 'Online';
   if (req.body.segment === 'program') { if (!req.body.programId) throw badRequest('Pick a program.'); where.programId = req.body.programId; }
-  let list = await req.db.client.findMany({ where });
-  if (req.body.segment === 'missing_checkin') {
-    const recent = new Set((await req.db.checkIn.findMany({ where: { submittedAt: { gte: new Date(Date.now() - 7 * DAY) } }, select: { clientId: true } })).map(k => k.clientId));
-    list = list.filter(c => !recent.has(c.id) && (Date.now() - c.startedAt) / DAY >= 7);
-  }
+  const list = req.body.segment === 'missing_checkin' ? await missingCheckinClients(req.db) : await req.db.client.findMany({ where });
   for (const c of list) await sendMessage(req.db, { clientId: c.id, body: fillTemplate(req.body.body, c), senderUserId: req.auth.userId, senderRole: 'COACH' });
   res.json({ ok: true, sent: list.length });
 });
 
 router.get('/segments/counts', async (req, res) => {
   const clients = await req.db.client.findMany({ where: { status: { in: ['NEW', 'ACTIVE'] } }, select: { id: true, mode: true, programId: true, startedAt: true } });
-  const recent = new Set((await req.db.checkIn.findMany({ where: { submittedAt: { gte: new Date(Date.now() - 7 * DAY) } }, select: { clientId: true } })).map(k => k.clientId));
   const programs = await req.db.program.findMany({ where: { archived: false }, select: { id: true, name: true } });
   res.json({
-    missing_checkin: clients.filter(c => !recent.has(c.id) && (Date.now() - c.startedAt) / DAY >= 7).length,
+    missing_checkin: (await missingCheckinClients(req.db)).length,
     active: clients.length, online: clients.filter(c => c.mode === 'Online').length,
     programs: programs.map(p => ({ id: p.id, name: p.name, count: clients.filter(c => c.programId === p.id).length })).filter(p => p.count),
   });

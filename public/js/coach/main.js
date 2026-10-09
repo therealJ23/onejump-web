@@ -9,6 +9,8 @@ import { rewrite } from '../shared/editor.js';
 import { state } from './state.js';
 import { renderShell, refreshCounts } from './shell.js';
 import { navigate, render, ctx } from './router.js';
+import { chatActions, proposalActions, submitChat } from './assist.js';
+import { toggleDictation } from '../shared/dictation.js';
 
 applyTheme();
 
@@ -17,6 +19,11 @@ const NOTIF_ICON = { risk: 'alert', checkin: 'clipboard', message: 'message', pa
 const NOTIF_TONE = { risk: 'crit', checkin: 'assist', payment: 'warn', missed: 'warn', assist: 'assist' };
 
 export const globalActions = {
+  ...chatActions,
+  ...proposalActions,
+  dictate(el) { toggleDictation(el, { onError: msg => toast(msg, { error: true, ms: 7000 }) }); },
+  talk() { return import('./voice.js').then(m => m.openTalk()); },
+  briefing() { return import('./voice.js').then(m => m.openBriefing()); },
   openRail() { document.body.classList.add('rail-open'); },
   closeRail() { document.body.classList.remove('rail-open'); },
   closeModal() { closeModal(); },
@@ -130,11 +137,12 @@ document.addEventListener('change', e => { const el = e.target.closest('[data-ch
 document.addEventListener('submit', e => {
   const f = e.target.closest('form[data-form]'); if (!f) return;
   e.preventDefault();
-  const fn = ctx.screen?.forms?.[f.dataset.form] || (f.dataset.form === 'invite' ? () => globalActions.inviteSend(document.querySelector('[data-act="inviteSend"]')) : null);
+  const fn = ctx.screen?.forms?.[f.dataset.form] || (f.dataset.form === 'invite' ? () => globalActions.inviteSend(document.querySelector('[data-act="inviteSend"]')) : f.dataset.form === 'chat' ? submitChat : null);
   if (fn) run(fn, f, e);
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { if (document.getElementById('modal')) closeModal(); else if (document.getElementById('drawer')) closeDrawer(); else document.body.classList.remove('rail-open'); }
+  if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); globalActions.copilot(); return; }
   if (e.key === '/' && !/input|textarea|select/i.test(document.activeElement?.tagName || '') && !document.activeElement?.isContentEditable) { const s = document.getElementById('global-search'); if (s) { e.preventDefault(); s.focus(); } }
 });
 

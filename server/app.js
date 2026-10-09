@@ -31,6 +31,12 @@ import { router as workspaceRoutes } from './routes/workspace.js';
 import { router as adminRoutes } from './routes/admin.js';
 import { router as webhookRoutes } from './routes/webhooks.js';
 import { router as devRoutes } from './routes/dev.js';
+import { router as assistRoutes } from './routes/assist.js';
+import { router as nutritionRoutes } from './routes/nutrition.js';
+import { router as clientNutritionRoutes } from './routes/clientNutrition.js';
+import { router as meNutritionRoutes } from './routes/meNutrition.js';
+import { router as foodRoutes } from './routes/foods.js';
+import { unauthorized } from './lib/errors.js';
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 
@@ -48,6 +54,7 @@ export function createApp({ sessionStore } = {}) {
         'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
         'img-src': ["'self'", 'data:', 'blob:', 'https://*.r2.cloudflarestorage.com'],
+        'media-src': ["'self'", 'blob:', 'https://*.r2.cloudflarestorage.com'],
         'connect-src': ["'self'"],
         'frame-ancestors': ["'none'"],
         'form-action': ["'self'"],
@@ -82,7 +89,7 @@ export function createApp({ sessionStore } = {}) {
   app.use('/api/auth', authRoutes);
   app.use('/api/join', joinRoutes);
   app.use('/api/onboarding', requireOwner, onboardingRoutes);
-  app.use('/api/clients', requireCoach, clientRoutes);
+  app.use('/api/clients', requireCoach, clientNutritionRoutes, clientRoutes);
   app.use('/api/exercises', requireCoach, exerciseRoutes);
   app.use('/api/programs', requireCoach, programRoutes);
   app.use('/api/workouts', requireCoach, workoutRoutes);
@@ -94,7 +101,11 @@ export function createApp({ sessionStore } = {}) {
   app.use('/api/payments', requireCoach, paymentRoutes);
   app.use('/api/billing', requireOwner, billingRoutes);
   app.use('/api/leads', requireCoach, leadRoutes);
-  app.use('/api/me', requireClient, meRoutes);
+  app.use('/api/assist', requireCoach, assistRoutes);
+  app.use('/api/nutrition', requireCoach, nutritionRoutes);
+  const foodLimit = rateLimit({ windowMs: 60e3, limit: 60, standardHeaders: 'draft-7', legacyHeaders: false, skip: () => config.isTest, message: { error: 'Too many food searches. Wait a minute and try again.' } });
+  app.use('/api/foods', (req, _res, next) => next(req.auth && req.db ? undefined : unauthorized()), foodLimit, foodRoutes);
+  app.use('/api/me', requireClient, meNutritionRoutes, meRoutes);
   app.use('/api/admin', requirePlatformAdmin, adminRoutes);
   if (!config.isProd) app.use('/api/dev', devRoutes);
   app.use('/api', requireCoach, workspaceRoutes);
@@ -112,6 +123,7 @@ export function createApp({ sessionStore } = {}) {
   app.get('/login/magic', page('magic.html'));
   app.get('/coach/:slug', page('coach.html'));
   if (!config.isProd) app.get('/dev/outbox', page('outbox.html'));
+  app.get('/vendor/zxing-browser.min.js', (_req, res) => { res.set('Cache-Control', 'public, max-age=86400'); res.sendFile(path.join(publicDir, '..', 'node_modules', '@zxing', 'browser', 'umd', 'zxing-browser.min.js')); });
   app.get('/client-sw.js', (_req, res) => { res.set('Service-Worker-Allowed', '/client'); res.sendFile(path.join(publicDir, 'js', 'client', 'sw.js')); });
   app.use(express.static(publicDir, { extensions: ['html'], index: 'index.html', maxAge: config.isProd ? '1h' : 0 }));
   app.use((_req, res) => res.status(404).sendFile(path.join(publicDir, '404.html')));

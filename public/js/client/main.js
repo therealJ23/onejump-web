@@ -10,14 +10,14 @@ export const state = { me: null, brand: null, done: null };
 
 const ROUTES = [
   ['/client', 'today'], ['/client/workout/:id', 'workout'], ['/client/workout/:id/finish', 'finish'], ['/client/workout/:id/done', 'done'],
-  ['/client/checkin', 'checkin'], ['/client/chat', 'chat'], ['/client/progress', 'progress'], ['/client/me', 'me'], ['/client/checkout', 'checkout'],
+  ['/client/checkin', 'checkin'], ['/client/chat', 'chat'], ['/client/nutrition', 'nutrition'], ['/client/progress', 'progress'], ['/client/me', 'me'], ['/client/checkout', 'checkout'],
 ];
 const LOADERS = {
   today: () => import('./screens/today.js'), workout: () => import('./screens/workout.js'), finish: () => import('./screens/workout.js').then(m => ({ default: m.finish })),
   done: () => import('./screens/workout.js').then(m => ({ default: m.done })), checkin: () => import('./screens/checkin.js'), chat: () => import('./screens/chat.js'),
-  progress: () => import('./screens/progress.js'), me: () => import('./screens/me.js'), checkout: () => import('./screens/me.js').then(m => ({ default: m.checkout })),
+  progress: () => import('./screens/progress.js'), nutrition: () => import('./screens/nutrition.js'), me: () => import('./screens/me.js'), checkout: () => import('./screens/me.js').then(m => ({ default: m.checkout })),
 };
-const TABS = [['today', '/client', 'home', 'Today'], ['progress', '/client/progress', 'chart', 'Progress'], ['chat', '/client/chat', 'message', 'Coach'], ['me', '/client/me', 'user', 'Me']];
+const TABS = [['today', '/client', 'home', 'Today'], ['nutrition', '/client/nutrition', 'utensils', 'Nutrition'], ['progress', '/client/progress', 'chart', 'Progress'], ['chat', '/client/chat', 'message', 'Coach'], ['me', '/client/me', 'user', 'Me']];
 
 function match(pathname) {
   const parts = pathname.replace(/\/+$/, '').split('/');
@@ -94,6 +94,7 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => { const el = e.target.closest('[data-input]'); if (el) { const fn = current.screen?.inputs?.[el.dataset.input]; if (fn) run(fn, el, e); } });
 document.addEventListener('change', e => { const el = e.target.closest('[data-change]'); if (el) { const fn = current.screen?.actions?.[el.dataset.change] || current.screen?.inputs?.[el.dataset.change]; if (fn) run(fn, el, e); } });
 document.addEventListener('submit', e => { const f = e.target.closest('form[data-form]'); if (!f) return; e.preventDefault(); const fn = current.screen?.forms?.[f.dataset.form]; if (fn) run(fn, f, e); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('modal')) closeModal(); });
 window.addEventListener('popstate', () => render());
 
 (async function boot() {

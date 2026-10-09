@@ -8,6 +8,7 @@ import { sendMessage } from '../core/messaging.js';
 import { fillTemplate } from '../core/automationTemplates.js';
 import { programWeek } from '../core/training.js';
 import { DAY } from '../lib/time.js';
+import { missingCheckinClients } from '../core/checkinStatus.js';
 
 export const router = Router();
 const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
@@ -21,14 +22,13 @@ router.get('/', async (req, res) => {
   ]);
   const byId = new Map(clients.map(c => [c.id, c]));
   const allClients = new Map((await req.db.client.findMany({ select: { id: true, name: true } })).map(c => [c.id, c]));
-  const recent = new Set(checkins.filter(k => k.submittedAt >= new Date(now - 7 * DAY)).map(k => k.clientId));
   const remindedToday = new Set((await req.db.message.findMany({ where: { senderRole: 'COACH', createdAt: { gte: new Date(now - 20 * 3600e3) }, body: { contains: 'check-in' } }, select: { clientId: true } })).map(m => m.clientId));
   const P = new Map(programs.map(p => [p.id, p.name]));
   const row = k => ({ id: k.id, clientId: k.clientId, name: allClients.get(k.clientId)?.name || 'Client', submittedAt: k.submittedAt, status: k.status, flagged: k.flagged });
   res.json({
     toReview: checkins.filter(k => k.status === 'submitted').sort((a, b) => b.flagged - a.flagged || a.submittedAt - b.submittedAt).map(row),
     reviewed: checkins.filter(k => k.status === 'reviewed' && k.submittedAt >= new Date(now - 7 * DAY)).map(row),
-    missing: clients.filter(c => (now - c.startedAt) / DAY >= 7 && !recent.has(c.id)).map(c => ({ clientId: c.id, name: c.name, lastCheckinAt: c.lastCheckinAt, reminded: remindedToday.has(c.id), program: P.get(c.programId) || null })),
+    missing: (await missingCheckinClients(req.db, now)).map(c => ({ clientId: c.id, name: c.name, lastCheckinAt: c.lastCheckinAt, reminded: remindedToday.has(c.id), program: P.get(c.programId) || null })),
     active: byId.size,
   });
 });

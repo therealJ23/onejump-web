@@ -7,10 +7,10 @@ import { PROMPTS, PROMPT_VERSION } from './prompts.js';
 import { MockProvider } from './providers/mock.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { OpenAIProvider } from './providers/openai.js';
-import { guardDraft, checkText } from './safety.js';
+import { guardDraft, checkText, guardNutrition } from './safety.js';
 import { startOfMonthUtc } from '../lib/time.js';
 
-const MAX_TOKENS = { checkin: 1400, message: 500, risk: 700, workout: 1800, adjust: 900, progress: 700, lead: 500 };
+const MAX_TOKENS = { checkin: 1400, message: 500, risk: 700, workout: 1800, adjust: 900, progress: 700, lead: 500, meal_photo: 700, food_text: 500, set_text: 120, nutrition_summary: 500, nutrition_nudge: 300, voice_summary: 120, briefing: 500 };
 
 export function makeProvider(name = config.ai.provider) {
   if (name === 'anthropic') return new AnthropicProvider({ apiKey: config.ai.anthropicKey, model: config.ai.anthropicModel });
@@ -38,12 +38,12 @@ export class AIService {
   }
 
   /** Runs one job. Falls back to the mock drafts if the provider fails or the workspace is over its AI budget. */
-  async run(task, ctx, { db } = {}) {
+  async run(task, ctx, { db, images = [], model = null } = {}) {
     const { system, prompt } = PROMPTS[task](ctx);
     let provider = this.active, out, fallback = null;
     if (await this.overBudget(db)) { provider = this.mock; fallback = 'budget'; }
     try {
-      out = await provider.complete({ task, system, prompt, schema: jsonSchemaFor(task), description: SCHEMAS[task].description, maxTokens: MAX_TOKENS[task], input: ctx });
+      out = await provider.complete({ task, system, prompt, schema: jsonSchemaFor(task), description: SCHEMAS[task].description, maxTokens: MAX_TOKENS[task], input: ctx, images, model: provider.name === 'anthropic' ? model : null });
       out.data = SCHEMAS[task].zod.parse(out.data);
     } catch (e) {
       if (provider === this.mock) throw e;
@@ -63,7 +63,9 @@ export class AIService {
     const r = await this.run('checkin', ctx, opts);
     const s = checkText(ctx.checkin.text);
     const g = guardDraft(r.data.reply, { contextTexts: [ctx.checkin.text], firstName: ctx.client.first });
-    r.data.reply = g.text;
+    const n = guardNutrition(g.text, { contextTexts: [ctx.checkin.text], firstName: ctx.client.first });
+    r.data.reply = n.text;
+    if (n.nutritionFlag && !r.data.flags.some(f => /food|nutrition/i.test(f.text))) r.data.flags.unshift({ level: 'warn', text: 'Food language worth a private follow-up (only you see this)' });
     if (s.flagged && !r.data.flags.some(f => f.level === 'crit')) r.data.flags.unshift({ level: 'crit', text: `Mentions ${s.term}` });
     r.data.safety = { flagged: s.flagged, term: s.term, rewritten: g.safety.rewritten };
     return r;
@@ -73,7 +75,8 @@ export class AIService {
     const replying = ['reply-last', 'checkin-reply'].includes(ctx.intent);
     const lastClient = (ctx.lastMessages || []).filter(m => m.from === 'client').slice(-2).map(m => m.text);
     const g = guardDraft(r.data.text, { contextTexts: replying ? lastClient : [], firstName: ctx.client?.first });
-    r.data = { text: g.text, safety: g.safety };
+    const n = guardNutrition(g.text, { contextTexts: replying ? lastClient : [], firstName: ctx.client?.first });
+    r.data = { text: n.text, safety: { ...g.safety, nutrition: n.nutritionFlag } };
     return r;
   }
   async analyzeClientRisk(ctx, opts) {
@@ -98,11 +101,29 @@ export class AIService {
   }
   suggestAdjustments(ctx, opts) { return this.run('adjust', ctx, opts); }
   analyzeProgress(ctx, opts) { return this.run('progress', ctx, opts); }
+  // -------------------------------------------------------------- nutrition and voice
+  /** Vision: foods, grams and confidence. The server matches foods to USDA and does the math. */
+  analyzeMealPhoto(image, opts = {}) {
+    return this.run('meal_photo', { image }, { ...opts, images: [{ mediaType: 'image/jpeg', base64: image.toString('base64') }], model: config.nutrition.photoModel });
+  }
+  parseFoodText(text, opts) { return this.run('food_text', { text: String(text).slice(0, 600) }, opts); }
+  parseSetText(text, opts) { return this.run('set_text', { text: String(text).slice(0, 200) }, opts); }
+  summarizeNutrition(ctx, opts) { return this.run('nutrition_summary', ctx, opts); }
+  async draftNutritionNudge(ctx, opts) {
+    const r = await this.run('nutrition_nudge', ctx, opts);
+    r.data.text = guardDraft(stripNumbersFromText(r.data.text), { firstName: ctx.client?.first }).text;
+    return r;
+  }
+  summarizeVoiceNote(text, opts) { return this.run('voice_summary', { text: String(text).slice(0, 2000) }, opts); }
+  wordBriefing(ctx, opts) { return this.run('briefing', ctx, opts); }
   async parseLead(ctx, opts) {
     const r = await this.run('lead', ctx, opts);
     r.data.reply = guardDraft(r.data.reply, { contextTexts: [ctx.dm] }).text;
     return r;
   }
 }
+
+/** Nudges are number-free: no calories, grams or percentages. */
+function stripNumbersFromText(t) { return String(t).replace(/\s*\(?\b\d[\d,.]*\s*(k?cal(orie)?s?|g(rams?)?|%|percent)\b\)?/gi, '').replace(/\s{2,}/g, ' ').trim(); }
 
 export const AI = new AIService();

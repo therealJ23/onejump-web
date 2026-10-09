@@ -7,25 +7,39 @@
 //   - updates can't move a row to another business
 //   - a CLIENT session only sees and writes its own rows (clientId = session.clientId)
 //   - a CLIENT session can't touch coach-only tables at all
-//   - raw SQL is not available
+//   - raw SQL and nested writes through relations are not available
 // tests/isolation.test.js proves these rules against a real MySQL database.
-import { getPrisma } from './prisma.js';
+import { getPrisma, Prisma } from './prisma.js';
 
 /** Tables with no businessId that are never reachable from a tenant client. */
-const SYSTEM_MODELS = new Set(['User', 'MagicLink', 'UserSession', 'Job']);
+const SYSTEM_MODELS = new Set(['User', 'MagicLink', 'UserSession', 'Job', 'FoodCache']);
 /** Rows with businessId = null are OneJump's shared library: readable by everyone, writable by no tenant. */
 const SHARED_MODELS = new Set(['Exercise']);
 /** Tables whose rows belong to one client: a CLIENT session is filtered to clientId = its own. */
-const CLIENT_OWNED = new Set(['CheckIn', 'WorkoutSession', 'WorkoutAssignment', 'Measurement', 'ProgressPhoto', 'Thread', 'Message', 'Payment', 'Subscription']);
+const CLIENT_OWNED = new Set(['CheckIn', 'WorkoutSession', 'WorkoutAssignment', 'Measurement', 'ProgressPhoto', 'Thread', 'Message', 'Payment', 'Subscription',
+  'NutritionPlan', 'Habit', 'HabitCheck', 'FoodEntry', 'FoodEntryItem', 'FoodFavorite']);
 /** Coach-only tables: a CLIENT session can't read or write them. */
-const CLIENT_DENIED = new Set(['Lead', 'AIInsight', 'Automation', 'AutomationRun', 'AuditLog', 'ClientEvent', 'Note', 'Invite', 'Notification', 'AIUsage', 'SupportRequest', 'Membership']);
+const CLIENT_DENIED = new Set(['Lead', 'AIInsight', 'Automation', 'AutomationRun', 'AuditLog', 'ClientEvent', 'Note', 'Invite', 'Notification', 'AIUsage', 'SupportRequest', 'Membership',
+  'VoiceInteraction', 'AssistProposal', 'Briefing', 'NutritionFlag', 'MealPlanTemplate', 'Recipe']);
 /** What a CLIENT session may change. Everything else is read-only for clients. */
-const CLIENT_WRITABLE = new Set(['CheckIn', 'WorkoutSession', 'WorkoutAssignment', 'Measurement', 'ProgressPhoto', 'Message', 'Thread', 'Client']);
+const CLIENT_WRITABLE = new Set(['CheckIn', 'WorkoutSession', 'WorkoutAssignment', 'Measurement', 'ProgressPhoto', 'Message', 'Thread', 'Client',
+  'HabitCheck', 'FoodEntry', 'FoodEntryItem', 'FoodFavorite']);
 
 const READS = new Set(['findUnique', 'findUniqueOrThrow', 'findFirst', 'findFirstOrThrow', 'findMany', 'count', 'aggregate', 'groupBy']);
 const CREATES = new Set(['create', 'createMany', 'createManyAndReturn']);
 const UNIQUE_OPS = new Set(['findUnique', 'findUniqueOrThrow', 'update', 'delete', 'upsert']);
 const RAW = new Set(['$queryRaw', '$queryRawUnsafe', '$executeRaw', '$executeRawUnsafe', '$runCommandRaw']);
+
+/** Relation fields per model. Nested writes through them would skip the rewrite below, so they're refused. */
+const RELATIONS = new Map(Prisma.dmmf.datamodel.models.map(m => [m.name, new Set(m.fields.filter(f => f.kind === 'object').map(f => f.name))]));
+function assertNoNestedWrites(model, ...datas) {
+  const rel = RELATIONS.get(model);
+  if (!rel?.size) return;
+  for (const d of datas.flat()) {
+    if (!d || typeof d !== 'object') continue;
+    for (const k of Object.keys(d)) if (rel.has(k)) throw new TenantAccessError(`Nested writes (${model}.${k}) aren't allowed in tenant code. Write each table separately so it's scoped.`);
+  }
+}
 
 export class TenantAccessError extends Error {
   constructor(message) { super(message); this.name = 'TenantAccessError'; this.status = 403; }
@@ -57,6 +71,7 @@ function rewrite(s, model, operation, args) {
   args = { ...(args || {}) };
 
   if (SYSTEM_MODELS.has(model)) throw new TenantAccessError(`${model} is not available to tenant code`);
+  if (!READS.has(operation)) assertNoNestedWrites(model, args?.data, args?.create, args?.update);
   if (isClient && CLIENT_DENIED.has(model)) throw new TenantAccessError(`Clients can't access ${model}`);
   if (isClient && !READS.has(operation) && !CLIENT_WRITABLE.has(model)) throw new TenantAccessError(`Clients can't change ${model}`);
 

@@ -85,3 +85,38 @@ export function sniffImage(buf) {
   if (buf.subarray(0, 6).toString() === 'GIF87a' || buf.subarray(0, 6).toString() === 'GIF89a') return 'image/gif';
   return null;
 }
+
+/**
+ * Removes metadata (EXIF, GPS location, XMP, comments) from a JPEG by dropping its APP1–APP15
+ * and COM segments. The browser already re-encodes photos (which strips EXIF); this makes sure.
+ * Returns null if the buffer isn't a well-formed JPEG.
+ */
+export function stripJpegMetadata(buf) {
+  if (!buf || buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) return null;
+  const out = [buf.subarray(0, 2)];
+  let i = 2;
+  while (i + 4 <= buf.length) {
+    if (buf[i] !== 0xff) return null;
+    const marker = buf[i + 1];
+    if (marker === 0xd9) { out.push(buf.subarray(i, i + 2)); break; }
+    if (marker === 0xda) { out.push(buf.subarray(i)); break; } // start of scan: the rest is image data
+    if (marker >= 0xd0 && marker <= 0xd7) { out.push(buf.subarray(i, i + 2)); i += 2; continue; }
+    const len = buf.readUInt16BE(i + 2);
+    if (len < 2 || i + 2 + len > buf.length) return null;
+    const drop = (marker >= 0xe1 && marker <= 0xef) || marker === 0xfe;
+    if (!drop) out.push(buf.subarray(i, i + 2 + len));
+    i += 2 + len;
+  }
+  return Buffer.concat(out);
+}
+
+/** Recognizes the audio formats browsers record (WebM/Opus, MP4/AAC, Ogg, WAV). */
+export function sniffAudio(buf) {
+  if (!buf || buf.length < 12) return null;
+  if (buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) return 'audio/webm';
+  if (buf.subarray(4, 8).toString() === 'ftyp') return 'audio/mp4';
+  if (buf.subarray(0, 4).toString() === 'OggS') return 'audio/ogg';
+  if (buf.subarray(0, 4).toString() === 'RIFF' && buf.subarray(8, 12).toString() === 'WAVE') return 'audio/wav';
+  if (buf.subarray(0, 3).toString() === 'ID3' || (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0)) return 'audio/mpeg';
+  return null;
+}

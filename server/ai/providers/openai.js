@@ -7,14 +7,15 @@ export class OpenAIProvider {
     if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
     this.name = 'openai'; this.model = model; this.apiKey = apiKey; this.fetch = fetchImpl;
   }
-  async complete({ task, system, prompt, schema, maxTokens = 1200 }) {
+  async complete({ task, system, prompt, schema, maxTokens = 1200, images = [] }) {
+    const user = images.length ? [{ type: 'text', text: prompt }, ...images.map(i => ({ type: 'image_url', image_url: { url: `data:${i.mediaType};base64,${i.base64}` } }))] : prompt;
     const res = await this.fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${this.apiKey}`, 'content-type': 'application/json' },
       body: JSON.stringify({
         model: this.model,
         max_tokens: maxTokens,
-        messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }],
+        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
         response_format: { type: 'json_schema', json_schema: { name: `respond_${task}`, schema, strict: false } },
       }),
       signal: AbortSignal.timeout(45000),

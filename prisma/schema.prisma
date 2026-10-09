@@ -357,6 +357,9 @@ model Message {
   body         String    @db.Text
   aiInsightId  String? // set when sent from an Assist draft
   aiEdited     Boolean   @default(false)
+  audioKey          String? // voice note: private file (voice/{businessId}/{uuid})
+  durationS         Int?
+  transcriptSummary String? // one-line Assist summary of a voice note, for the coach
   readAt       DateTime?
   createdAt    DateTime  @default(now())
   thread       Thread    @relation(fields: [threadId], references: [id])
@@ -527,10 +530,212 @@ model AIUsage {
   model        String
   inputTokens  Int      @default(0)
   outputTokens Int      @default(0)
+  seconds      Int      @default(0) // audio seconds (voice)
   costMicros   Int      @default(0) // USD × 1,000,000
   createdAt    DateTime @default(now())
 
   @@index([businessId, createdAt])
+}
+
+// ---------------------------------------------------------------- voice
+
+model VoiceInteraction {
+  id         String   @id @default(uuid())
+  businessId String
+  userId     String
+  clientId   String? // client voice (voice notes, set and food logging)
+  kind       String   @default("ask") // ask | voice_note | set_log | food_log
+  transcript String   @db.Text
+  durationMs Int
+  provider   String
+  costMicros Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+// Something Assist proposed doing (by voice or in Ask Assist). Nothing happens until the coach confirms.
+model AssistProposal {
+  id         String    @id @default(uuid())
+  businessId String
+  userId     String
+  type       String // send_message | create_lead | send_reminders | add_note | book_appointment
+  summary    String    @db.Text
+  payload    Json
+  status     String    @default("pending") // pending | confirmed | cancelled | expired
+  source     String    @default("voice") // voice | typed
+  result     Json?
+  expiresAt  DateTime
+  decidedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([businessId, status])
+}
+
+model Briefing {
+  id         String    @id @default(uuid())
+  businessId String
+  userId     String
+  date       DateTime  @db.Date
+  script     String    @db.Text
+  lines      Json?
+  audioKey   String?
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([businessId, userId, date])
+}
+
+// ---------------------------------------------------------------- nutrition
+
+model NutritionPlan {
+  id                   String    @id @default(uuid())
+  businessId           String
+  clientId             String    @unique
+  approach             String    @default("habits") // habits | targets | meal_plan
+  calories             Int?
+  proteinG             Int?
+  carbsG               Int?
+  fatG                 Int?
+  hideNumbers          Boolean   @default(false)
+  mealPlanId           String?
+  coachNote            String?   @db.Text
+  sex                  String? // for the calculator only
+  heightIn             Float?
+  activity             Float?
+  goal                 String? // lose | maintain | gain (calculator)
+  lowTargetConfirmedAt DateTime?
+  updatedAt            DateTime  @updatedAt
+
+  @@index([businessId])
+}
+
+model Habit {
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  title      String
+  active     Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, clientId])
+}
+
+model HabitCheck {
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  habitId    String
+  date       DateTime @db.Date
+
+  @@unique([habitId, date])
+  @@index([businessId, clientId, date])
+}
+
+model FoodEntry {
+  id          String          @id @default(uuid())
+  businessId  String
+  clientId    String
+  meal        String // breakfast | lunch | dinner | snack
+  title       String
+  source      String // photo | search | barcode | voice | quick | favorite
+  photoKey    String?
+  aiInsightId String?
+  note        String?         @db.Text
+  day         DateTime        @db.Date // the client's local day (coach's time zone)
+  loggedAt    DateTime
+  createdAt   DateTime        @default(now())
+  items       FoodEntryItem[]
+
+  @@index([businessId, clientId, loggedAt])
+  @@index([businessId, clientId, day])
+}
+
+model FoodEntryItem {
+  id          String    @id @default(uuid())
+  businessId  String
+  clientId    String // so a client session can only ever reach its own items
+  entryId     String
+  name        String
+  grams       Float?
+  portionText String?
+  calories    Float
+  proteinG    Float
+  carbsG      Float
+  fatG        Float
+  foodRef     String? // usda:123 | off:0123456789 | mock:egg
+  fdcId       Int?
+  barcode     String?
+  confidence  String? // high | medium | low | estimate
+  entry       FoodEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, clientId])
+}
+
+model FoodFavorite {
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  title      String
+  items      Json
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, clientId])
+}
+
+model MealPlanTemplate {
+  id         String   @id @default(uuid())
+  businessId String
+  name       String
+  calories   Int?
+  notes      String?  @db.Text
+  days       Json // [{ label, meals: [{ meal, items: [text], recipeId? }] }]
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model Recipe {
+  id          String   @id @default(uuid())
+  businessId  String
+  name        String
+  servings    Int
+  ingredients Json // [{ name, grams, foodRef? }]
+  steps       Json // [text]
+  perServing  Json // { calories, proteinG, carbsG, fatG }
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
+}
+
+// Language in food notes, check-ins, messages or voice notes that the coach should see. Coach-only.
+model NutritionFlag {
+  id         String    @id @default(uuid())
+  businessId String
+  clientId   String
+  sourceType String // food_note | checkin | message | voice_note | fast_loss
+  sourceId   String
+  text       String    @db.Text
+  category   String // compensating | purging | earning | restriction | at_risk | fast_loss
+  severity   String    @default("normal") // normal | urgent
+  status     String    @default("open") // open | resolved
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([businessId, status])
+  @@index([businessId, clientId])
+}
+
+// Public food data (USDA FoodData Central, Open Food Facts). Not tenant data: no businessId.
+model FoodCache {
+  id         String   @id @default(uuid())
+  source     String // usda | usda-search | off | mock
+  externalId String
+  data       Json
+  fetchedAt  DateTime @default(now())
+
+  @@unique([source, externalId])
 }
 
 // ---------------------------------------------------------------- platform

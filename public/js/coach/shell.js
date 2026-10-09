@@ -1,6 +1,6 @@
 // The coach workspace shell from the prototype: deep-green rail, top bar, mobile tab bar.
 import { esc, fmtSaved, planName, plural } from '../shared/format.js';
-import { icon, wordmark } from '../shared/icons.js';
+import { icon, wordmark, arc } from '../shared/icons.js';
 import { avatar, lock } from '../shared/components.js';
 import { api } from '../shared/api.js';
 import { state, hasPlan } from './state.js';
@@ -14,17 +14,19 @@ const NAV = [
   ['programs', '/app/programs', 'layers', 'Programs'],
   ['builder', '/app/builder', 'dumbbell', 'Workout builder'],
   ['library', '/app/library', 'list', 'Exercise library'],
+  ['nutrition', '/app/nutrition', 'utensils', 'Nutrition'],
   ['-', 'Business'],
   ['payments', '/app/payments', 'card', 'Payments'],
   ['leads', '/app/leads', 'funnel', 'Leads', null, 'PRO'],
   ['-', 'Assist'],
+  ['assist', '/app/assist', 'arc', 'Ask Assist', null, 'PRO'],
   ['automations', '/app/automations', 'zap', 'Automations'],
 ];
 
 function navItem([id, href, ic, label, badge, plan], active) {
   const on = active === id;
   const b = badge && state.counts[badge] ? `<span class="badge" data-badge="${badge}">${state.counts[badge]}</span>` : `<span class="badge" data-badge="${badge || ''}" hidden></span>`;
-  return `<a class="nav-item ${on ? 'on' : ''}" href="${href}" data-nav="${id}" ${on ? 'aria-current="page"' : ''}>${icon(ic)}<span>${label}</span>${badge ? b : ''}${plan && !hasPlan(plan) ? `<span style="margin-left:auto">${lock(plan)}</span>` : ''}</a>`;
+  return `<a class="nav-item ${on ? 'on' : ''}" href="${href}" data-nav="${id}" ${on ? 'aria-current="page"' : ''}>${ic === 'arc' ? arc() : icon(ic)}<span>${label}</span>${badge ? b : ''}${plan && !hasPlan(plan) ? `<span style="margin-left:auto">${lock(plan)}</span>` : ''}</a>`;
 }
 
 export function renderShell() {
@@ -53,6 +55,8 @@ export function renderShell() {
         <div class="search" style="flex:1;max-width:420px"><label class="sr" for="global-search">Search</label>${icon('search')}<input class="input" id="global-search" placeholder="Search clients, programs, exercises" data-input="globalSearch" autocomplete="off"><span class="kbd hide-sm">/</span></div>
         <div class="grow"></div>
         ${trial}
+        <button class="btn ghost icon" data-act="talk" aria-label="Talk to Assist" title="Talk to Assist">${icon('mic')}</button>
+        <button class="btn assist sm" data-act="copilot">${arc()}<span class="hide-sm">Ask Assist</span></button>
         <button class="btn primary sm" data-act="newMenu">${icon('plus')}<span class="hide-sm">New</span></button>
         <button class="btn ghost icon bell" data-act="notifs" aria-label="Notifications">${icon('bell')}<span class="dot" id="bell-dot" ${state.counts.notifications ? '' : 'hidden'}></span></button>
         <button class="btn ghost icon hide-sm" data-act="theme" aria-label="Toggle dark mode">${icon('moon')}</button>

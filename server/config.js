@@ -50,6 +50,24 @@ export const config = {
     r2Bucket: env.R2_BUCKET || 'onejump-private',
     localDir: env.LOCAL_STORAGE_DIR || 'var/uploads',
   },
+  voice: {
+    provider: (env.VOICE_PROVIDER || 'mock').toLowerCase(), // mock | deepgram | openai
+    tts: (env.VOICE_TTS || 'browser').toLowerCase(), // browser | deepgram
+    deepgramKey: env.DEEPGRAM_API_KEY || '',
+    deepgramModel: env.DEEPGRAM_MODEL || 'nova-3',
+    deepgramVoice: env.DEEPGRAM_TTS_VOICE || 'aura-2-thalia-en',
+    openaiTranscribeModel: env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1',
+    monthlyMinutes: Number(env.VOICE_MONTHLY_MINUTES || 300),
+  },
+  nutrition: {
+    // live = USDA FoodData Central + Open Food Facts; mock = the offline sample list (default without a key)
+    provider: (env.FOOD_DATA_PROVIDER || (isTest ? 'mock' : env.FDC_API_KEY ? 'live' : 'mock')).toLowerCase(),
+    fdcKey: env.FDC_API_KEY || 'DEMO_KEY',
+    photoModel: env.NUTRITION_PHOTO_MODEL || 'claude-haiku-4-5-20251001',
+    photosMonthly: Number(env.NUTRITION_PHOTOS_MONTHLY || 3000),
+    photosPerClientDaily: Number(env.NUTRITION_PHOTOS_PER_CLIENT_DAILY || 20),
+    userAgent: env.OFF_USER_AGENT || 'OneJump/1.0 (hello@onejumpfit.com)',
+  },
   jobsEnabled: !isTest && bool(env.JOBS_ENABLED, true),
 };
 
@@ -61,8 +79,12 @@ export function assertProductionConfig() {
   if (config.payments.provider === 'stripe' && !config.payments.stripeSecretKey) missing.push('STRIPE_SECRET_KEY');
   if (config.ai.provider === 'anthropic' && !config.ai.anthropicKey) missing.push('ANTHROPIC_API_KEY');
   if (config.email.provider === 'resend' && !config.email.resendKey) missing.push('RESEND_API_KEY');
+  if (config.voice.provider === 'deepgram' && !config.voice.deepgramKey) missing.push('DEEPGRAM_API_KEY');
+  if (config.voice.provider === 'openai' && !config.ai.openaiKey) missing.push('OPENAI_API_KEY');
   if (missing.length) throw new Error(`Missing production settings: ${missing.join(', ')}`);
   if (config.email.provider === 'console') console.warn('[config] EMAIL_PROVIDER=console in production: invites and login links are NOT emailed. Set up Resend.');
   if (config.storage?.provider === 'local') console.warn('[config] STORAGE_PROVIDER=local in production: uploaded photos are lost on every deploy. Set up Cloudflare R2.');
   if (config.payments.provider === 'mock') console.warn('[config] PAYMENTS_PROVIDER=mock in production: no real payments.');
+  if (config.voice.provider === 'mock') console.warn('[config] VOICE_PROVIDER=mock in production: Talk to Assist and voice notes use placeholder transcripts. Set up Deepgram.');
+  if (config.nutrition.provider === 'mock') console.warn('[config] FOOD_DATA_PROVIDER=mock in production: food search uses the small offline list. Add FDC_API_KEY.');
 }

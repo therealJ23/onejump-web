@@ -1,8 +1,22 @@
 # Progress
 
-_Last updated: October 8, 2026_
+_Last updated: October 9, 2026_
 
-## Status: MVP built ✅
+## Now building: Voice + Nutrition (approved Oct 8)
+
+Spec: `03-voice-and-nutrition-spec.md`. Everything runs on mock voice, AI and food data until the keys below exist.
+
+- [x] **Foundation:** new tables (voice, proposals, briefings, nutrition), tenant rules for them (plus a guard against nested writes), **Ask Assist** (typed) with read-only tools and confirmation cards
+- [x] **Step 1 · Nutrition basics:** approach per client (habits / targets / meal plan), Hide numbers, targets + calculator (Mifflin-St Jeor) + low-target warning with required review (audited), habits with streaks, quick add, food search (USDA, cached 30 days), barcode (Open Food Facts), favorites and “repeat yesterday”, coach Nutrition page and Client → Nutrition tab, client Nutrition screen, data sources page, sample data
+- [ ] Step 2 · Dictation everywhere
+- [ ] Step 3 · Photo logging, Assist summaries, Today queue item, Ask Assist answer, language flags
+- [ ] Step 4 · Talk to Assist (voice) with confirmation cards
+- [ ] Step 5 · Client voice: set logging, voice notes, voice food logging
+- [ ] Step 6 · Morning briefing
+
+**Tests:** `npm test` → lint passes, **109 API tests pass** (24 new nutrition tests from the spec’s acceptance criteria).
+
+## MVP: built ✅
 
 Every item on the 12-week MVP checklist in `docs/02-mvp-build-plan.md` is built and runs end to end with the sample data, using mock AI, mock payments, console email and local photo storage. The only things left need your accounts (below) or are yours to do (moving your own coaching off Everfit, onboarding the pilot coaches).
 

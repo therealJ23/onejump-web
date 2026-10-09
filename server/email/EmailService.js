@@ -59,6 +59,10 @@ export const EmailService = {
   sendCoachMessage({ to, businessName, subject, text }) {
     return deliver({ to, subject, text, html: layout(subject, `<p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>`, businessName) });
   },
+  /** Alerts for the coach (urgent flags, the morning briefing). No client health details in the email itself. */
+  sendCoachAlert({ to, subject, text, link, linkLabel = 'Open OneJump' }) {
+    return deliver({ to, link, subject, text: `${text}\n\n${link}`, html: layout(subject, `<p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>${button(link, linkLabel)}`) });
+  },
   sendMigrationRequest({ fromName, fromEmail, businessName, body }) {
     return deliver({ to: 'hello@onejumpfit.com', replyTo: fromEmail, subject: `Migration request: ${businessName}`, text: `${fromName} <${fromEmail}>\n\n${body}`, html: layout('Migration request', `<p><b>${escapeHtml(fromName)}</b> (${escapeHtml(fromEmail)}) · ${escapeHtml(businessName)}</p><p>${escapeHtml(body).replace(/\n/g, '<br>')}</p>`) });
   },
