@@ -1,6 +1,7 @@
 // Messages: thread list + conversation with Assist draft chips (prototype V.inbox).
 // Drafts are only ever put in the composer; the coach presses Send.
 import { api } from '../../shared/api.js';
+import { micButton } from '../../shared/dictation.js';
 import { esc, first, fmtTime, fmtDate, daysAgo, plural } from '../../shared/format.js';
 import { icon, arc } from '../../shared/icons.js';
 import { avatar, riskPill, emptyState, small } from '../../shared/components.js';
@@ -33,7 +34,7 @@ function convo(conv) {
         ${CHIPS.map(([k, l]) => `<button type="button" class="chip" data-act="msgDraft" data-intent="${k}">${l}</button>`).join('')}
       </div>
       <div id="draft-label" class="tiny assist-text" hidden>${small(arc(), 13)} Assist draft. Edit anything before you send.</div>
-      <div class="row top"><label class="grow"><span class="sr">Message to ${esc(c.name)}</span><textarea class="textarea" id="msg-text" name="body" rows="2" style="min-height:52px" placeholder="Write to ${esc(first(c.name))}…" data-input="typed"></textarea></label><button class="btn primary" type="submit" style="height:52px">${icon('send')}<span class="hide-sm">Send</span></button></div>
+      <div class="row top"><label class="grow"><span class="sr">Message to ${esc(c.name)}</span><textarea class="textarea" id="msg-text" name="body" rows="2" style="min-height:52px" placeholder="Write to ${esc(first(c.name))}…" data-input="typed"></textarea></label>${micButton('msg-text', { style: 'height:52px;width:52px' })}<button class="btn primary" type="submit" style="height:52px">${icon('send')}<span class="hide-sm">Send</span></button></div>
       <div class="tiny faint">Enter to send · Shift+Enter for a new line</div>
     </form></div>`;
 }

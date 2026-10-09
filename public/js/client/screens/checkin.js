@@ -1,5 +1,6 @@
 // Client: weekly check-in (prototype cCheckin), with optional private progress photos.
 import { api } from '../../shared/api.js';
+import { micButton } from '../../shared/dictation.js';
 import { fmtDate } from '../../shared/format.js';
 import { icon } from '../../shared/icons.js';
 import { toast } from '../../shared/ui.js';
@@ -18,7 +19,7 @@ export default {
       <div class="field"><label for="ck-w">Weight this morning (lb) <span class="muted">(optional)</span></label><input class="input" id="ck-w" name="weight" inputmode="decimal" value="${d.weight ?? ''}" maxlength="6"></div>
       ${SLIDERS.map(([k, label, min, max, step, unit, def]) => { const v = last[k] ?? def; return `<div class="field"><div class="row between"><label for="ck-${k}">${label}</label><span class="strong small slider-val" id="ck-${k}-v">${v}${unit}</span></div><input type="range" id="ck-${k}" name="${k}" min="${min}" max="${max}" step="${step}" value="${v}" data-input="range" data-unit="${unit}"></div>`; }).join('')}
       <div class="panel pad-sm small row">${icon('check')} ${d.workouts.done} of ${d.workouts.planned} workouts logged this week</div>
-      <div class="field"><label for="ck-t">How was your week?</label><textarea class="textarea" id="ck-t" name="text" rows="4" maxlength="3000" placeholder="Wins, struggles, anything that hurts"></textarea><span class="hint">Mention any pain or injury here. Your coach will follow up and may suggest seeing a professional.</span></div>
+      <div class="field"><div class="row between"><label for="ck-t">How was your week?</label>${micButton('ck-t', { cls: 'btn ghost icon sm' })}</div><textarea class="textarea" id="ck-t" name="text" rows="4" maxlength="3000" placeholder="Wins, struggles, anything that hurts"></textarea><span class="hint">Mention any pain or injury here. Your coach will follow up and may suggest seeing a professional.</span></div>
       <label class="dropzone" for="ck-photo" style="padding:16px;cursor:pointer">${icon('camera')}<span class="small grow" id="ck-photo-l">Add progress photos (optional, private)</span></label><input type="file" id="ck-photo" accept="image/jpeg,image/png,image/webp,image/heic" multiple class="sr" data-change="photos">
       <div class="form-error" id="ck-err" role="alert" hidden></div>
       <button class="btn primary lg" type="submit" style="width:100%">Send to your coach</button>

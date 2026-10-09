@@ -1,6 +1,7 @@
 // Leads (Pro; prototype V.leads, MVP scope): pasted DMs and booking-page requests in a
 // simple pipeline, follow-up drafts the coach copies back, one-tap convert to client.
 import { api } from '../../shared/api.js';
+import { micButton } from '../../shared/dictation.js';
 import { esc, money, plural, daysAgo, fmtDate, first } from '../../shared/format.js';
 import { icon, arc } from '../../shared/icons.js';
 import { assistBadge, thinking, lock, emptyState } from '../../shared/components.js';
@@ -68,7 +69,7 @@ export default {
       const m = openModal(`${modalHead(`Follow up with ${esc(l.name)}`, `${esc(SOURCE[l.source] || l.source)} · goal: ${esc(l.goal || 'not given')}`)}<div class="modal-body" id="ld-body">${thinking()}</div><div class="modal-foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn" id="ld-copy">${icon('copy')} Copy</button>${l.stage === 'new' || l.stage === 'contacted' ? `<button class="btn primary" id="ld-mark">${icon('check')} Copy & mark contacted</button>` : ''}</div>`, { label: 'Follow up' });
       try {
         const r = await api.get(`/api/leads/${l.id}/draft`);
-        m.querySelector('#ld-body').innerHTML = `${r.assist ? `<div class="row">${assistBadge('Drafted from their message')}</div>` : ''}<div class="field"><label for="ld-text">Message</label><textarea class="textarea" id="ld-text" rows="6">${esc(r.text)}</textarea></div><p class="tiny muted">Copy it into Instagram, text or email. OneJump doesn’t message leads directly.</p>`;
+        m.querySelector('#ld-body').innerHTML = `${r.assist ? `<div class="row">${assistBadge('Drafted from their message')}</div>` : ''}<div class="field"><div class="row between"><label for="ld-text">Message</label>${micButton('ld-text', { cls: 'btn ghost icon sm' })}</div><textarea class="textarea" id="ld-text" rows="6">${esc(r.text)}</textarea></div><p class="tiny muted">Copy it into Instagram, text or email. OneJump doesn’t message leads directly.</p>`;
       } catch (e) { m.querySelector('#ld-body').innerHTML = `<p class="small">${esc(e.message)}</p>`; }
       m.querySelector('#ld-copy').addEventListener('click', () => copyText(m.querySelector('#ld-text')?.value || ''));
       m.querySelector('#ld-mark')?.addEventListener('click', async ev => {

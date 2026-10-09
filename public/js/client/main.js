@@ -2,9 +2,10 @@
 // one state object, small screen modules, event delegation. No AI labels, risk scores or
 // business data appear here; everything comes from /api/me (scoped to this client).
 import { api, setCsrf, setUnauthorizedHandler } from '../shared/api.js';
+import { toggleDictation } from '../shared/dictation.js';
 import { icon } from '../shared/icons.js';
 import { errorState } from '../shared/components.js';
-import { closeModal, toastError } from '../shared/ui.js';
+import { closeModal, toastError, toast } from '../shared/ui.js';
 
 export const state = { me: null, brand: null, done: null };
 
@@ -81,6 +82,7 @@ function handler(name) { return current.screen?.actions?.[name] || GLOBAL[name];
 async function run(fn, el, e) { try { await fn(el, e, ctx); } catch (err) { toastError(err); } }
 const GLOBAL = {
   retry() { render(); },
+  dictate(el) { toggleDictation(el, { onError: msg => toast(msg, { error: true, ms: 7000 }) }); },
   closeModal() { closeModal(); },
   async logout() { await api.post('/api/auth/logout').catch(() => {}); location.href = '/login?as=client'; },
 };

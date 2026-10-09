@@ -1,5 +1,6 @@
 // Modals used from several screens: CSV import, new package, new program, add lead, edit a draft.
 import { api } from '../shared/api.js';
+import { micButton } from '../shared/dictation.js';
 import { esc, plural } from '../shared/format.js';
 import { icon, arc } from '../shared/icons.js';
 import { assistBadge, thinking } from '../shared/components.js';
@@ -118,7 +119,7 @@ export function newProgram() {
 export function newLead() {
   const m = openModal(`${modalHead('Add lead', 'Paste a DM and Assist fills in the rest')}
     <form class="modal-body" id="nl-form" novalidate>
-      <div class="field"><label for="nl-dm">Paste the message (from Instagram, text, email)</label><textarea class="textarea" id="nl-dm" name="firstMessage" rows="3" placeholder="e.g. Hey! How much is your online coaching? I want to get stronger for climbing."></textarea></div>
+      <div class="field"><label for="nl-dm">Paste the message (from Instagram, text, email)</label><div class="row top"><textarea class="textarea grow" id="nl-dm" name="firstMessage" rows="3" placeholder="e.g. Hey! How much is your online coaching? I want to get stronger for climbing."></textarea>${micButton('nl-dm')}</div></div>
       <div><button type="button" class="btn assist sm" id="nl-parse">${arc()} Fill in with Assist</button></div>
       <div class="grid g2"><div class="field"><label for="nl-n">Name</label><input class="input" id="nl-n" name="name" placeholder="Name or @handle" required></div>
       <div class="field"><label for="nl-s">Source</label><select class="select" id="nl-s" name="source"><option value="instagram_dm">Instagram DM</option><option value="referral">Referral</option><option value="walk_in">Walk-in</option><option value="google">Google</option><option value="other">Other</option></select></div></div>

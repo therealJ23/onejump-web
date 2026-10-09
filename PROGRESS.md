@@ -8,7 +8,7 @@ Spec: `03-voice-and-nutrition-spec.md`. Everything runs on mock voice, AI and fo
 
 - [x] **Foundation:** new tables (voice, proposals, briefings, nutrition), tenant rules for them (plus a guard against nested writes), **Ask Assist** (typed) with read-only tools and confirmation cards
 - [x] **Step 1 · Nutrition basics:** approach per client (habits / targets / meal plan), Hide numbers, targets + calculator (Mifflin-St Jeor) + low-target warning with required review (audited), habits with streaks, quick add, food search (USDA, cached 30 days), barcode (Open Food Facts), favorites and “repeat yesterday”, coach Nutrition page and Client → Nutrition tab, client Nutrition screen, data sources page, sample data
-- [ ] Step 2 · Dictation everywhere
+- [x] **Step 2 · Dictation everywhere:** 🎤 on every message box (inbox, client chat, every Edit box, check-in replies), client notes, the “+ Lead” paste box, lead follow-ups, Ask Assist, the client’s check-in and workout notes. Browser speech recognition with live text; nothing is sent automatically; hidden where unsupported; privacy policy updated. (Community isn’t built yet; its post box will get the same button.)
 - [ ] Step 3 · Photo logging, Assist summaries, Today queue item, Ask Assist answer, language flags
 - [ ] Step 4 · Talk to Assist (voice) with confirmation cards
 - [ ] Step 5 · Client voice: set logging, voice notes, voice food logging

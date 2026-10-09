@@ -1,5 +1,6 @@
 // Client: messages with the coach (prototype cChat).
 import { api } from '../../shared/api.js';
+import { micButton } from '../../shared/dictation.js';
 import { esc, fmtTime, fmtDate, daysAgo } from '../../shared/format.js';
 import { icon } from '../../shared/icons.js';
 import { toastError } from '../../shared/ui.js';
@@ -19,7 +20,7 @@ export default {
   render(d) {
     return `<div class="row between" style="padding-top:4px">${brandRow()}<span class="strong">Your coach</span></div>
     <div class="stack s8" id="msgs" aria-live="polite">${d.messages.length ? bubbles(d.messages) : `<div class="empty">${icon('message')}<div class="h3" style="color:var(--ink)">Say hi</div><p>Questions about a workout, how you’re feeling, anything. Your coach usually replies within a day.</p></div>`}</div>
-    <form class="row cchat" data-form="send"><label class="grow"><span class="sr">Message your coach</span><input class="input" id="cchat-in" name="body" placeholder="Message your coach" autocomplete="off" maxlength="3000" style="border-radius:999px"></label><button class="btn primary icon" type="submit" aria-label="Send">${icon('send')}</button></form>`;
+    <form class="row cchat" data-form="send"><label class="grow"><span class="sr">Message your coach</span><input class="input" id="cchat-in" name="body" placeholder="Message your coach" autocomplete="off" maxlength="3000" style="border-radius:999px"></label>${micButton('cchat-in')}<button class="btn primary icon" type="submit" aria-label="Send">${icon('send')}</button></form>`;
   },
   mount(_root, _d, _p, ctx) {
     window.scrollTo(0, document.body.scrollHeight);

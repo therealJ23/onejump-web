@@ -1,6 +1,7 @@
 // Client: log a workout (prototype cWorkout / cFinish / cDone). Progress is saved on the
 // phone as you go, so a closed tab or a lost signal doesn't lose sets.
 import { api } from '../../shared/api.js';
+import { micButton } from '../../shared/dictation.js';
 import { esc, plural } from '../../shared/format.js';
 import { icon, arc } from '../../shared/icons.js';
 import { openModal, modalHead } from '../../shared/ui.js';
@@ -90,7 +91,7 @@ export const finish = {
     ${done ? '' : '<div class="notice small">No sets are ticked yet. Go back and tap ✓ on the sets you did, or save anyway if you trained without logging.</div>'}
     <div class="stack s8"><div class="strong" id="rpe-l">How hard was it overall?</div><div class="tiny muted">1 = very easy · 10 = max effort</div>${rate('rpe', d.log.rpe, 'How hard was it')}</div>
     <div class="stack s8"><div class="strong">How sore are you today?</div><div class="tiny muted">1 = not at all · 10 = very sore</div>${rate('soreness', d.log.soreness, 'How sore are you')}</div>
-    <div class="field"><label for="cw-note">Anything for your coach?</label><textarea class="textarea" id="cw-note" rows="3" maxlength="1000" placeholder="e.g. last set of RDLs felt heavy" data-input="note">${esc(d.log.note)}</textarea><span class="hint">If something hurts, say so here. Your coach will follow up.</span></div>
+    <div class="field"><div class="row between"><label for="cw-note">Anything for your coach?</label>${micButton('cw-note', { cls: 'btn ghost icon sm' })}</div><textarea class="textarea" id="cw-note" rows="3" maxlength="1000" placeholder="e.g. last set of RDLs felt heavy" data-input="note">${esc(d.log.note)}</textarea><span class="hint">If something hurts, say so here. Your coach will follow up.</span></div>
     <div class="form-error" id="fin-err" role="alert" hidden></div>
     <button class="btn primary lg" data-act="save" style="width:100%">Save workout</button>`;
   },
