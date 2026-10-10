@@ -14,7 +14,7 @@ const STYLE = () => (state.me.business.writingStyle || 'Supportive').toLowerCase
 function queueItem(q) {
   const done = q.status && q.status !== 'pending';
   if (done) {
-    const label = q.status === 'dismissed' ? 'Dismissed' : q.status === 'edited' ? 'Edited and sent' : q.id === 'missing' || q.id === 'payments' ? 'Reminders sent' : 'Approved and sent';
+    const label = q.status === 'dismissed' ? 'Dismissed' : q.status === 'edited' ? 'Edited and sent' : q.id === 'missing' || q.id === 'payments' || q.id === 'nutrition' ? 'Reminders sent' : 'Approved and sent';
     const canUndo = q.insightId && q.decidedAt && Date.now() - new Date(q.decidedAt).getTime() < 5 * 60e3;
     return `<div class="q-item q-done"><span class="q-icon good">${icon('check')}</span><div class="stack s4"><div class="strong small">${esc(q.title)}</div><div class="tiny muted">${label}${q.mins && q.status !== 'dismissed' ? ` · saved about ${q.mins} min` : ''}</div></div>${canUndo ? `<div class="q-actions"><button class="btn ghost xs" data-act="undo" data-id="${q.insightId}">Undo</button></div>` : ''}</div>`;
   }
@@ -23,6 +23,7 @@ function queueItem(q) {
     <div class="stack s4" style="min-width:0">
       <div class="row wrap" style="gap:8px"><span class="strong">${esc(q.title)}</span>${q.pill ? `<span class="pill ${q.sev}">${esc(q.pill)}</span>` : ''}</div>
       ${q.sub ? `<div class="small muted">${esc(q.sub)}</div>` : ''}
+      ${q.drafts?.length ? q.drafts.map(d => `<div class="panel pad-sm stack s8" data-nudge="${esc(d.insightId)}"><div class="row">${avatar(d.client, 'xs')}<a class="client-link small" href="/app/clients/${esc(d.client.id)}/nutrition">${esc(d.client.name)}</a><span class="tiny muted grow">${esc(d.detail || '')}</span></div><div class="q-draft"><div class="row" style="margin-bottom:6px">${assistBadge('Draft')}<span class="tiny faint">number-free, in your ${STYLE()} tone</span></div><div data-text>${esc(d.text)}</div></div><div class="row wrap"><button class="btn sm" data-act="nudgeOne" data-id="${esc(d.insightId)}" data-name="${esc(d.client.name)}">${icon('send')} Approve</button><button class="btn sm" data-act="nudgeEdit" data-id="${esc(d.insightId)}" data-client="${esc(d.client.id)}" data-name="${esc(d.client.name)}">Edit</button><button class="btn ghost sm" data-act="nudgeDismiss" data-id="${esc(d.insightId)}">Not now</button></div></div>`).join('') : ''}
       ${q.draft ? `<div class="q-draft"><div class="row" style="margin-bottom:6px">${assistBadge(q.id === 'missing' || q.id === 'payments' ? 'Your reminder' : 'Draft')}<span class="tiny faint">${q.id === 'missing' ? 'your fixed check-in reminder' : `in your ${STYLE()} tone`}</span></div><div>${esc(q.draft)}</div></div>` : ''}
     </div>
     <div class="q-actions">${q.actions.map(a => a.go ? `<a class="btn sm ${a.primary ? 'primary' : ''}" href="${esc(a.go)}">${esc(a.label)}</a>` : `<button class="btn sm ${a.primary ? 'primary' : ''}" data-act="${a.act}" data-q="${esc(q.id)}">${esc(a.label)}</button>`).join('')}</div>
@@ -114,6 +115,23 @@ export default {
     },
     async undo(el, _e, ctx) { await api.post(`/api/insights/${el.dataset.id}/undo`); toast('Undone'); await ctx.refresh(); refreshCounts(); },
     async remindMissing(el, _e, ctx) { busy(el, true, 'Sending…'); try { const r = await api.post('/api/today/remind-missing', {}); toast(`${plural(r.sent, 'reminder')} sent`); await ctx.refresh(); refreshCounts(); } catch (e) { busy(el, false); toastError(e); } },
+    async approveNudges(el, _e, ctx) {
+      const q = ctx.data.items.find(x => x.id === el.dataset.q);
+      busy(el, true, 'Sending…');
+      let n = 0;
+      for (const d of q.drafts) { try { await api.post(`/api/insights/${d.insightId}/approve`); n++; } catch { /* already handled */ } }
+      toast(`${plural(n, 'reminder')} sent`, { assist: true }); await ctx.refresh(); refreshCounts();
+    },
+    async nudgeOne(el, _e, ctx) {
+      busy(el, true, 'Sending…');
+      try { await api.post(`/api/insights/${el.dataset.id}/approve`); toast(`Sent to ${first(el.dataset.name)}`, { assist: true, undo: async () => { await api.post(`/api/insights/${el.dataset.id}/undo`); ctx.refresh(); refreshCounts(); } }); await ctx.refresh(); refreshCounts(); }
+      catch (e) { busy(el, false); toastError(e); }
+    },
+    nudgeEdit(el, _e, ctx) {
+      const text = el.closest('[data-nudge]').querySelector('[data-text]').textContent;
+      editDraft({ title: 'Edit before sending', sub: `To ${esc(el.dataset.name)}`, text, clientId: el.dataset.client, onSend: async v => { await api.post(`/api/insights/${el.dataset.id}/approve`, { text: v }); toast('Sent'); await ctx.refresh(); refreshCounts(); } });
+    },
+    async nudgeDismiss(el, _e, ctx) { await api.post(`/api/insights/${el.dataset.id}/dismiss`); toast('Dismissed', { undo: async () => { await api.post(`/api/insights/${el.dataset.id}/undo`); ctx.refresh(); refreshCounts(); } }); await ctx.refresh(); refreshCounts(); },
     async remindPayments(el, _e, ctx) { busy(el, true, 'Sending…'); try { const r = await api.post('/api/today/remind-payments'); toast(`${plural(r.sent, 'card-update reminder')} sent`); await ctx.refresh(); refreshCounts(); } catch (e) { busy(el, false); toastError(e); } },
   },
 };

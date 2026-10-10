@@ -339,3 +339,38 @@ describe('parsers', () => {
     expect(parseSet('10 reps at 55')).toMatchObject({ reps: 10, weight: 55 });
   });
 });
+
+describe('Assist on nutrition: Today queue, radar, check-ins', async () => {
+  const { scoreRisk } = await import('../server/core/risk.js');
+
+  it('the Today queue has one item for clients missing protein most days, with a personal draft each', async () => {
+    const t = (await dani.get('/api/today')).body;
+    const item = t.items.find(i => i.id === 'nutrition');
+    expect(item.title).toBe('3 clients missed their protein target most days');
+    expect(item.drafts.map(d => d.client.name).sort()).toEqual(['Grace Owens', 'Kevin Shah', 'Tom Becker']);
+    for (const d of item.drafts) { expect(d.text).toContain(d.client.name.split(' ')[0]); expect(d.text).not.toMatch(/\d/); }
+    // approving one sends exactly that client's draft
+    const d = item.drafts[0];
+    const before = await f.dbA.message.count({ where: { clientId: d.client.id } });
+    expect((await dani.post(`/api/insights/${d.insightId}/approve`)).status).toBe(200);
+    expect(await f.dbA.message.count({ where: { clientId: d.client.id } })).toBe(before + 1);
+    await dani.post(`/api/insights/${d.insightId}/undo`);
+    expect(await f.dbA.message.count({ where: { clientId: d.client.id } })).toBe(before);
+  });
+
+  it('the radar adds 6 points when logging stopped and 4 when protein is rarely hit for 2 weeks', async () => {
+    expect(scoreRisk({ foodStopped: true }).score).toBe(6);
+    expect(scoreRisk({ proteinLow: true }).score).toBe(4);
+    expect(scoreRisk({ foodStopped: true }).reasons).toEqual(['Stopped logging food 5+ days ago']);
+    const sarah = await f.dbA.client.findFirst({ where: { name: 'Sarah Kim' } });
+    expect(sarah.riskReasons).toContain('Stopped logging food 5+ days ago');
+  });
+
+  it('the weekly check-in shows days logged and protein days hit, and the summary mentions food', async () => {
+    const k = await f.dbA.checkIn.findFirst({ where: { clientId: f.mike.id }, orderBy: { submittedAt: 'desc' } });
+    const r = await dani.get(`/api/checkins/${k.id}`);
+    expect(r.body.nutrition).toMatchObject({ daysLogged: expect.any(Number), proteinHitDays: expect.any(Number), approach: 'targets' });
+    const a = await dani.get(`/api/checkins/${k.id}/assist?refresh=1`);
+    expect(a.body.insight.summary).toMatch(/Food log: \d of 7 days logged, protein target reached on \d/);
+  });
+});

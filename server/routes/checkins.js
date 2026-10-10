@@ -9,6 +9,7 @@ import { fillTemplate } from '../core/automationTemplates.js';
 import { programWeek } from '../core/training.js';
 import { DAY } from '../lib/time.js';
 import { missingCheckinClients } from '../core/checkinStatus.js';
+import { checkinNutrition } from '../nutrition/insights.js';
 
 export const router = Router();
 const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
@@ -43,6 +44,7 @@ router.get('/:id', async (req, res) => {
     checkin: k,
     previous: prev ? { weight: prevWeight?.weight ?? prev.weight, sleepHours: prev.sleepHours, energy: prev.energy, soreness: prev.soreness, stress: prev.stress, nutrition: prev.nutrition, mood: prev.mood } : null,
     client: { id: client.id, name: client.name, goalType: client.goalType, week: programWeek(client), program: program?.name || null, risk: client.riskLevel },
+    nutrition: await checkinNutrition(req.db, client, k, await tzOf(req.db)),
   });
 });
 

@@ -34,6 +34,7 @@ function detail(det) {
     ${metric('Soreness', k.soreness, pv.soreness, '/10', false)}
     ${metric('Stress', k.stress, pv.stress, '/10', false)}
     ${metric('Nutrition', k.nutrition, pv.nutrition, '/10')}
+    ${det.nutrition ? `<div class="stat" style="padding:12px 14px"><div class="eyebrow">Food log</div><div class="strong" style="font-size:1.15rem">${det.nutrition.daysLogged}/7 <span class="tiny muted" style="font-weight:600">days</span></div>${det.nutrition.proteinHitDays != null ? `<div class="tiny muted">protein hit ${det.nutrition.proteinHitDays} of ${det.nutrition.daysLogged}</div>` : ''}</div>` : ''}
     ${metric('Mood', k.mood, pv.mood, '/10')}
   </div>
   <div class="pad stack s16">

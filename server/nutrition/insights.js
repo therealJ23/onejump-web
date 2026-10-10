@@ -1,6 +1,6 @@
 // Nutrition numbers for the coach: the Nutrition page, Ask Assist ("who's struggling with
 // nutrition?"), the Today queue and the risk radar all read from here.
-import { planFor, weekStats, lowTarget, habitsWithStatus, dayKey } from './plans.js';
+import { planFor, weekStats, lowTarget, habitsWithStatus, dayKey, windowStats } from './plans.js';
 import { addDays, DAY } from '../lib/time.js';
 
 const ACTIVE = { status: { in: ['NEW', 'ACTIVE'] } };
@@ -91,4 +91,12 @@ export async function clientNutrition(db, client, { tz = 'UTC', now = new Date()
   const plan = await planFor(db, client.id);
   const [week, habits, lt] = await Promise.all([weekStats(db, client.id, plan, tz, now), habitsWithStatus(db, client.id, tz, now), lowTarget(db, client, plan)]);
   return { plan, week, habits, lowTarget: lt };
+}
+
+/** The week before a check-in: days logged and protein days hit (shown next to the client's 1–10 rating). */
+export async function checkinNutrition(db, client, checkIn, tz = 'UTC') {
+  const plan = await planFor(db, client.id);
+  if (!plan.id) return null;
+  const end = dayKey(tz, new Date(checkIn.submittedAt));
+  return windowStats(db, client.id, plan, addDays(end, -6), end);
 }

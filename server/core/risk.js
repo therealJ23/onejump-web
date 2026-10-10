@@ -5,6 +5,8 @@
 // failed payment 15, adherence <60% = 10; high ≥65, medium ≥40.
 import { todayKey, addDays, DAY } from '../lib/time.js';
 import { weightSeries } from './stats.js';
+import { planFor, windowStats } from '../nutrition/plans.js';
+import { stoppedLogging } from '../nutrition/insights.js';
 
 const plural = (n, w) => `${n} ${n === 1 ? w : w + 's'}`;
 
@@ -19,6 +21,8 @@ export function scoreRisk(s) {
   if (s.plateau >= 3) parts.push([10, `Weight flat for ${s.plateau} weeks`]);
   else if (s.plateau === 2) parts.push([5, 'Progress slowing for 2 weeks']);
   if (s.payFailed) parts.push([15, 'Latest payment failed']);
+  if (s.foodStopped) parts.push([6, 'Stopped logging food 5+ days ago']);
+  if (s.proteinLow) parts.push([4, 'Protein target hit on 2 or fewer days, 2 weeks running']);
   if (s.adherence != null && s.adherence < 60) parts.push([10, `Adherence ${s.adherence}% over 4 weeks`]);
   else if (s.adherence != null && s.adherence < 75) parts.push([5, `Adherence ${s.adherence}% over 4 weeks`]);
   const score = Math.min(96, parts.reduce((a, p) => a + p[0], 0));
@@ -76,7 +80,18 @@ export async function computeSignals(db, client, { tz = 'UTC', now = new Date() 
   const words = [...msgs.slice(0, 4).map(m => m.body), ...checkins.slice(0, 1).map(k => k.text || '')];
   const { sentiment, quote } = sentimentOf(words);
   const losing = /\b(fat|lose|losing|loss)\b/i.test(`${client.goalType || ''} ${client.goal || ''}`);
+  // nutrition: logging stopped after regular logging; protein rarely hit for two weeks (while logging)
+  const plan = await planFor(db, client.id);
+  let foodStopped = false, proteinLow = false;
+  if (plan.id) {
+    foodStopped = await stoppedLogging(db, client.id, tz, now);
+    if (plan.proteinG && plan.approach !== 'habits') {
+      const w1 = await windowStats(db, client.id, plan, addDays(today, -6), today), w2 = await windowStats(db, client.id, plan, addDays(today, -13), addDays(today, -7));
+      proteinLow = w1.daysLogged >= 3 && w2.daysLogged >= 3 && w1.proteinHitDays <= 2 && w2.proteinHitDays <= 2;
+    }
+  }
   return {
+    foodStopped, proteinLow,
     missed14, checkinMiss, msgDrop, sentiment, quote,
     plateau: losing ? plateauWeeks(weights.map(w => w.value)) : 0,
     payFailed: payFailed > 0,

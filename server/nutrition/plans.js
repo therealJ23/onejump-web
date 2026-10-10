@@ -84,6 +84,16 @@ export async function weekStats(db, clientId, plan, tz, now = new Date()) {
   };
 }
 
+/** Days logged and protein days hit between two day keys (inclusive), for check-ins and the radar. */
+export async function windowStats(db, clientId, plan, from, to) {
+  const entries = await entriesBetween(db, clientId, from, to);
+  const byDay = new Map();
+  for (const e of entries) { const k = +e.day; byDay.set(k, (byDay.get(k) || []).concat(e.items)); }
+  let hit = 0;
+  for (const items of byDay.values()) if (proteinHit(sumItems(items).proteinG, plan.proteinG)) hit++;
+  return { daysLogged: byDay.size, proteinHitDays: plan.proteinG && plan.approach !== 'habits' ? hit : null, approach: plan.approach };
+}
+
 // ---------------------------------------------------------------- habits
 export async function habitsWithStatus(db, clientId, tz, now = new Date()) {
   const today = dayKey(tz, now);

@@ -63,6 +63,8 @@ function checkin(ctx) {
     actions.push({ kind: 'reply', label: 'Send the drafted reply', minutes: 4 });
     reply = styleWrap(style, `Great week, ${f}. ${wins[0] ? `${wins[0]}. ` : ''}Everything is moving in the right direction, so we’ll keep the plan as is. Keep it up!`, `Good week, ${f}. No changes. Keep going.`, `Good week, ${f}: ${done}${k.sleepHours != null ? `, sleep ${k.sleepHours} h` : ''}. Plan stays the same.`, `Look at you, ${f}! Plan stays the same because it’s working. Keep it rolling!`);
   }
+  const n = ctx.nutrition;
+  if (n && n.daysLogged != null) summary += ` Food log: ${n.daysLogged} of 7 days logged${n.proteinHitDays != null ? `, protein target reached on ${n.proteinHitDays}` : ''}.`;
   return { summary, flags, wins: wins.slice(0, 4), actions: actions.slice(0, 3), reply };
 }
 function excerpt(text, term) {

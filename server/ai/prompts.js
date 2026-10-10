@@ -32,7 +32,7 @@ const NUTRITION_RULES = 'Nutrition rules: neutral words only (no “good” or �
 export const PROMPTS = {
   checkin: ctx => ({
     system: system(ctx),
-    prompt: `A client sent their weekly check-in. Summarize the week for the coach in 2–3 sentences (what happened, what changed vs last week, what to do), list flags (warn or crit; crit only for pain or medical topics) and wins, suggest up to 3 concrete actions with the minutes each saves the coach, and draft the coach’s reply to the client (3–5 sentences).\n\nCONTEXT\n${json(ctx)}`,
+    prompt: `A client sent their weekly check-in. Summarize the week for the coach in 2–3 sentences (what happened, what changed vs last week, what to do), list flags (warn or crit; crit only for pain or medical topics) and wins, suggest up to 3 concrete actions with the minutes each saves the coach, and draft the coach’s reply to the client (3–5 sentences). If food-log stats are given (nutrition), mention them in one short neutral clause in the summary (never judge food). If the client’s words suggest compensating, purging, earning food or restriction, keep the reply warm and number-free and suggest a doctor or registered dietitian if it continues.\n\nCONTEXT\n${json(ctx)}`,
   }),
   message: ctx => ({
     system: system(ctx),

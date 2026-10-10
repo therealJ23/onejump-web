@@ -48,7 +48,10 @@ async function weights(db, clientId) {
 
 export async function checkinContext(db, client, checkIn) {
   const prev = await db.checkIn.findFirst({ where: { clientId: client.id, submittedAt: { lt: checkIn.submittedAt } }, orderBy: { submittedAt: 'desc' } });
-  return { coach: await coachContext(db), client: await clientContext(db, client), checkin: ciFields(checkIn), previous: ciFields(prev) || null, ...(await weights(db, client.id)), safety: checkText(checkIn.text) };
+  const b = await db.business.findFirst({ select: { timezone: true } });
+  const { checkinNutrition } = await import('../nutrition/insights.js');
+  const nutrition = await checkinNutrition(db, client, checkIn, b?.timezone || 'UTC');
+  return { coach: await coachContext(db), client: await clientContext(db, client), checkin: ciFields(checkIn), previous: ciFields(prev) || null, ...(await weights(db, client.id)), safety: checkText(checkIn.text), nutrition };
 }
 
 export async function lastMessages(db, clientId, n = 6) {

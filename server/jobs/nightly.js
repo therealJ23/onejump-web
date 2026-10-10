@@ -6,6 +6,9 @@ import { businesses, jobs } from '../db/system.js';
 import { dbForBusiness } from '../db/tenant.js';
 import { runRadar } from '../core/radar.js';
 import { runAutomations } from '../core/automations.js';
+import { runNutrition } from '../nutrition/nightly.js';
+import { foodCache } from '../db/system.js';
+import { CACHE_DAYS } from '../nutrition/foods.js';
 import { checkinSummary } from '../ai/drafts.js';
 import { localParts } from '../lib/time.js';
 import { config } from '../config.js';
@@ -44,10 +47,14 @@ export async function hourly(now = new Date(), { forceRadar = false } = {}) {
   for (const b of list) {
     const db = dbForBusiness(b.id);
     try {
-      if (forceRadar || localParts(b.timezone, now).hour === 2) { await runRadar(db, { tz: b.timezone, now }); summary.radar++; }
+      if (forceRadar || localParts(b.timezone, now).hour === 2) {
+        await runNutrition(db, { tz: b.timezone, now }); // nudges and flags first, so the radar sees today's food signals
+        await runRadar(db, { tz: b.timezone, now }); summary.radar++;
+      }
       summary.automationRuns += (await runAutomations(db, { tz: b.timezone, now })).runs;
     } catch (e) { console.error(`[jobs] business ${b.id}:`, e.message); }
   }
+  if (forceRadar || now.getUTCHours() === 7) await foodCache.prune(new Date(now.getTime() - CACHE_DAYS * 864e5)).catch(() => null);
   return summary;
 }
 

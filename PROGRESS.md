@@ -9,12 +9,12 @@ Spec: `03-voice-and-nutrition-spec.md`. Everything runs on mock voice, AI and fo
 - [x] **Foundation:** new tables (voice, proposals, briefings, nutrition), tenant rules for them (plus a guard against nested writes), **Ask Assist** (typed) with read-only tools and confirmation cards
 - [x] **Step 1 · Nutrition basics:** approach per client (habits / targets / meal plan), Hide numbers, targets + calculator (Mifflin-St Jeor) + low-target warning with required review (audited), habits with streaks, quick add, food search (USDA, cached 30 days), barcode (Open Food Facts), favorites and “repeat yesterday”, coach Nutrition page and Client → Nutrition tab, client Nutrition screen, data sources page, sample data
 - [x] **Step 2 · Dictation everywhere:** 🎤 on every message box (inbox, client chat, every Edit box, check-in replies), client notes, the “+ Lead” paste box, lead follow-ups, Ask Assist, the client’s check-in and workout notes. Browser speech recognition with live text; nothing is sent automatically; hidden where unsupported; privacy policy updated. (Community isn’t built yet; its post box will get the same button.)
-- [ ] Step 3 · Photo logging, Assist summaries, Today queue item, Ask Assist answer, language flags
+- [x] **Step 3 · Assist on nutrition:** photo logging (camera, resized and EXIF-stripped in the browser and again on the server; Assist identifies foods and grams, the server matches USDA and does the math; nothing saved before Add; monthly and daily photo caps), weekly nutrition summary with charts, Today item “N clients missed their protein target most days” with a personal number-free draft each, “Who’s struggling with nutrition?” in Ask Assist, coach-only language flags (urgent ones alert the coach right away, by notification and email), no supplement or medical nutrition advice in drafts, radar +6 when logging stops and +4 when protein is rarely hit, fast-loss alert, food-log stats next to the check-in nutrition rating
 - [ ] Step 4 · Talk to Assist (voice) with confirmation cards
 - [ ] Step 5 · Client voice: set logging, voice notes, voice food logging
 - [ ] Step 6 · Morning briefing
 
-**Tests:** `npm test` → lint passes, **109 API tests pass** (24 new nutrition tests from the spec’s acceptance criteria).
+**Tests:** `npm test` → lint passes, **112 API tests pass** (27 new nutrition tests from the spec’s acceptance criteria).
 
 ## MVP: built ✅
 

@@ -101,6 +101,23 @@ export async function buildToday(db, { tz = 'UTC', now = new Date() } = {}) {
     });
   }
 
+  // 5b. Nutrition: clients missing protein most days, each with a personal draft (Pro)
+  if (pro) {
+    const nudges = await db.aIInsight.findMany({ where: { kind: 'nutrition_nudge', OR: [{ status: 'pending' }, { decidedAt: { gte: dayStart } }] }, orderBy: { createdAt: 'asc' } });
+    const live = nudges.filter(i => byId.get(i.clientId) && ['ACTIVE', 'NEW'].includes(byId.get(i.clientId).status));
+    const pendingN = live.filter(i => i.status === 'pending');
+    if (live.length) {
+      items.push({
+        id: 'nutrition', cat: 'clients', sev: 'assist', icon: 'utensils',
+        title: `${plural(live.length, 'client')} missed their protein target most days`,
+        sub: `${listNames(live.map(i => firstOf(byId.get(i.clientId).name)))}. A personal reminder is drafted for each; nothing is sent until you approve it.`,
+        drafts: pendingN.map(i => ({ insightId: i.id, client: { id: i.clientId, name: byId.get(i.clientId).name }, text: i.finalText || draftText(i), detail: i.draft?.loggedDays ? `hit ${i.draft.hitDays} of ${i.draft.loggedDays} logged days` : '' })),
+        status: pendingN.length ? 'pending' : 'approved', mins: 4 * live.length,
+        actions: [{ label: pendingN.length > 1 ? `Send all ${pendingN.length}` : 'Approve & send', act: 'approveNudges', primary: true }, { label: 'Open Nutrition', go: '/app/nutrition' }],
+      });
+    }
+  }
+
   // 6. Leads waiting for a first reply (Pro)
   if (pro) {
     const newLeads = await db.lead.findMany({ where: { stage: 'new' }, orderBy: { createdAt: 'desc' } });
@@ -144,7 +161,7 @@ export async function buildToday(db, { tz = 'UTC', now = new Date() } = {}) {
     date: localYMD(tz, now),
     plan, pro,
     open: open.length,
-    drafted: open.filter(i => i.draft || i.insightId).length,
+    drafted: open.filter(i => i.draft || i.insightId || i.drafts?.length).length,
     items: [...open, ...doneItems],
     kpis: {
       activeClients: active.length,
