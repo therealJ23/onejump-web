@@ -105,3 +105,74 @@ test('Talk to Assist with the microphone off: clear message, and typing still wo
   await expect(page.locator('#v-answer')).not.toBeEmpty();
   await expect(page.locator('#v-answer .thinking')).toHaveCount(0);
 });
+
+test('client: “10 reps at 55” fills the next set; Undo restores it @phone', async ({ page }) => {
+  const done = watchErrors(page);
+  await page.addInitScript(fakeSpeech('10 reps at 55'));
+  await clientLogin(page);
+  const today = await (await page.request.get('/api/me/today')).json();
+  const a = today.today?.status === 'scheduled' ? today.today : today.next;
+  await page.goto(`/client/workout/${a.assignmentId}`);
+  const row = page.locator('[data-row="0-0"]');
+  const reps = row.locator('[data-f="r"]'), weight = row.locator('[data-f="w"]'), check = row.locator('[data-act="setDone"]');
+  const before = { reps: await reps.inputValue(), weight: await weight.inputValue() };
+  await expect(check).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: /Log next set by voice/ }).click();
+  await expect(check).toHaveAttribute('aria-pressed', 'true');
+  await expect(reps).toHaveValue('10');
+  await expect(weight).toHaveValue('55');
+  await expect(page.locator('.toast')).toContainText('set 1: 55 lb × 10');
+  await page.locator('.toast').getByRole('button', { name: 'Undo' }).click();
+  await expect(check).toHaveAttribute('aria-pressed', 'false');
+  await expect(reps).toHaveValue(before.reps);
+  await expect(weight).toHaveValue(before.weight);
+  done();
+});
+
+test('client voice note: recording bar, Send, and the transcript in the thread @phone', async ({ page }) => {
+  const done = watchErrors(page);
+  await page.addInitScript(fakeSpeech('My knee hurts after the squats yesterday. Should I skip lunges tomorrow?'));
+  await page.addInitScript(fakeMic);
+  await clientLogin(page);
+  await page.goto('/client/chat');
+  await page.getByRole('button', { name: 'Record a voice note' }).click();
+  await expect(page.locator('.vnote-rec .rec-dot')).toContainText('Recording');
+  await page.waitForTimeout(1200);
+  await page.getByRole('button', { name: 'Send voice note' }).click();
+  await expect(page.locator('.bubble.me.voice').last()).toContainText('My knee hurts after the squats yesterday');
+  await expect(page.locator('.vnote-rec')).toHaveCount(0);
+  await expect(page.locator('#cchat-in')).toBeVisible();
+  done();
+});
+
+test('coach hears the voice note with the transcript, Assist summary and health flag', async ({ page }) => {
+  const done = watchErrors(page);
+  await coachLogin(page);
+  const id = await mikeId(page);
+  await page.goto(`/app/inbox/${id}`);
+  const note = page.locator('.bubble.them.voice').last();
+  await expect(note).toContainText('My knee hurts');
+  await expect(note.locator('.vnote-sum')).toContainText(/skip lunges/i);
+  await expect(note.locator('.vnote-flag')).toContainText('Health flag: mentions hurts');
+  await note.getByRole('button', { name: /Play voice note/ }).click();
+  await expect(note.getByRole('button', { name: 'Pause voice note' })).toBeVisible();
+  done();
+});
+
+test('voice food logging without browser speech recognition: records, transcribes on the server, then review @phone', async ({ page }) => {
+  const done = watchErrors(page);
+  await page.addInitScript(noSpeech);
+  await page.addInitScript(fakeMic);
+  await clientLogin(page);
+  await page.goto('/client/nutrition');
+  await page.getByRole('button', { name: /Log food/ }).first().click();
+  await page.locator('[data-pick="voice"]').click();
+  await page.locator('#vf-orb').click();
+  await expect(page.locator('#vf-msg .rec-dot')).toBeVisible();
+  await page.waitForTimeout(900);
+  await page.locator('#vf-orb').click();
+  await expect(page.locator('#vf-text')).not.toHaveValue('');
+  await page.getByRole('button', { name: 'Find foods' }).click();
+  await expect(page.getByRole('button', { name: /^Add/ }).first()).toBeVisible();
+  done();
+});

@@ -10,9 +10,9 @@ export async function ensureThread(db, clientId) {
 }
 
 /** Sends a message in a client's thread and updates unread counters. */
-export async function sendMessage(db, { clientId, body, senderUserId = null, senderRole = 'COACH', aiInsightId = null, aiEdited = false }) {
+export async function sendMessage(db, { clientId, body, senderUserId = null, senderRole = 'COACH', aiInsightId = null, aiEdited = false, audioKey = null, durationS = null, transcriptSummary = null }) {
   const thread = await ensureThread(db, clientId);
-  const msg = await db.message.create({ data: { threadId: thread.id, clientId, senderUserId, senderRole, body: String(body).slice(0, 5000), aiInsightId, aiEdited } });
+  const msg = await db.message.create({ data: { threadId: thread.id, clientId, senderUserId, senderRole, body: String(body).slice(0, 5000), aiInsightId, aiEdited, audioKey, durationS, transcriptSummary } });
   await db.thread.update({
     where: { id: thread.id },
     data: { lastMessageAt: msg.createdAt, ...(senderRole === 'CLIENT' ? { coachUnread: { increment: 1 } } : { clientUnread: { increment: 1 } }) },

@@ -17,16 +17,23 @@ export const MOCK_PHRASES = [
   'Add a lead: Jake, wants to get stronger for climbing, found me on Instagram',
   'Give me a summary of my business this month.',
 ];
+// What the mock "hears" for client voice, by kind (when no hint is given).
+export const MOCK_CLIENT_PHRASES = {
+  voice_note: ['Hey, legs feel a lot better today. Can we move Friday’s session to 7 instead of 6?', 'Quick one: the gym was packed so I swapped the bench for dumbbells. Hope that’s okay.'],
+  set_log: ['10 reps at 55', '8 at 135 pounds', '12 bodyweight'],
+  food_log: ['Two eggs and toast', 'Chicken and rice with broccoli'],
+};
 // USD per minute of audio (check the providers' pricing pages when switching).
 const PRICE_PER_MIN = { deepgram: 0.0077, openai: 0.006, mock: 0 };
 const TTS_PRICE_PER_1K_CHARS = 0.03;
 
 class MockVoice {
   constructor() { this.name = 'mock'; }
-  async transcribe(buf, { hint } = {}) {
-    if (hint && String(hint).trim()) return { transcript: String(hint).trim().slice(0, 600) };
-    const i = parseInt(createHash('sha1').update(buf).digest('hex').slice(0, 6), 16) % MOCK_PHRASES.length;
-    return { transcript: MOCK_PHRASES[i] };
+  async transcribe(buf, { hint, kind = 'ask' } = {}) {
+    if (hint && String(hint).trim()) return { transcript: String(hint).trim().slice(0, 2000) };
+    const list = MOCK_CLIENT_PHRASES[kind] || MOCK_PHRASES;
+    const i = parseInt(createHash('sha1').update(buf).digest('hex').slice(0, 6), 16) % list.length;
+    return { transcript: list[i] };
   }
 }
 
@@ -93,7 +100,7 @@ export const VoiceService = {
   async transcribe(db, buf, { mimeType, durationMs = 0, hint = null, userId, clientId = null, kind = 'ask' }) {
     const p = active();
     let out;
-    try { out = await p.transcribe(buf, { mimeType, hint }); }
+    try { out = await p.transcribe(buf, { mimeType, hint, kind }); }
     catch (e) { console.error(`[voice] ${p.name} failed:`, e.message); throw new HttpError(502, 'I couldn’t hear that clearly. Try again, or type instead.', { code: 'voice_failed' }); }
     const ms = Math.max(0, Math.min(120000, out.durationMs ?? Number(durationMs) ?? 0));
     const costMicros = Math.round((ms / 60000) * (PRICE_PER_MIN[p.name] ?? 0) * 1e6);

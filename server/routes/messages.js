@@ -8,6 +8,13 @@ import { fillTemplate } from '../core/automationTemplates.js';
 import { programWeek } from '../core/training.js';
 import { DAY } from '../lib/time.js';
 import { missingCheckinClients } from '../core/checkinStatus.js';
+import multer from 'multer';
+import { requireFeature, planOf, isPro } from '../auth/middleware.js';
+import { VoiceService } from '../voice/VoiceService.js';
+import { sendVoiceNote, voiceFields, fmtDuration } from '../voice/voiceNotes.js';
+import { StorageService, sniffAudio } from '../storage/StorageService.js';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1 } });
 
 export const router = Router();
 
@@ -21,8 +28,9 @@ router.get('/', async (req, res) => {
   for (const t of threads) {
     const c = byId.get(t.clientId);
     if (!c || !t.lastMessageAt) continue;
-    const m = await req.db.message.findFirst({ where: { threadId: t.id }, orderBy: { createdAt: 'desc' }, select: { body: true, senderRole: true, createdAt: true } });
-    out.push({ clientId: c.id, name: c.name, status: c.status, unread: t.coachUnread, last: m ? { body: m.body.slice(0, 160), fromCoach: m.senderRole !== 'CLIENT', at: m.createdAt } : null });
+    const m = await req.db.message.findFirst({ where: { threadId: t.id }, orderBy: { createdAt: 'desc' }, select: { body: true, senderRole: true, createdAt: true, audioKey: true, durationS: true, transcriptSummary: true } });
+    const text = m?.audioKey ? `🎤 Voice note · ${fmtDuration(m.durationS)} — ${m.transcriptSummary || m.body}` : m?.body;
+    out.push({ clientId: c.id, name: c.name, status: c.status, unread: t.coachUnread, last: m ? { body: text.slice(0, 160), fromCoach: m.senderRole !== 'CLIENT', at: m.createdAt } : null });
   }
   res.json({ threads: out, unread: out.filter(t => t.unread).length });
 });
@@ -39,8 +47,27 @@ router.get('/:clientId', async (req, res) => {
   const k = await req.db.checkIn.findFirst({ where: { clientId: c.id, submittedAt: { gte: new Date(Date.now() - 8 * DAY) } }, orderBy: { submittedAt: 'desc' }, select: { id: true, status: true } });
   res.json({
     client: { id: c.id, name: c.name, program: program?.name || null, week: programWeek(c), adherence: c.adherence, risk: c.riskLevel ? { level: c.riskLevel, score: c.riskScore } : null, checkin: k, status: c.status },
-    messages: messages.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'them' : 'me', body: m.body, at: m.createdAt, assist: !!m.aiInsightId, edited: m.aiEdited, system: !m.senderUserId && m.senderRole === 'COACH' })),
+    features: { voiceNotes: isPro(await planOf(req.db)), voiceProvider: VoiceService.provider },
+    messages: messages.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'them' : 'me', body: m.body, at: m.createdAt, assist: !!m.aiInsightId, edited: m.aiEdited, system: !m.senderUserId && m.senderRole === 'COACH', ...voiceFields(m, { coach: true }) })),
   });
+});
+
+/** The coach records a voice note to a client (Pro). The coach's own words, so no approval step. */
+router.post('/:clientId/voice-notes', requireFeature('PRO', 'Voice notes'), upload.single('audio'), async (req, res) => {
+  const c = must(await req.db.client.findFirst({ where: { id: req.params.clientId } }), 'That client');
+  if (!req.file) throw badRequest('No audio was received. Tap the mic, talk, then tap again.');
+  const mimeType = sniffAudio(req.file.buffer);
+  if (!mimeType) throw badRequest('That recording couldn’t be read. Try again.');
+  const r = await sendVoiceNote({ coach: req.db, db: req.db, businessId: req.auth.businessId, client: c, senderRole: 'COACH', senderUserId: req.auth.userId, buf: req.file.buffer, mimeType, durationMs: req.body?.durationMs, hint: req.body?.hint });
+  const m = r.message;
+  res.status(201).json({ message: { id: m.id, from: 'me', body: m.body, at: m.createdAt, ...voiceFields(m, { coach: true }) } });
+});
+
+/** A 5-minute link to play a voice note in this coach's own workspace. */
+router.get('/:clientId/messages/:id/audio', async (req, res) => {
+  const m = must(await req.db.message.findFirst({ where: { id: req.params.id, clientId: req.params.clientId }, select: { audioKey: true } }), 'That voice note');
+  if (!m.audioKey) throw badRequest('That message has no audio.');
+  res.set('Cache-Control', 'no-store').json({ url: await StorageService.signedUrl(m.audioKey) });
 });
 
 router.post('/:clientId/messages', body(z.object({ body: z.string().trim().min(1).max(5000), insightId: z.string().max(64).optional() })), async (req, res) => {

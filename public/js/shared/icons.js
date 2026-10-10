@@ -79,6 +79,7 @@ ICONS.mic = '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.
 ICONS.speaker = '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>';
 ICONS.logout = '<path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/>';
 ICONS.download = '<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>';
+ICONS.wave = '<path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 10.5v3"/>';
 ICONS.sparkle = '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>';
 
 export function icon(name, cls = '') {

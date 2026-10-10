@@ -58,12 +58,12 @@ export function toggleDictation(btn, { onError, onFinal, lang } = {}) {
 }
 
 /** One-shot listening (no text box): resolves with what was said, or '' if nothing. */
-export function listenOnce({ lang, onInterim } = {}) {
+export function listenOnce({ lang, onInterim, continuous = false } = {}) {
   return new Promise((resolve, reject) => {
     if (!SR) return reject(Object.assign(new Error('Speech recognition isn’t available in this browser.'), { code: 'unsupported' }));
     const rec = new SR();
     rec.lang = lang || navigator.language || 'en-US';
-    rec.interimResults = true; rec.continuous = false;
+    rec.interimResults = true; rec.continuous = continuous;
     let heard = '', failed = null;
     rec.onresult = e => { heard = Array.from(e.results).map(r => r[0].transcript).join(' '); onInterim?.(heard); };
     rec.onerror = e => { failed = e.error; };

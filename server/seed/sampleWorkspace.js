@@ -7,6 +7,7 @@
 // radar from the generated data, the same way it will be for real clients.
 import { randomUUID } from 'node:crypto';
 import { loadSampleNutrition } from './sampleNutrition.js';
+import { StorageService } from '../storage/StorageService.js';
 import { todayKey, addDays, weekStart, trainingWeekdays, DAY } from '../lib/time.js';
 import { pickWorkout } from '../core/training.js';
 import { ensureAutomations } from '../core/automationTemplates.js';
@@ -132,9 +133,23 @@ const CHECKINS = {
 };
 const LAST_CHECKIN = { c2: 12, c3: 16, c13: 9, c15: 9, c18: 8, c9: 9, c17: 33 };
 
-// Message threads: [from, daysAgo, "H:MM", text]
+/** A short, quiet, speech-like clip (8 kHz mono WAV) that stands in for a sample voice note. */
+export function sampleVoiceClip(seconds) {
+  const rate = 8000, n = rate * seconds, buf = Buffer.alloc(44 + n);
+  buf.write('RIFF', 0); buf.writeUInt32LE(36 + n, 4); buf.write('WAVE', 8); buf.write('fmt ', 12); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20); buf.writeUInt16LE(1, 22);
+  buf.writeUInt32LE(rate, 24); buf.writeUInt32LE(rate, 28); buf.writeUInt16LE(1, 32); buf.writeUInt16LE(8, 34); buf.write('data', 36); buf.writeUInt32LE(n, 40);
+  for (let i = 0; i < n; i++) {
+    const t = i / rate, syll = Math.max(0, Math.sin(Math.PI * 3.1 * t)) ** 2 * (t % 2.4 < 2 ? 1 : 0.15);
+    const f = 150 + 30 * Math.sin(2 * Math.PI * 0.7 * t);
+    const v = syll * (0.6 * Math.sin(2 * Math.PI * f * t) + 0.3 * Math.sin(4 * Math.PI * f * t) + 0.1 * Math.sin(6 * Math.PI * f * t));
+    buf[44 + i] = 128 + Math.round(v * 40);
+  }
+  return buf;
+}
+
+// Message threads: [from, daysAgo, "H:MM", text, voice?]
 const THREADS = {
-  c1: [['them', 6, '6:12', 'Morning! Quick one: can I swap Thursday’s session to Friday this week? Big deadline.'], ['me', 6, '7:40', 'Of course. Just keep a rest day between Friday and Sunday’s session.'], ['them', 0, '7:02', 'Sent my check-in. Legs are still wrecked from Thursday, is that normal?']],
+  c1: [['them', 6, '6:12', 'Morning! Quick one: can I swap Thursday’s session to Friday this week? Big deadline.'], ['me', 6, '7:40', 'Of course. Just keep a rest day between Friday and Sunday’s session.'], ['them', 1, '18:05', 'Hey Dani, legs feel a lot better today. Can we move Friday’s session to 7 instead of 6?', { durationS: 7, summary: 'Can we move Friday’s session to 7 instead of 6?' }], ['them', 0, '7:02', 'Sent my check-in. Legs are still wrecked from Thursday, is that normal?']],
   c8: [['them', 4, '20:30', '285 for 3!! Video in the app.'], ['me', 4, '20:51', 'That was clean. Depth looked great.'], ['them', 0, '6:48', 'Also my left knee has been bugging me on squats, mentioned it in my check-in.']],
   c5: [['me', 6, '10:00', 'Welcome, Priya! Your first week is in the app. Film one set of goblet squats on Day 1 and I’ll send notes.'], ['them', 5, '19:15', 'Done! Uploaded the video. Felt awkward but fun.'], ['me', 5, '20:02', 'Great first set. Two things: sit back a little more and keep your chest proud. Same weight on Day 2.'], ['them', 0, '8:20', 'Day 2 felt WAY better. Is it ok that my glutes are sore?']],
   c2: [['me', 14, '9:00', 'How did the 180 triples feel?'], ['them', 12, '23:41', 'Good! Night shifts this week though.'], ['me', 7, '9:10', 'How are you holding up with the shift change?']],
@@ -359,10 +374,17 @@ export async function loadSampleWorkspace(db, { now = new Date(), tz = 'America/
         }
       }
     }
-    for (const [from, ago, hhmm, text] of proto) rows.push({ senderRole: from === 'them' ? 'CLIENT' : 'COACH', senderUserId: from === 'me' ? coachUserId : (clientUsers[s.key] || null), body: text, createdAt: at(now, ago, hhmm) });
+    for (const [from, ago, hhmm, text, voice] of proto) {
+      const row = { senderRole: from === 'them' ? 'CLIENT' : 'COACH', senderUserId: from === 'me' ? coachUserId : (clientUsers[s.key] || null), body: text, createdAt: at(now, ago, hhmm) };
+      if (voice) { // a sample voice note: a short generated clip stands in for the recording
+        row.audioKey = `voice/${c.businessId}/${randomUUID()}`; row.durationS = voice.durationS; row.transcriptSummary = voice.summary;
+        await StorageService.put(row.audioKey, sampleVoiceClip(voice.durationS), 'audio/wav');
+      }
+      rows.push(row);
+    }
     rows.sort((a, b) => a.createdAt - b.createdAt);
     if (rows.length) {
-      await db.message.createMany({ data: rows.map(m => ({ threadId: thread.id, clientId: c.id, senderUserId: m.senderUserId || (m.senderRole === 'COACH' ? coachUserId : clientUsers[s.key] || null), senderRole: m.senderRole, body: m.body, createdAt: m.createdAt, readAt: UNREAD.has(s.key) && m === rows.at(-1) ? null : m.createdAt })) });
+      await db.message.createMany({ data: rows.map(m => ({ threadId: thread.id, clientId: c.id, senderUserId: m.senderUserId || (m.senderRole === 'COACH' ? coachUserId : clientUsers[s.key] || null), senderRole: m.senderRole, body: m.body, createdAt: m.createdAt, readAt: UNREAD.has(s.key) && m === rows.at(-1) ? null : m.createdAt, audioKey: m.audioKey || null, durationS: m.durationS || null, transcriptSummary: m.transcriptSummary || null })) });
       await db.thread.update({ where: { id: thread.id }, data: { lastMessageAt: rows.at(-1).createdAt, coachUnread: UNREAD.has(s.key) ? 1 : 0 } });
     }
   }

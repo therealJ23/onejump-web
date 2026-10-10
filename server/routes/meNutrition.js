@@ -18,6 +18,7 @@ import { raiseFlag } from '../nutrition/flags.js';
 import { AI } from '../ai/AIService.js';
 import { splitFoods } from '../../public/js/shared/parse.js';
 import { startOfMonthUtc } from '../lib/time.js';
+import { guardClientTranscript } from '../voice/voiceNotes.js';
 
 export const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 6 * 1024 * 1024, files: 1 } });
@@ -132,9 +133,11 @@ async function matchFoods(parts) {
   }
   return out;
 }
-router.post('/food-text', body(z.object({ text: z.string().trim().min(2).max(600), source: z.enum(['voice', 'text']).default('text') })), async (req, res) => {
-  const { coach, plan, pro } = await ctx(req);
+router.post('/food-text', body(z.object({ text: z.string().trim().min(2).max(600), source: z.enum(['voice', 'text']).default('text'), transcribed: z.boolean().default(false) })), async (req, res) => {
+  const { coach, client, plan, pro } = await ctx(req);
   if (req.body.source === 'voice' && !pro) throw new HttpError(403, 'Voice food logging is part of OneJump Pro. Ask your coach about it.', { upgrade: 'PRO', code: 'upgrade' });
+  // SafetyGuard on every transcript (the server-transcribed path already ran it).
+  if (req.body.source === 'voice' && !req.body.transcribed) await guardClientTranscript(coach, { client, businessId: req.auth.businessId, text: req.body.text, source: 'food_log' });
   let parts = splitFoods(req.body.text), via = 'parser';
   let items = await matchFoods(parts);
   if (!items.length || items.every(i => i.unmatched)) {

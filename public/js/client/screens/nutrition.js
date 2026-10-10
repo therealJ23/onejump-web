@@ -5,7 +5,7 @@ import { api } from '../../shared/api.js';
 import { esc, fmtTime, plural } from '../../shared/format.js';
 import { icon } from '../../shared/icons.js';
 import { openModal, closeModal, modalHead, toast, toastError, busy } from '../../shared/ui.js';
-import { resizeToJpeg, scanBarcode, MIC_OFF } from '../../shared/media.js';
+import { resizeToJpeg, scanBarcode, MIC_OFF, createRecorder, recordingSupported } from '../../shared/media.js';
 import { dictationSupported, listenOnce } from '../../shared/dictation.js';
 import { brandRow } from './today.js';
 
@@ -245,27 +245,46 @@ function scanSheet(meal) {
 }
 
 // ----- voice (dictation → foods → review)
-async function textToReview(text, meal, source, btn) {
+async function textToReview(text, meal, source, btn, { transcribed = false } = {}) {
   busy(btn, true, 'Finding foods…');
-  try { const r = await api.post('/api/me/food-text', { text, source }); reviewSheet({ title: r.items.length === 1 ? r.items[0].name : 'Check and add', items: r.items, source, meal }); if (r.unmatched?.length) toast(`Couldn’t match: ${r.unmatched.join(', ')}. Add it with search.`, { ms: 7000 }); }
+  try { const r = await api.post('/api/me/food-text', { text, source, transcribed }); reviewSheet({ title: r.items.length === 1 ? r.items[0].name : 'Check and add', items: r.items, source, meal }); if (r.unmatched?.length) toast(`Couldn’t match: ${r.unmatched.join(', ')}. Add it with search.`, { ms: 7000 }); }
   catch (e) { busy(btn, false); toastError(e); }
 }
 function voiceSheet(meal) {
   const m = openModal(`${modalHead('Say what you ate', 'e.g. “two eggs and toast”')}
     <div class="modal-body" style="align-items:center;text-align:center"><button class="voice-orb" id="vf-orb" aria-label="Tap to talk">${icon('mic').replace('class="ico ', 'style="width:56px;height:56px" class="ico ')}</button>
       <div class="field" style="width:100%;text-align:left"><label for="vf-text">What you said</label><textarea class="textarea" id="vf-text" rows="2" placeholder="Tap the circle and talk, or type here"></textarea></div>
-      <p class="small" id="vf-msg" role="status">${dictationSupported ? 'Tap the circle to start. Your browser turns speech into text.' : 'Voice isn’t available in this browser. Type what you ate instead.'}</p></div>
+      <p class="small" id="vf-msg" role="status">${dictationSupported ? 'Tap the circle to start. Your browser turns speech into text.' : recordingSupported ? 'Tap the circle, talk, then tap again.' : 'Voice isn’t available in this browser. Type what you ate instead.'}</p></div>
     <div class="modal-foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" id="vf-go">Find foods</button></div>`, { label: 'Voice food logging' });
   const orb = m.querySelector('#vf-orb'), ta = m.querySelector('#vf-text'), msg = m.querySelector('#vf-msg');
-  if (!dictationSupported) orb.disabled = true;
+  let transcribed = false, rec = null;
+  ta.addEventListener('input', () => { transcribed = false; });
+  if (!dictationSupported && !recordingSupported) orb.disabled = true;
   orb.addEventListener('click', async () => {
+    if (!dictationSupported) {
+      // No speech recognition in this browser (some phones): record and transcribe on the server.
+      if (rec) { const r = rec; rec = null; orb.classList.remove('listening'); msg.textContent = 'One moment…'; await r.stop(); return; }
+      rec = createRecorder({ maxMs: 15000 });
+      try { await rec.start(); } catch (e) { rec = null; msg.textContent = e.code === 'denied' ? MIC_OFF : e.message; return; }
+      const mine = rec;
+      orb.classList.add('listening'); msg.innerHTML = '<span class="rec-dot">Recording · tap to stop</span>';
+      const out = await mine.done; rec = null; orb.classList.remove('listening');
+      if (!out?.blob?.size) { msg.textContent = 'Nothing was recorded. Try again or type it.'; return; }
+      const fd = new FormData();
+      fd.append('audio', out.blob, `food.${/mp4/.test(out.mimeType) ? 'm4a' : 'webm'}`); fd.append('durationMs', String(out.durationMs)); fd.append('kind', 'food_log');
+      try { const r = await api.post('/api/me/voice/transcribe', fd); ta.value = r.transcript; transcribed = !!r.transcript; msg.textContent = r.transcript ? 'Check the text, then Find foods.' : 'I didn’t catch that. Try again or type it.'; }
+      catch (e) { msg.textContent = e.message; }
+      return;
+    }
     if (orb.classList.contains('listening')) { listenOnce.stop?.(); return; }
     orb.classList.add('listening'); msg.innerHTML = '<span class="rec-dot">Listening</span>';
     try { const t = await listenOnce({ onInterim: v => { ta.value = v; } }); if (t) ta.value = t; msg.textContent = t ? 'Check the text, then Find foods.' : 'I didn’t catch that. Try again or type it.'; }
     catch (e) { msg.textContent = e.code === 'denied' ? MIC_OFF : e.message; }
     orb.classList.remove('listening');
   });
-  m.querySelector('#vf-go').addEventListener('click', ev => { const t = ta.value.trim(); if (!t) { ta.focus(); return; } textToReview(t, meal, 'voice', ev.currentTarget); });
+  m.querySelector('#vf-go').addEventListener('click', ev => { const t = ta.value.trim(); if (!t) { ta.focus(); return; } textToReview(t, meal, 'voice', ev.currentTarget, { transcribed }); });
+  const obs = new MutationObserver(() => { if (!document.contains(m)) { rec?.cancel(); listenOnce.stop?.(); obs.disconnect(); } });
+  obs.observe(document.body, { childList: true });
 }
 
 // ----- quick add

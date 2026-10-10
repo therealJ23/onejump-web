@@ -19,6 +19,9 @@ import { StorageService, sniffImage } from '../storage/StorageService.js';
 import { exportClientData } from '../core/clientData.js';
 import { payments } from '../payments/PaymentService.js';
 import { raiseFlag } from '../nutrition/flags.js';
+import { voiceFields } from '../voice/voiceNotes.js';
+import { VoiceService } from '../voice/VoiceService.js';
+import { effectivePlan, isPro } from '../auth/middleware.js';
 
 export const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 1 } });
@@ -106,7 +109,8 @@ router.get('/workouts/:assignmentId', async (req, res) => {
   const a = must(await req.db.workoutAssignment.findFirst({ where: { id: req.params.assignmentId } }), 'That workout');
   const w = must(await req.db.workout.findFirst({ where: { id: a.workoutId } }), 'That workout');
   const session = await req.db.workoutSession.findFirst({ where: { assignmentId: a.id }, orderBy: { startedAt: 'desc' } });
-  res.json({ assignment: { id: a.id, date: a.scheduledFor, status: a.status, note: a.coachNote }, workout: shapeWorkout(w, await exerciseMap(req.db)), session });
+  const b = await req.db.business.findFirst({ select: { plan: true, planStatus: true, trialEndsAt: true } });
+  res.json({ assignment: { id: a.id, date: a.scheduledFor, status: a.status, note: a.coachNote }, workout: shapeWorkout(w, await exerciseMap(req.db)), session, features: { voice: isPro(effectivePlan(b)), voiceProvider: VoiceService.provider } });
 });
 
 const loggedSet = z.object({ weight: z.union([z.coerce.number().min(0).max(2000), z.literal('')]).optional(), reps: z.union([z.coerce.number().int().min(0).max(1000), z.literal('')]).optional(), done: z.boolean().default(true) });
@@ -172,7 +176,8 @@ router.get('/thread', async (req, res) => {
     await req.db.thread.update({ where: { id: t.id }, data: { clientUnread: 0 } });
     await req.db.message.updateMany({ where: { senderRole: 'COACH', readAt: null }, data: { readAt: new Date() } });
   }
-  res.json({ messages: msgs.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'me' : 'coach', body: m.body, at: m.createdAt })) });
+  const b = await req.db.business.findFirst({ select: { plan: true, planStatus: true, trialEndsAt: true } });
+  res.json({ messages: msgs.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'me' : 'coach', body: m.body, at: m.createdAt, ...voiceFields(m) })), features: { voiceNotes: isPro(effectivePlan(b)), voiceProvider: VoiceService.provider } });
 });
 
 router.post('/messages', body(z.object({ body: z.string().trim().min(1).max(3000) })), async (req, res) => {

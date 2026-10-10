@@ -1,10 +1,11 @@
 // Client: log a workout (prototype cWorkout / cFinish / cDone). Progress is saved on the
 // phone as you go, so a closed tab or a lost signal doesn't lose sets.
 import { api } from '../../shared/api.js';
-import { micButton } from '../../shared/dictation.js';
+import { micButton, listenOnce, dictationSupported } from '../../shared/dictation.js';
+import { createRecorder, recordingSupported, MIC_OFF } from '../../shared/media.js';
 import { esc, plural } from '../../shared/format.js';
 import { icon, arc } from '../../shared/icons.js';
-import { openModal, modalHead } from '../../shared/ui.js';
+import { openModal, modalHead, toast } from '../../shared/ui.js';
 import { state } from '../main.js';
 
 const key = id => `oj.workout.${id}`;
@@ -33,13 +34,14 @@ export default {
     const { total, done } = totals(d.log);
     return `${header(esc(d.workout.name), '/client')}
     <div class="stack s4"><div class="row between small"><span class="muted">${done} of ${total} sets</span><span class="strong">${total ? Math.round((done / total) * 100) : 0}%</span></div><div class="bar"><i style="width:${total ? (done / total) * 100 : 0}%"></i></div></div>
+    ${d.features?.voice && (dictationSupported || recordingSupported) && done < total ? `<button class="btn sm" style="align-self:flex-start" data-act="voiceSet" id="voice-set" aria-live="polite">${icon('mic')} <span>Log next set by voice</span></button>` : ''}
     ${d.assignment.note ? `<div class="card pad small" style="border-left:3px solid var(--volt-deep)"><b>Coach’s note:</b> ${esc(d.assignment.note)}</div>` : ''}
     <div id="rest-banner" hidden class="today-card rest-banner" role="timer" aria-live="polite">${icon('clock')}<span class="grow strong">Rest <span id="rest-left">1:30</span></span><button class="btn assist sm" data-act="restSkip">Skip</button></div>
     ${d.workout.exercises.map((e, ei) => `<section class="card pad stack s8" aria-label="${esc(e.name)}">
       ${e.group ? `<span class="tag" style="align-self:flex-start">${esc(e.group)}</span>` : ''}
       <div class="row"><button class="thumb" style="border:0;cursor:pointer" data-act="howTo" data-e="${ei}" aria-label="How to do ${esc(e.name)}">${icon('play')}</button><div class="grow"><div class="strong">${esc(e.name)}</div><div class="tiny muted">${plural(e.sets.length, 'set')} · ${esc(e.sets[0]?.target || '')}${e.tempo ? ` · tempo ${esc(e.tempo)}` : ''}${e.notes ? ' · ' + esc(e.notes) : ''}</div></div></div>
       <div class="set-row tiny muted strong" aria-hidden="true"><span>Set</span><span style="text-align:center">lb</span><span style="text-align:center">Reps</span><span></span></div>
-      ${d.log.exs[ei].sets.map((s, si) => `<div class="set-row"><span class="strong small" style="text-align:center">${si + 1}</span><input inputmode="decimal" aria-label="${esc(e.name)} set ${si + 1} weight in pounds" value="${esc(s.w)}" placeholder="${esc(String(e.sets[si]?.weight ?? ''))}" data-input="setVal" data-e="${ei}" data-s="${si}" data-f="w" maxlength="7"><input inputmode="numeric" aria-label="${esc(e.name)} set ${si + 1} reps" value="${esc(s.r)}" data-input="setVal" data-e="${ei}" data-s="${si}" data-f="r" maxlength="4"><button class="check ${s.done ? 'on' : ''}" data-act="setDone" data-e="${ei}" data-s="${si}" aria-label="Set ${si + 1} done" aria-pressed="${s.done}">${icon('check')}</button></div>`).join('')}
+      ${d.log.exs[ei].sets.map((s, si) => `<div class="set-row" data-row="${ei}-${si}"><span class="strong small" style="text-align:center">${si + 1}</span><input inputmode="decimal" aria-label="${esc(e.name)} set ${si + 1} weight in pounds" value="${esc(s.w)}" placeholder="${esc(String(e.sets[si]?.weight ?? ''))}" data-input="setVal" data-e="${ei}" data-s="${si}" data-f="w" maxlength="7"><input inputmode="numeric" aria-label="${esc(e.name)} set ${si + 1} reps" value="${esc(s.r)}" data-input="setVal" data-e="${ei}" data-s="${si}" data-f="r" maxlength="4"><button class="check ${s.done ? 'on' : ''}" data-act="setDone" data-e="${ei}" data-s="${si}" aria-label="Set ${si + 1} done" aria-pressed="${s.done}">${icon('check')}</button></div>`).join('')}
     </section>`).join('')}
     <a class="btn primary lg" href="/client/workout/${params.id}/finish" style="width:100%">Finish workout</a>
     <p class="tiny faint" style="text-align:center">Your sets are saved on this phone as you go.</p>`;
@@ -49,12 +51,48 @@ export default {
       const d = ctx.data, s = d.log.exs[+el.dataset.e].sets[+el.dataset.s];
       s.done = !s.done; saveDraft(ctx.params.id, d.log);
       el.classList.toggle('on', s.done); el.setAttribute('aria-pressed', s.done);
-      const { total, done } = totals(d.log);
-      const bar = el.closest('.scroll').querySelector('.bar i'); if (bar) bar.style.width = `${(done / total) * 100}%`;
-      const lbl = el.closest('.scroll').querySelector('.stack.s4 .row span'); if (lbl) lbl.textContent = `${done} of ${total} sets`;
-      const pct = el.closest('.scroll').querySelector('.stack.s4 .row .strong'); if (pct) pct.textContent = `${Math.round((done / total) * 100)}%`;
+      paintProgress(d.log);
       if (s.done && s.rest) startRest(s.rest);
       if (s.done && navigator.vibrate) navigator.vibrate(15);
+    },
+    /** "10 reps at 55" → fills and ticks the next unchecked set, with Undo. */
+    async voiceSet(el, _e, ctx) {
+      if (el.dataset.busy) { if (el.dataset.busy === 'rec') el.dispatchEvent(new CustomEvent('vstop')); else listenOnce.stop?.(); return; }
+      const d = ctx.data, next = nextOpenSet(d.log);
+      if (!next) { toast('All sets are logged.'); return; }
+      const label = el.querySelector('span'), reset = () => { delete el.dataset.busy; el.classList.remove('mic-live'); label.textContent = 'Log next set by voice'; };
+      el.classList.add('mic-live'); el.dataset.busy = 'listen'; label.textContent = 'Listening… say “10 reps at 55”';
+      let text = '', transcribed = false;
+      try {
+        if (dictationSupported) text = await listenOnce({ onInterim: v => { label.textContent = `“${v}”`; } });
+        else {
+          // No speech recognition in this browser: record a few seconds and transcribe on the server.
+          const rec = createRecorder({ maxMs: 10000 });
+          await rec.start();
+          el.dataset.busy = 'rec'; label.textContent = 'Listening… tap when done';
+          await new Promise(res => { el.addEventListener('vstop', res, { once: true }); rec.done.then(res); });
+          const out = await rec.stop();
+          el.dataset.busy = 'listen'; label.textContent = 'One moment…';
+          const fd = new FormData();
+          fd.append('audio', out.blob, `set.${/mp4/.test(out.mimeType) ? 'm4a' : 'webm'}`); fd.append('durationMs', String(out.durationMs)); fd.append('kind', 'set_log');
+          text = (await api.post('/api/me/voice/transcribe', fd)).transcript; transcribed = true;
+        }
+      } catch (e) { reset(); toast(e.code === 'denied' ? MIC_OFF : e.message, { ms: 6000 }); return; }
+      if (!text) { reset(); toast('I didn’t catch that. Try “10 reps at 55”.'); return; }
+      label.textContent = `“${text}”`;
+      let r;
+      try { r = await api.post('/api/me/voice/set', { text, spoken: !transcribed }); }
+      catch (e) { reset(); toast(e.message, { ms: 6000 }); return; }
+      reset();
+      const target = nextOpenSet(d.log) || next, s = d.log.exs[target.ei].sets[target.si], before = { ...s };
+      s.r = String(r.reps); s.w = r.bodyweight || r.weight == null ? (r.bodyweight ? '' : s.w) : String(r.weight); s.done = true;
+      saveDraft(ctx.params.id, d.log); paintSet(target.ei, target.si, s); paintProgress(d.log);
+      const ex = d.workout.exercises[target.ei];
+      if (s.rest) startRest(s.rest);
+      if (navigator.vibrate) navigator.vibrate(15);
+      toast(`Logged ${ex.name}, set ${target.si + 1}: ${s.w ? `${s.w} lb × ` : r.bodyweight ? 'bodyweight × ' : ''}${s.r}`, {
+        undo: () => { Object.assign(s, before); saveDraft(ctx.params.id, d.log); paintSet(target.ei, target.si, s); paintProgress(d.log); clearInterval(restTimer); const b = document.getElementById('rest-banner'); if (b) b.hidden = true; },
+      });
     },
     restSkip() { clearInterval(restTimer); const b = document.getElementById('rest-banner'); if (b) b.hidden = true; },
     howTo(el, _e, ctx) {
@@ -66,6 +104,23 @@ export default {
     setVal(el, _e, ctx) { const s = ctx.data.log.exs[+el.dataset.e].sets[+el.dataset.s]; s[el.dataset.f] = el.value.replace(/[^\d.]/g, ''); saveDraft(ctx.params.id, ctx.data.log); },
   },
 };
+
+const nextOpenSet = log => { for (let ei = 0; ei < log.exs.length; ei++) { const si = log.exs[ei].sets.findIndex(s => !s.done); if (si >= 0) return { ei, si }; } return null; };
+/** Updates one set row in place after a voice entry (or its Undo). */
+function paintSet(ei, si, s) {
+  const row = document.querySelector(`[data-row="${ei}-${si}"]`); if (!row) return;
+  row.querySelector('[data-f="w"]').value = s.w; row.querySelector('[data-f="r"]').value = s.r;
+  const c = row.querySelector('[data-act="setDone"]'); c.classList.toggle('on', s.done); c.setAttribute('aria-pressed', s.done);
+  row.classList.remove('set-flash'); void row.offsetWidth; row.classList.add('set-flash');
+  row.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+function paintProgress(log) {
+  const { total, done } = totals(log);
+  const bar = document.querySelector('.bar i'); if (bar) bar.style.width = `${total ? (done / total) * 100 : 0}%`;
+  const lbl = document.querySelector('.stack.s4 .row span'); if (lbl) lbl.textContent = `${done} of ${total} sets`;
+  const pct = document.querySelector('.stack.s4 .row .strong'); if (pct) pct.textContent = `${total ? Math.round((done / total) * 100) : 0}%`;
+  const vb = document.getElementById('voice-set'); if (vb) vb.hidden = done >= total;
+}
 
 function startRest(sec) {
   clearInterval(restTimer);

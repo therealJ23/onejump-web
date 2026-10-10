@@ -147,3 +147,101 @@ describe('client set logging parser', () => {
     expect(parseSet('nothing here')).toBeNull();
   });
 });
+
+describe('client voice: log a set by voice', () => {
+  it('“10 reps at 55” reads reps and weight; odd phrasing goes to Assist; nonsense is refused', async () => {
+    expect((await mike.post('/api/me/voice/set', { text: '10 reps at 55' })).body).toMatchObject({ reps: 10, weight: 55, bodyweight: false, via: 'parser' });
+    expect((await mike.post('/api/me/voice/set', { text: '12 bodyweight' })).body).toMatchObject({ reps: 12, weight: null, bodyweight: true });
+    const bad = await mike.post('/api/me/voice/set', { text: 'banana' });
+    expect(bad.status).toBe(422);
+    expect(bad.body.error).toMatch(/10 reps at 55/);
+  });
+
+  it('SafetyGuard runs on the transcript: pain flags the coach', async () => {
+    const before = await f.dbA.notification.count({ where: { title: { contains: 'mentioned hurts' } } });
+    await mike.post('/api/me/voice/set', { text: '8 at 135 but my shoulder hurts' });
+    expect(await f.dbA.notification.count({ where: { title: { contains: 'mentioned hurts' } } })).toBe(before + 1);
+    expect(await f.dbA.clientEvent.count({ where: { clientId: f.mike.id, kind: 'safety_flag' } })).toBeGreaterThan(0);
+  });
+
+  it('server transcription for browsers without speech recognition', async () => {
+    const r = await mike.upload('/api/me/voice/transcribe', 'audio', AUDIO, 'set.webm', { kind: 'set_log', durationMs: '2100' });
+    expect(r.status).toBe(200);
+    expect(['10 reps at 55', '8 at 135 pounds', '12 bodyweight']).toContain(r.body.transcript);
+    const v = await f.dbA.voiceInteraction.findFirst({ where: { kind: 'set_log' }, orderBy: { createdAt: 'desc' } });
+    expect(v).toMatchObject({ clientId: f.mike.id, durationMs: 2100 });
+  });
+});
+
+describe('voice notes', () => {
+  let noteId;
+  it('a client voice note shows the coach audio + transcript + a one-line summary; “my knee hurts” flags the coach', async () => {
+    const r = await mike.upload('/api/me/voice-notes', 'audio', AUDIO, 'note.webm', { hint: 'Hey Dani, my knee hurts after the squats yesterday. Should I skip lunges tomorrow?', durationMs: '7400' });
+    expect(r.status).toBe(201);
+    expect(r.body.message).toMatchObject({ from: 'me', voice: { durationS: 7 } });
+    noteId = r.body.message.id;
+    const row = await f.dbA.message.findFirst({ where: { id: noteId } });
+    expect(row.audioKey).toMatch(new RegExp(`^voice/${f.A.id}/`));
+    expect(row.body).toBe('Hey Dani, my knee hurts after the squats yesterday. Should I skip lunges tomorrow?');
+
+    const t = await dani.get(`/api/threads/${f.mike.id}`);
+    const m = t.body.messages.find(x => x.id === noteId);
+    expect(m.from).toBe('them');
+    expect(m.body).toMatch(/my knee hurts/);
+    expect(m.voice).toMatchObject({ durationS: 7, flag: 'hurts' });
+    expect(m.voice.summary).toMatch(/skip lunges/i);
+    expect(await f.dbA.notification.count({ where: { title: { contains: 'mentioned hurts in a voice note' } } })).toBe(1);
+    const list = await dani.get('/api/threads');
+    expect(list.body.threads.find(x => x.clientId === f.mike.id).last.body).toMatch(/^🎤 Voice note · 0:07/);
+
+    const a = await dani.get(`/api/threads/${f.mike.id}/messages/${noteId}/audio`);
+    const file = await dani.get(new URL(a.body.url, 'http://x').pathname + new URL(a.body.url, 'http://x').search);
+    expect(file.status).toBe(200);
+    expect(file.headers['content-type']).toMatch(/audio\/webm/);
+  });
+
+  it('the client sees their note without the coach-only summary or flag; other businesses can’t reach it', async () => {
+    const t = await mike.get('/api/me/thread');
+    const m = t.body.messages.find(x => x.id === noteId);
+    expect(m.voice).toEqual({ durationS: 7 });
+    expect(t.body.features.voiceNotes).toBe(true);
+    expect((await mike.get(`/api/me/messages/${noteId}/audio`)).body.url).toMatch(/^\/files\/voice/);
+    expect((await alex.get(`/api/threads/${f.mike.id}/messages/${noteId}/audio`)).status).toBe(404);
+    expect(await f.dbB.message.findFirst({ where: { id: noteId } })).toBeNull();
+  });
+
+  it('the coach can send a voice note too; the client hears it', async () => {
+    const r = await dani.upload(`/api/threads/${f.mike.id}/voice-notes`, 'audio', AUDIO, 'note.webm', { hint: 'Nice work today. Keep the lunges light tomorrow.', durationMs: '3200' });
+    expect(r.status).toBe(201);
+    const t = await mike.get('/api/me/thread');
+    expect(t.body.messages.at(-1)).toMatchObject({ from: 'coach', body: 'Nice work today. Keep the lunges light tomorrow.', voice: { durationS: 3 } });
+  });
+
+  it('rejects non-audio files', async () => {
+    expect((await mike.upload('/api/me/voice-notes', 'audio', Buffer.from('<html>not audio</html>'), 'x.webm')).status).toBe(400);
+  });
+
+  it('voice is Pro: Starter clients get 403 with an upgrade message, and the chat hides the button', async () => {
+    const orig = await f.dbA.business.findFirst({ select: { plan: true, planStatus: true } });
+    await f.dbA.business.update({ where: { id: f.A.id }, data: { plan: 'STARTER', planStatus: 'active' } });
+    try {
+      for (const [url, fn] of [['/api/me/voice-notes', () => mike.upload('/api/me/voice-notes', 'audio', AUDIO, 'n.webm')], ['/api/me/voice/set', () => mike.post('/api/me/voice/set', { text: '10 reps at 55' })], ['coach voice note', () => dani.upload(`/api/threads/${f.mike.id}/voice-notes`, 'audio', AUDIO, 'n.webm')]]) {
+        const r = await fn();
+        expect(r.status, url).toBe(403);
+        expect(r.body.upgrade, url).toBe('PRO');
+      }
+      expect((await mike.get('/api/me/thread')).body.features.voiceNotes).toBe(false);
+    } finally { await f.dbA.business.update({ where: { id: f.A.id }, data: orig }); }
+  });
+
+  it('over the monthly limit, client voice is refused with a friendly message', async () => {
+    const original = config.voice.monthlyMinutes;
+    config.voice.monthlyMinutes = 0.01;
+    try {
+      const r = await mike.upload('/api/me/voice-notes', 'audio', AUDIO, 'n.webm');
+      expect(r.status).toBe(429);
+      expect(r.body.error).toMatch(/type your message instead/);
+      expect((await mike.post('/api/me/messages', { body: 'Typing still works' })).status).toBe(201);
+    } finally { config.voice.monthlyMinutes = original; }
+  });
+});
