@@ -3,6 +3,7 @@
 import { api } from '../../shared/api.js';
 import { micButton, listenOnce, dictationSupported } from '../../shared/dictation.js';
 import { createRecorder, recordingSupported, MIC_OFF } from '../../shared/media.js';
+import { onRemoved } from '../../shared/lifecycle.js';
 import { esc, plural } from '../../shared/format.js';
 import { icon, arc } from '../../shared/icons.js';
 import { openModal, modalHead, toast } from '../../shared/ui.js';
@@ -64,13 +65,21 @@ export default {
       el.classList.add('mic-live'); el.dataset.busy = 'listen'; label.textContent = 'Listening… say “10 reps at 55”';
       let text = '', transcribed = false;
       try {
-        if (dictationSupported) text = await listenOnce({ onInterim: v => { label.textContent = `“${v}”`; } });
+        if (dictationSupported) {
+          const unwatch = onRemoved(el, () => listenOnce.stop?.()); // leaving the screen stops listening
+          text = await listenOnce({ onInterim: v => { label.textContent = `“${v}”`; } });
+          unwatch();
+        }
         else {
           // No speech recognition in this browser: record a few seconds and transcribe on the server.
           const rec = createRecorder({ maxMs: 10000 });
           await rec.start();
+          if (!document.contains(el)) { rec.cancel(); return; } // left the workout while the mic was starting
           el.dataset.busy = 'rec'; label.textContent = 'Listening… tap when done';
-          await new Promise(res => { el.addEventListener('vstop', res, { once: true }); rec.done.then(res); });
+          const unwatch = onRemoved(el, () => rec.cancel()); // leaving the screen stops the mic
+          await new Promise(res => { el.addEventListener('vstop', res, { once: true }); rec.done.then(res); onRemoved(el, res); });
+          unwatch();
+          if (!document.contains(el)) return;
           const out = await rec.stop();
           el.dataset.busy = 'listen'; label.textContent = 'One moment…';
           const fd = new FormData();
@@ -78,6 +87,7 @@ export default {
           text = (await api.post('/api/me/voice/transcribe', fd)).transcript; transcribed = true;
         }
       } catch (e) { reset(); toast(e.code === 'denied' ? MIC_OFF : e.message, { ms: 6000 }); return; }
+      if (!document.contains(el)) return; // they left the workout: don't log anything
       if (!text) { reset(); toast('I didn’t catch that. Try “10 reps at 55”.'); return; }
       label.textContent = `“${text}”`;
       let r;

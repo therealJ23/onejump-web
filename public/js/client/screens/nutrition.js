@@ -257,16 +257,20 @@ function voiceSheet(meal) {
       <p class="small" id="vf-msg" role="status">${dictationSupported ? 'Tap the circle to start. Your browser turns speech into text.' : recordingSupported ? 'Tap the circle, talk, then tap again.' : 'Voice isn’t available in this browser. Type what you ate instead.'}</p></div>
     <div class="modal-foot"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" id="vf-go">Find foods</button></div>`, { label: 'Voice food logging' });
   const orb = m.querySelector('#vf-orb'), ta = m.querySelector('#vf-text'), msg = m.querySelector('#vf-msg');
-  let transcribed = false, rec = null;
+  let transcribed = false, rec = null, starting = false;
   ta.addEventListener('input', () => { transcribed = false; });
   if (!dictationSupported && !recordingSupported) orb.disabled = true;
   orb.addEventListener('click', async () => {
     if (!dictationSupported) {
       // No speech recognition in this browser (some phones): record and transcribe on the server.
+      if (starting) return; // the mic is still starting
       if (rec) { const r = rec; rec = null; orb.classList.remove('listening'); msg.textContent = 'One moment…'; await r.stop(); return; }
-      rec = createRecorder({ maxMs: 15000 });
-      try { await rec.start(); } catch (e) { rec = null; msg.textContent = e.code === 'denied' ? MIC_OFF : e.message; return; }
-      const mine = rec;
+      const mine = createRecorder({ maxMs: 15000 });
+      starting = true;
+      try { await mine.start(); } catch (e) { starting = false; msg.textContent = e.code === 'denied' ? MIC_OFF : e.message; return; }
+      starting = false;
+      if (!document.contains(m)) { mine.cancel(); return; }
+      rec = mine;
       orb.classList.add('listening'); msg.innerHTML = '<span class="rec-dot">Recording · tap to stop</span>';
       const out = await mine.done; rec = null; orb.classList.remove('listening');
       if (!out?.blob?.size) { msg.textContent = 'Nothing was recorded. Try again or type it.'; return; }

@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { dbForBusiness } from '../db/tenant.js';
-import { body, z } from '../lib/validate.js';
+import { body, z, audioFields } from '../lib/validate.js';
 import { must, badRequest, HttpError } from '../lib/errors.js';
 import { requireFeature, effectivePlan, isPro } from '../auth/middleware.js';
 import { VoiceService, assertUnderLimit } from '../voice/VoiceService.js';
@@ -15,7 +15,7 @@ import { parseSet } from '../../public/js/shared/parse.js';
 import { AI } from '../ai/AIService.js';
 
 export const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
 const proOnly = feature => requireFeature('PRO', feature);
 
 async function ctx(req) {
@@ -41,7 +41,7 @@ router.get('/voice/config', async (req, res) => {
 });
 
 /** For browsers without speech recognition: audio → text (not stored). kind: set_log | food_log. */
-router.post('/voice/transcribe', proOnly('Voice logging'), upload.single('audio'), async (req, res) => {
+router.post('/voice/transcribe', proOnly('Voice logging'), upload.single('audio'), body(audioFields), async (req, res) => {
   const mimeType = audioOf(req);
   const kind = req.body?.kind === 'food_log' ? 'food_log' : 'set_log';
   const { coach, client } = await ctx(req);
@@ -65,7 +65,7 @@ router.post('/voice/set', proOnly('Logging a set by voice'), body(z.object({ tex
 });
 
 /** A voice note to the coach: audio + transcript (the coach also sees a one-line Assist summary). */
-router.post('/voice-notes', proOnly('Voice notes'), upload.single('audio'), async (req, res) => {
+router.post('/voice-notes', proOnly('Voice notes'), upload.single('audio'), body(audioFields), async (req, res) => {
   const mimeType = audioOf(req);
   const { coach, client } = await ctx(req);
   const r = await sendVoiceNote({ coach, db: req.db, businessId: req.auth.businessId, client, senderRole: 'CLIENT', senderUserId: req.auth.userId, buf: req.file.buffer, mimeType, durationMs: req.body?.durationMs, hint: req.body?.hint });

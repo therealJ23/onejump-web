@@ -66,16 +66,19 @@ export const proposalActions = {
       refreshCounts();
     } catch (e) {
       busy(el, false);
-      if (e.status === 409) { decided.set(id, { confirmed: false, message: e.message }); card.innerHTML = `<div class="small muted">${esc(e.message)}</div>`; proposalEvents.dispatchEvent(new CustomEvent('done', { detail: { id, confirmed: false, message: e.message } })); }
+      // Already done, expired, or failed partway (never repeated): the card is finished either way.
+      if (e.status === 409 || e.data?.code === 'proposal_failed') { decided.set(id, { confirmed: false, message: e.message }); card.innerHTML = `<div class="small ${e.data?.code === 'proposal_failed' ? 'form-error' : 'muted'}" role="alert">${esc(e.message)}</div>`; proposalEvents.dispatchEvent(new CustomEvent('done', { detail: { id, confirmed: false, message: e.message } })); }
       else toastError(e);
     }
   },
   async proposalCancel(el) {
     const id = el.dataset.id, card = el.closest('.proposal');
-    try { await api.post(`/api/assist/proposals/${id}/cancel`); } catch { /* already handled or expired: nothing to do either way */ }
-    decided.set(id, { confirmed: false, message: 'Cancelled. Nothing was done.' });
-    card.innerHTML = '<div class="small muted">Cancelled. Nothing was done.</div>';
-    proposalEvents.dispatchEvent(new CustomEvent('done', { detail: { id, confirmed: false, message: 'Okay, I won’t do that.' } }));
+    let msg = 'Cancelled. Nothing was done.', spoken = 'Okay, I won’t do that.';
+    try { await api.post(`/api/assist/proposals/${id}/cancel`); }
+    catch (e) { if (e.status !== 409) { toastError(e); return; } msg = spoken = e.message; } // e.g. it was already done in another tab
+    decided.set(id, { confirmed: false, message: msg });
+    card.innerHTML = `<div class="small muted" role="status">${esc(msg)}</div>`;
+    proposalEvents.dispatchEvent(new CustomEvent('done', { detail: { id, confirmed: false, message: spoken } }));
   },
 };
 

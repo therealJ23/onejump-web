@@ -1,6 +1,6 @@
 // Coach inbox: one thread per client, Assist drafts in the coach's voice, group messages.
 import { Router } from 'express';
-import { body, z } from '../lib/validate.js';
+import { body, z, audioFields } from '../lib/validate.js';
 import { must, badRequest } from '../lib/errors.js';
 import { sendMessage } from '../core/messaging.js';
 import { messageDraft } from '../ai/drafts.js';
@@ -14,7 +14,7 @@ import { VoiceService } from '../voice/VoiceService.js';
 import { sendVoiceNote, voiceFields, fmtDuration } from '../voice/voiceNotes.js';
 import { StorageService, sniffAudio } from '../storage/StorageService.js';
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
 
 export const router = Router();
 
@@ -53,7 +53,7 @@ router.get('/:clientId', async (req, res) => {
 });
 
 /** The coach records a voice note to a client (Pro). The coach's own words, so no approval step. */
-router.post('/:clientId/voice-notes', requireFeature('PRO', 'Voice notes'), upload.single('audio'), async (req, res) => {
+router.post('/:clientId/voice-notes', requireFeature('PRO', 'Voice notes'), upload.single('audio'), body(audioFields), async (req, res) => {
   const c = must(await req.db.client.findFirst({ where: { id: req.params.clientId } }), 'That client');
   if (!req.file) throw badRequest('No audio was received. Tap the mic, talk, then tap again.');
   const mimeType = sniffAudio(req.file.buffer);

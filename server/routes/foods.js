@@ -4,14 +4,14 @@ import { Router } from 'express';
 import { query, z } from '../lib/validate.js';
 import { badRequest } from '../lib/errors.js';
 import { foods, CREDITS } from '../nutrition/foods.js';
-import { planFor, stripNumbers } from '../nutrition/plans.js';
+import { planFor, hiddenView } from '../nutrition/plans.js';
 
 export const router = Router();
 
 async function forViewer(req, data) {
   if (req.auth.role !== 'CLIENT') return data;
   const plan = await planFor(req.db, req.auth.clientId);
-  return plan.hideNumbers ? stripNumbers(data) : data;
+  return plan.hideNumbers ? hiddenView(data) : data;
 }
 
 router.get('/search', query(z.object({ q: z.string().trim().min(2, 'Type at least 2 letters.').max(80) })), async (req, res) => {

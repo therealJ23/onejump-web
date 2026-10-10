@@ -30,7 +30,7 @@ export async function openTalk() {
     </div>`, { wide: true, label: 'Talk to Assist' });
   const $ = s => m.querySelector(s);
   const orb = $('#v-orb'), wave = $('#v-wave'), said = $('#v-said'), ans = $('#v-answer'), rec = $('#v-rec');
-  let recorder = null, timer = null, hint = '', listening = null;
+  let recorder = null, timer = null, hint = '', listening = null, starting = false;
 
   const setOrb = st => { orb.className = `voice-orb ${st}`; orb.setAttribute('aria-pressed', st === 'listening'); orb.setAttribute('aria-label', st === 'listening' ? 'Tap to stop' : 'Tap to talk'); wave.classList.toggle('on', st === 'speaking'); wave.classList.toggle('live', st === 'listening'); if (st !== 'listening') wave.querySelectorAll('i').forEach(i => { i.style.height = ''; }); };
   const reply = r => {
@@ -49,10 +49,13 @@ export async function openTalk() {
   }
   async function start() {
     stopSpeaking(); ans.innerHTML = ''; hint = '';
-    recorder = createRecorder({ maxMs: (c.maxSeconds || 30) * 1000, onLevel: meter(wave), onAutoStop: () => finish() });
-    try { await recorder.start(); }
-    catch (e) { recorder = null; said.textContent = e.code === 'denied' ? MIC_OFF : e.message; ans.innerHTML = '<p class="small muted">Typing still works: use the box below or tap a phrase.</p>'; return; }
-    if (!recorder) return;
+    const r = createRecorder({ maxMs: (c.maxSeconds || 30) * 1000, onLevel: meter(wave), onAutoStop: () => finish() });
+    starting = true; said.textContent = 'Starting the microphone…';
+    try { await r.start(); }
+    catch (e) { starting = false; said.textContent = e.code === 'denied' ? MIC_OFF : e.message; ans.innerHTML = '<p class="small muted">Typing still works: use the box below or tap a phrase.</p>'; return; }
+    starting = false;
+    if (!document.contains(orb)) { r.cancel(); return; } // closed while the mic was starting
+    recorder = r;
     setOrb('listening'); said.textContent = 'Listening…';
     const t0 = Date.now();
     rec.innerHTML = '<span class="rec-dot">Recording 0:00</span>';
@@ -77,7 +80,7 @@ export async function openTalk() {
     try { reply(await api.post('/api/voice/ask', fd)); } catch (e) { fail(e); }
   }
 
-  orb.addEventListener('click', () => (recorder ? finish() : start()));
+  orb.addEventListener('click', () => { if (starting) return; if (recorder) finish(); else start(); }); // taps while the mic starts are ignored
   $('#v-form').addEventListener('submit', e => { e.preventDefault(); const v = $('#v-type').value.trim(); if (!v) return; $('#v-type').value = ''; ask(v); });
   m.addEventListener('click', e => { const b = e.target.closest('[data-say]'); if (b) ask(b.dataset.say); });
   $('#v-speak').addEventListener('click', e => { const on = !speakOn(); setSpeakOn(on); e.currentTarget.classList.toggle('on', on); e.currentTarget.setAttribute('aria-pressed', on); });

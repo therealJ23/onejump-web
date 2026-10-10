@@ -99,7 +99,12 @@ export function stripJpegMetadata(buf) {
     if (buf[i] !== 0xff) return null;
     const marker = buf[i + 1];
     if (marker === 0xd9) { out.push(buf.subarray(i, i + 2)); break; }
-    if (marker === 0xda) { out.push(buf.subarray(i)); break; } // start of scan: the rest is image data
+    if (marker === 0xda) { // start of scan: image data up to the end-of-image marker; anything appended after it is dropped
+      let end = -1;
+      for (let j = i + 2; j + 1 < buf.length; j++) if (buf[j] === 0xff && buf[j + 1] === 0xd9) { end = j + 2; break; }
+      out.push(buf.subarray(i, end > 0 ? end : buf.length));
+      break;
+    }
     if (marker >= 0xd0 && marker <= 0xd7) { out.push(buf.subarray(i, i + 2)); i += 2; continue; }
     const len = buf.readUInt16BE(i + 2);
     if (len < 2 || i + 2 + len > buf.length) return null;

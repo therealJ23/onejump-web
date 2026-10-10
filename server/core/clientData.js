@@ -11,6 +11,7 @@ export async function exportClientData(db, clientId) {
   for (const t of CLIENT_TABLES) out[t] = await db[t].findMany({ where: { clientId } });
   out.messages = (await db.message.findMany({ where: { clientId }, orderBy: { createdAt: 'asc' } })).map(({ audioKey, ...m }) => ({ ...m, voiceNote: !!audioKey }));
   out.foodEntry = out.foodEntry.map(({ photoKey, ...e }) => ({ ...e, photo: !!photoKey }));
+  out.voiceTranscripts = (await db.voiceInteraction.findMany({ where: { clientId }, orderBy: { createdAt: 'asc' }, select: { kind: true, transcript: true, durationMs: true, createdAt: true } }));
   out.progressPhotos = (await db.progressPhoto.findMany({ where: { clientId } })).map(p => ({ id: p.id, pose: p.pose, takenAt: p.takenAt }));
   delete out.invite; // tokens are secrets
   return out;
@@ -26,6 +27,7 @@ export async function deleteClientData(db, clientId) {
   ];
   for (const k of new Set(files)) await StorageService.remove(k).catch(() => null);
   await db.progressPhoto.deleteMany({ where: { clientId } });
+  await db.voiceInteraction.deleteMany({ where: { clientId } });
   await db.message.deleteMany({ where: { clientId } });
   await db.thread.deleteMany({ where: { clientId } });
   for (const t of CLIENT_TABLES) await db[t].deleteMany({ where: { clientId } });

@@ -2,6 +2,10 @@
 // and the short line Assist says out loud. Spoken text is at most two short sentences and
 // never includes health details: those stay on screen.
 import { checkText } from '../ai/safety.js';
+import { checkNutritionLanguage } from '../nutrition/language.js';
+
+/** Health or food-behaviour details that stay on screen and are never spoken. */
+export const sensitive = t => checkText(t).flagged || checkNutritionLanguage(t).flagged;
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const money = c => '$' + Math.round((c || 0) / 100).toLocaleString('en-US');
@@ -20,7 +24,7 @@ export function speakable(text, max = 220) {
   let out = '';
   for (const p of parts.slice(0, 2)) { if ((out + p).length > max && out) break; out += p; }
   out = (out || t.replace(/\u2024/g, '.').slice(0, max)).trim();
-  return checkText(out).flagged ? 'I’ve put the details on screen.' : out;
+  return sensitive(out) ? 'I’ve put the details on screen.' : out;
 }
 
 function notFound(r, what = 'that client') {

@@ -17,19 +17,31 @@ const startOfToday = () => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); re
 
 async function proPlan(db) { return isPro(effectivePlan(await db.business.findFirst({ select: { plan: true, trialEndsAt: true } }))); }
 
+// Two page loads at once must not draft the same nudge twice (then "Send all" would send both):
+// concurrent callers share one in-flight draft, and it checks again before saving.
+const inflight = new Map();
+const findNudge = (db, sourceId) => db.aIInsight.findFirst({ where: { kind: 'nutrition_nudge', sourceId }, orderBy: { createdAt: 'desc' } });
+async function nudgeFor(db, r, sourceId) {
+  const existing = await findNudge(db, sourceId);
+  if (existing) return existing;
+  if (inflight.has(sourceId)) return inflight.get(sourceId);
+  const p = (async () => {
+    const ctx = { coach: await coachContext(db), client: await clientContext(db, r.client), week: { daysLogged: r.week.daysLogged, proteinHitDays: r.week.proteinHitDays }, hideNumbers: r.plan.hideNumbers };
+    const d = await AI.draftNutritionNudge(ctx, { db });
+    const again = await findNudge(db, sourceId);
+    if (again) return again;
+    return saveInsight(db, { clientId: r.client.id, kind: 'nutrition_nudge', source: 'nutrition', sourceId, summary: `${firstOf(r.client.name)} reached the protein target on ${r.week.proteinHitDays} of ${r.week.daysLogged} logged days.`, draft: { text: d.data.text, hitDays: r.week.proteinHitDays, loggedDays: r.week.daysLogged }, minutesSaved: NUDGE_MINUTES, model: d.model, promptVersion: d.promptVersion });
+  })().finally(() => inflight.delete(sourceId));
+  inflight.set(sourceId, p);
+  return p;
+}
+
 /** One pending personal draft per client per week for clients missing protein most days. */
 export async function ensureNudges(db, rows, { tz = 'UTC', now = new Date() } = {}) {
   const week = dateToYmd(weekStart(todayKey(tz, now)));
   const out = [];
   for (const r of rows.filter(r => missedProteinMostDays(r.plan, r.week))) {
-    const sourceId = `${r.client.id}:${week}`;
-    let ins = await db.aIInsight.findFirst({ where: { kind: 'nutrition_nudge', sourceId }, orderBy: { createdAt: 'desc' } });
-    if (!ins) {
-      const ctx = { coach: await coachContext(db), client: await clientContext(db, r.client), week: { daysLogged: r.week.daysLogged, proteinHitDays: r.week.proteinHitDays }, hideNumbers: r.plan.hideNumbers };
-      const d = await AI.draftNutritionNudge(ctx, { db });
-      ins = await saveInsight(db, { clientId: r.client.id, kind: 'nutrition_nudge', source: 'nutrition', sourceId, summary: `${firstOf(r.client.name)} reached the protein target on ${r.week.proteinHitDays} of ${r.week.daysLogged} logged days.`, draft: { text: d.data.text, hitDays: r.week.proteinHitDays, loggedDays: r.week.daysLogged }, minutesSaved: NUDGE_MINUTES, model: d.model, promptVersion: d.promptVersion });
-    }
-    out.push({ insight: ins, client: r.client, week: r.week });
+    out.push({ insight: await nudgeFor(db, r, `${r.client.id}:${week}`), client: r.client, week: r.week });
   }
   return out;
 }

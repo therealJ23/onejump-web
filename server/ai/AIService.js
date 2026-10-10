@@ -9,6 +9,11 @@ import { AnthropicProvider } from './providers/anthropic.js';
 import { OpenAIProvider } from './providers/openai.js';
 import { guardDraft, checkText, guardNutrition } from './safety.js';
 import { startOfMonthUtc } from '../lib/time.js';
+import { HttpError } from '../lib/errors.js';
+
+/** Tasks where a made-up mock answer would mislead (a random sample meal for a real photo). */
+const NO_MOCK_FALLBACK = new Set(['meal_photo']);
+const unavailable = task => new HttpError(503, task === 'meal_photo' ? 'I couldn’t read this photo right now. Search for the food instead, or try again in a minute.' : 'Assist is unavailable right now. Try again in a minute.', { code: 'ai_unavailable' });
 
 const MAX_TOKENS = { checkin: 1400, message: 500, risk: 700, workout: 1800, adjust: 900, progress: 700, lead: 500, meal_photo: 700, food_text: 500, set_text: 120, nutrition_summary: 500, nutrition_nudge: 300, voice_summary: 120, briefing: 500 };
 
@@ -41,12 +46,16 @@ export class AIService {
   async run(task, ctx, { db, images = [], model = null } = {}) {
     const { system, prompt } = PROMPTS[task](ctx);
     let provider = this.active, out, fallback = null;
-    if (await this.overBudget(db)) { provider = this.mock; fallback = 'budget'; }
+    if (await this.overBudget(db)) {
+      if (NO_MOCK_FALLBACK.has(task)) throw unavailable(task);
+      provider = this.mock; fallback = 'budget';
+    }
     try {
       out = await provider.complete({ task, system, prompt, schema: jsonSchemaFor(task), description: SCHEMAS[task].description, maxTokens: MAX_TOKENS[task], input: ctx, images, model: provider.name === 'anthropic' ? model : null });
       out.data = SCHEMAS[task].zod.parse(out.data);
     } catch (e) {
       if (provider === this.mock) throw e;
+      if (NO_MOCK_FALLBACK.has(task)) { console.error(`[ai] ${provider.name} failed on ${task}: ${e.message}.`); throw unavailable(task); }
       console.error(`[ai] ${provider.name} failed on ${task}: ${e.message}. Using mock draft.`);
       provider = this.mock; fallback = 'error';
       out = await this.mock.complete({ task, input: ctx });

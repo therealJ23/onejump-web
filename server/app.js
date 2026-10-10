@@ -144,6 +144,7 @@ export function createApp({ sessionStore } = {}) {
     else if (err?.code === 'P2002') { status = 409; body = { error: 'That already exists.' }; }
     else if (err?.type === 'entity.parse.failed') { status = 400; body = { error: 'Invalid JSON.' }; }
     else if (err?.type === 'entity.too.large' || err?.code === 'LIMIT_FILE_SIZE') { status = 413; body = { error: 'That file is too large.' }; }
+    else if (err?.name === 'MulterError') { status = 400; body = { error: 'That upload couldn’t be read. Try again.' }; }
     if (status >= 500) {
       console.error(`[error] ${req.method} ${req.originalUrl}:`, err);
       body = { error: 'Something went wrong on our side. Try again in a moment.' };

@@ -63,10 +63,28 @@ class OpenAIVoice {
     const form = new FormData();
     form.append('file', new Blob([buf], { type: mimeType.split(';')[0] }), `audio.${ext}`);
     form.append('model', this.model);
+    if (this.model === 'whisper-1') form.append('response_format', 'verbose_json'); // includes the audio's duration
     const res = await this.fetch('https://api.openai.com/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: `Bearer ${this.key}` }, body: form, signal: AbortSignal.timeout(30000) });
     if (!res.ok) throw new Error(`OpenAI transcription ${res.status}: ${(await res.text()).slice(0, 200)}`);
-    return { transcript: (await res.json()).text || '' };
+    const json = await res.json();
+    return { transcript: json.text || '', durationMs: json.duration ? Math.round(json.duration * 1000) : null };
   }
+}
+
+/** The longest recording each kind accepts, in seconds (the browser stops on its own before this). */
+export const MAX_SECONDS = { ask: 30, voice_note: 60, set_log: 10, food_log: 15 };
+/**
+ * A server-side lower bound for how long a recording is, so the monthly limit can't be dodged by
+ * sending a small duration. WAV is exact; compressed audio assumes at most 128 kbps (browsers
+ * record speech at 32–128 kbps), so a big file always counts as long.
+ */
+export function estimateDurationMs(buf, mimeType = '') {
+  if (!buf?.length) return 0;
+  if (/wav/.test(mimeType) && buf.length > 44 && buf.subarray(0, 4).toString() === 'RIFF') {
+    const byteRate = buf.readUInt32LE(28);
+    if (byteRate > 0) return Math.round(((buf.length - 44) / byteRate) * 1000);
+  }
+  return Math.round((buf.length * 8 / 128000) * 1000);
 }
 
 export function makeVoiceProvider(name = config.voice.provider, opts = {}) {
@@ -99,10 +117,13 @@ export const VoiceService = {
    */
   async transcribe(db, buf, { mimeType, durationMs = 0, hint = null, userId, clientId = null, kind = 'ask' }) {
     const p = active();
+    const estimate = estimateDurationMs(buf, mimeType), max = (MAX_SECONDS[kind] || 60) * 1000;
+    if (estimate > max * 1.5 + 2000) throw new HttpError(400, `That recording is too long. Keep it under ${Math.round(max / 1000)} seconds.`, { code: 'too_long' });
     let out;
     try { out = await p.transcribe(buf, { mimeType, hint, kind }); }
     catch (e) { console.error(`[voice] ${p.name} failed:`, e.message); throw new HttpError(502, 'I couldn’t hear that clearly. Try again, or type instead.', { code: 'voice_failed' }); }
-    const ms = Math.max(0, Math.min(120000, out.durationMs ?? Number(durationMs) ?? 0));
+    // Bill the longest of: what the provider measured, what the browser reported, and the size-based estimate.
+    const ms = Math.round(Math.max(0, Number(out.durationMs) || 0, Math.min(max * 1.5 + 2000, Number(durationMs) || 0), estimate));
     const costMicros = Math.round((ms / 60000) * (PRICE_PER_MIN[p.name] ?? 0) * 1e6);
     const transcript = String(out.transcript || '').trim();
     await db.voiceInteraction.create({ data: { userId, clientId, kind, transcript, durationMs: ms, provider: p.name, costMicros } });

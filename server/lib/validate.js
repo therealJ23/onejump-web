@@ -42,3 +42,10 @@ export const longText = z.string().trim().max(5000);
 export const password = z.string().min(10, 'Use at least 10 characters.').max(200);
 export const score10 = z.coerce.number().int().min(1).max(10);
 export const empty = z.object({}).strip();
+
+/** The form fields sent with a voice recording (multipart, after multer). */
+export const audioFields = z.object({
+  durationMs: z.coerce.number().int().min(0).max(200000).optional(),
+  hint: z.string().trim().max(2000).optional(),
+  kind: z.enum(['set_log', 'food_log']).optional(),
+}).strip();

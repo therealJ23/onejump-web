@@ -11,7 +11,7 @@ import { requireFeature, effectivePlan, isPro } from '../auth/middleware.js';
 import { addDays, ymdToDate, dateToYmd } from '../lib/time.js';
 import { config } from '../config.js';
 import { StorageService, stripJpegMetadata, sniffImage } from '../storage/StorageService.js';
-import { planFor, MEALS, stripNumbers, scrubText, sumItems, resolveItems, saveEntry, shapeEntry, habitsWithStatus, entriesBetween, dayKey, mealFor, titleFor } from '../nutrition/plans.js';
+import { planFor, MEALS, stripNumbers, hiddenView, scrubText, sumItems, resolveItems, saveEntry, shapeEntry, habitsWithStatus, entriesBetween, dayKey, mealFor, titleFor } from '../nutrition/plans.js';
 import { foods, nutrientsFor, CREDITS } from '../nutrition/foods.js';
 import { analyzeMealPhoto } from '../nutrition/attention.js';
 import { raiseFlag } from '../nutrition/flags.js';
@@ -21,7 +21,7 @@ import { startOfMonthUtc } from '../lib/time.js';
 import { guardClientTranscript } from '../voice/voiceNotes.js';
 
 export const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 6 * 1024 * 1024, files: 1 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 6 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
 
 async function ctx(req) {
   const coach = dbForBusiness(req.auth.businessId);
@@ -31,7 +31,7 @@ async function ctx(req) {
   return { coach, b, client, plan, tz: b.timezone, pro: isPro(effectivePlan(b)) };
 }
 /** What the client may see: everything, or nothing numeric when the coach hid numbers. */
-const view = (plan, data) => (plan.hideNumbers ? stripNumbers(data) : data);
+const view = (plan, data) => (plan.hideNumbers ? hiddenView(data) : data);
 const dayParam = z.object({ day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() });
 function pickDay(tz, ymd) {
   const today = dayKey(tz);
@@ -98,7 +98,9 @@ router.post('/food-photo', requireFeature('PRO', 'Photo logging'), upload.single
   if (today >= config.nutrition.photosPerClientDaily) throw new HttpError(429, 'That’s 20 photos today, the daily limit. Search or quick add still work.', { code: 'photo_limit' });
   const key = `food/${req.auth.businessId}/${client.id}/${randomUUID()}.jpg`;
   await StorageService.put(key, clean, 'image/jpeg');
-  const r = await analyzeMealPhoto(coach, { clientId: client.id, buffer: clean, photoKey: key });
+  let r;
+  try { r = await analyzeMealPhoto(coach, { clientId: client.id, buffer: clean, photoKey: key }); }
+  catch (e) { await StorageService.remove(key).catch(() => null); throw e; }
   if (!r.isFood) {
     await StorageService.remove(key).catch(() => null);
     return res.status(422).json({ error: 'I couldn’t recognize food in this photo. Try again or search instead.', code: 'not_food' });
@@ -177,10 +179,17 @@ router.post('/food-entries', body(z.object({
   if (plan.hideNumbers) items = items.map(i => (i.foodRef || d.source === 'favorite' ? i : { ...i, calories: i.calories ?? 0 }));
   const rows = await resolveItems(items, { estimates });
   const day = pickDay(tz, d.day);
-  const entry = await saveEntry(req.db, { clientId: client.id, meal: d.meal, title: d.title || insight?.draft?.title || titleFor(rows), source: d.source, note: d.note || null, day, loggedAt: new Date(), photoKey, aiInsightId, items: rows });
+  // Claim the photo analysis atomically, so a double tap on Add saves one entry, not two sharing a photo.
+  if (insight) {
+    const claimed = await coach.aIInsight.updateMany({ where: { id: insight.id, status: 'pending' }, data: { status: 'approved', decidedAt: new Date(), decidedBy: req.auth.userId } });
+    if (claimed.count !== 1) throw conflict('That photo was already added.');
+  }
+  let entry;
+  try { entry = await saveEntry(req.db, { clientId: client.id, meal: d.meal, title: d.title || insight?.draft?.title || titleFor(rows), source: d.source, note: d.note || null, day, loggedAt: new Date(), photoKey, aiInsightId, items: rows }); }
+  catch (e) { if (insight) await coach.aIInsight.update({ where: { id: insight.id }, data: { status: 'pending', decidedAt: null, decidedBy: null } }).catch(() => null); throw e; }
   if (insight) {
     const edited = rows.length !== estimates.length || rows.some((r, i) => Math.abs((r.grams || 0) - (estimates[i]?.grams || 0)) > 1);
-    await coach.aIInsight.update({ where: { id: insight.id }, data: { status: edited ? 'edited' : 'approved', decidedAt: new Date(), decidedBy: req.auth.userId } });
+    if (edited) await coach.aIInsight.update({ where: { id: insight.id }, data: { status: 'edited' } });
   }
   if (d.note) await raiseFlag(coach, { clientId: client.id, clientName: client.name, businessId: req.auth.businessId, sourceType: 'food_note', sourceId: entry.id, text: d.note });
   res.status(201).json(view(plan, { entry: shapeEntry(entry, { photoUrl: photoKey ? await StorageService.signedUrl(photoKey) : null }) }));

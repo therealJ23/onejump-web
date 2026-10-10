@@ -4,7 +4,7 @@
 //   - 6:30 AM in the coach's time zone: build it (one per coach per day)
 //   - 7:00 AM: in-app notification (+ optional email), then the Today banner until it's played
 import { buildToday } from '../core/queue.js';
-import { checkText } from '../ai/safety.js';
+import { sensitive } from './render.js';
 import { AI } from '../ai/AIService.js';
 import { notify } from '../core/messaging.js';
 import { EmailService } from '../email/EmailService.js';
@@ -19,7 +19,7 @@ const ORD = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd',
 const money = cents => `$${Math.round(cents / 100).toLocaleString('en-US')}`;
 const words = s => String(s).split(/\s+/).filter(Boolean).length;
 /** Risk reasons that are fine to say out loud (no quotes, food or health). */
-const speakableReason = r => !/^Said |food|protein/i.test(r) && !checkText(r).flagged;
+const speakableReason = r => !/^Said |food|protein/i.test(r) && !sensitive(r);
 const lowerFirst = s => s.charAt(0).toLowerCase() + s.slice(1);
 
 function dayPhrase(tz, now) {
@@ -54,8 +54,11 @@ export async function briefingFacts(db, { tz = 'UTC', now = new Date(), coachNam
   const checkins = open.find(i => i.id === 'checkins');
   if (checkins) {
     const n = Number(checkins.title.match(/^\d+/)?.[0]) || 1;
-    const k = await db.checkIn.findMany({ where: { status: 'submitted', flagged: true }, select: { clientId: true }, take: 3 });
-    const names = k.length ? (await db.client.findMany({ where: { id: { in: k.map(x => x.clientId) } }, select: { name: true } })).map(c => first(c.name)) : [];
+    // Flagged = a medical topic, or a private food/at-risk flag. Named, never described.
+    const subs = await db.checkIn.findMany({ where: { status: 'submitted' }, select: { id: true, clientId: true, flagged: true }, orderBy: { submittedAt: 'asc' } });
+    const foodFlags = new Set((await db.nutritionFlag.findMany({ where: { sourceType: 'checkin', sourceId: { in: subs.map(x => x.id) } }, select: { sourceId: true } })).map(x => x.sourceId));
+    const ids = [...new Set(subs.filter(x => x.flagged || foodFlags.has(x.id)).map(x => x.clientId))].slice(0, 3);
+    const names = ids.length ? (await db.client.findMany({ where: { id: { in: ids } }, select: { name: true } })).map(c => first(c.name)) : [];
     lines.push(`${plural(n, 'check-in is', 'check-ins are')} ready.${names.length ? ` ${names.length === 1 ? `${names[0]}’s is` : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}’s are`} flagged for you, so read ${names.length === 1 ? 'it' : 'those'} first.` : ''}`);
   }
 
@@ -80,7 +83,7 @@ export async function briefingFacts(db, { tz = 'UTC', now = new Date(), coachNam
 /** Keeps the worded lines safe to speak and under about 120 words. */
 export function tidyLines(lines, fallback) {
   let out = (lines || []).map(l => String(l).replace(/\s+/g, ' ').trim()).filter(Boolean);
-  if (!out.length || out.some(l => checkText(l).flagged)) out = fallback.filter(l => !checkText(l).flagged); // never read health details aloud
+  if (!out.length || out.some(sensitive)) out = fallback.filter(l => !sensitive(l)); // never read health or food-behaviour details aloud
   while (out.length > 2 && words(out.join(' ')) > MAX_WORDS) out.splice(out.length - 2, 1); // drop the least important middle line
   return out.slice(0, 8);
 }

@@ -2,6 +2,7 @@
 // plain server function that runs through the coach's tenant-scoped client (dbFor), so Assist
 // can only ever see this business's data, and never writes SQL. Results carry first names and
 // numbers only: no emails, phone numbers or payment details go to a model.
+import { checkNutritionLanguage } from '../nutrition/language.js';
 import { missingCheckinClients } from '../core/checkinStatus.js';
 import { revenueSummary } from '../core/money.js';
 import { buildToday } from '../core/queue.js';
@@ -146,7 +147,9 @@ export const TOOLS = {
       if (!k) return { id: client.id, name: client.name, checkin: null };
       let ins = await db.aIInsight.findFirst({ where: { kind: 'checkin_summary', sourceId: k.id }, orderBy: { createdAt: 'desc' } });
       if (!ins) { const { checkinSummary } = await import('../ai/drafts.js'); ins = await checkinSummary(db, k); }
-      return { id: client.id, name: client.name, checkin: { id: k.id, submittedAt: k.submittedAt, flagged: k.flagged, status: k.status, energy: k.energy, soreness: k.soreness, sleepHours: k.sleepHours, nutrition: k.nutrition, summary: ins?.summary || null } };
+      // A private nutrition flag (food or at-risk language) counts as a flag too: shown, never read aloud.
+      const foodFlag = await db.nutritionFlag.findFirst({ where: { sourceType: 'checkin', sourceId: k.id }, select: { id: true } });
+      return { id: client.id, name: client.name, checkin: { id: k.id, submittedAt: k.submittedAt, flagged: k.flagged || !!foodFlag || checkNutritionLanguage(k.text).flagged, status: k.status, energy: k.energy, soreness: k.soreness, sleepHours: k.sleepHours, nutrition: k.nutrition, summary: ins?.summary || null } };
     },
   },
   nutrition_struggles: {

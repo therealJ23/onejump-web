@@ -20,11 +20,12 @@ import { exportClientData } from '../core/clientData.js';
 import { payments } from '../payments/PaymentService.js';
 import { raiseFlag } from '../nutrition/flags.js';
 import { voiceFields } from '../voice/voiceNotes.js';
+import { hiddenView } from '../nutrition/plans.js';
 import { VoiceService } from '../voice/VoiceService.js';
 import { effectivePlan, isPro } from '../auth/middleware.js';
 
 export const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 1 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
 
 async function ctx(req) {
   const coach = dbForBusiness(req.auth.businessId);
@@ -271,6 +272,9 @@ router.get('/export', async (req, res) => {
   const { coach } = await ctx(req);
   const data = await exportClientData(coach, req.auth.clientId);
   delete data.aIInsight; delete data.clientEvent; delete data.note; delete data.nutritionFlag; // coach-private
+  data.messages = data.messages.map(({ transcriptSummary, ...m }) => (void transcriptSummary, m)); // the Assist summary is for the coach
+  const plan = data.nutritionPlan?.[0];
+  if (plan?.hideNumbers) for (const k of ['nutritionPlan', 'foodEntry', 'foodEntryItem', 'foodFavorite']) data[k] = hiddenView(data[k]); // "Hide numbers" holds in the export too
   audit({ businessId: req.auth.businessId, actorUserId: req.auth.userId, action: 'client_self_export', target: req.auth.clientId });
   res.set('Content-Disposition', 'attachment; filename="my-onejump-data.json"');
   res.json(data);

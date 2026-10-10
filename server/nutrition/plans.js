@@ -25,6 +25,12 @@ export function stripNumbers(v) {
 /** Also scrubs calorie / gram-of-macro mentions from free text (e.g. a meal plan line). */
 export const scrubText = s => String(s || '').replace(/\b\d[\d,.]*\s*(k?cal(orie)?s?|kcal)\b/gi, '').replace(/\b\d[\d,.]*\s*g(rams?)?\s*(of\s+)?(protein|carbs?|fat)\b/gi, '').replace(/\s{2,}/g, ' ').trim();
 
+/** Everything a client with "Hide numbers" may see: no numeric fields, and no numbers in text either. */
+export function hiddenView(v) {
+  const scrub = x => (typeof x === 'string' ? scrubText(x) : Array.isArray(x) ? x.map(scrub) : x && typeof x === 'object' && !(x instanceof Date) ? Object.fromEntries(Object.entries(x).map(([k, y]) => [k, k === 'photoUrl' || k === 'url' || k === 'id' ? y : scrub(y)])) : x);
+  return scrub(stripNumbers(v));
+}
+
 // ---------------------------------------------------------------- plan
 export const DEFAULT_PLAN = { approach: 'habits', calories: null, proteinG: null, carbsG: null, fatG: null, hideNumbers: false, mealPlanId: null, coachNote: null, sex: null, heightIn: null, activity: null, goal: null, lowTargetConfirmedAt: null };
 export async function planFor(db, clientId) {

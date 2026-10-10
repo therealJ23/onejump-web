@@ -2,7 +2,7 @@
 // AssistProposal row; nothing happens until the coach taps Confirm on screen. Confirming runs the
 // action through the normal service functions with the coach's own tenant-scoped access.
 // Proposals expire after 10 minutes and can be confirmed once.
-import { must, conflict, badRequest } from '../lib/errors.js';
+import { must, conflict, badRequest, HttpError } from '../lib/errors.js';
 import { audit } from '../db/system.js';
 import { sendMessage } from '../core/messaging.js';
 import { decideInsight } from '../core/actions.js';
@@ -77,6 +77,8 @@ export function proposalToolDefinitions() {
 
 // ---------------------------------------------------------------- confirm / cancel
 
+const SCREEN = { send_message: 'Messages', create_lead: 'Leads', send_reminders: 'Check-ins', add_note: 'the client’s profile' };
+
 const EXECUTE = {
   async send_message(db, auth, p, { text }) {
     const body = (text ?? p.text ?? '').trim();
@@ -116,6 +118,8 @@ export async function confirmProposal(db, auth, id, { text } = {}) {
   }
   if (p.status !== 'pending') throw conflict(p.status === 'confirmed' ? 'That was already done.' : p.status === 'cancelled' ? 'That was cancelled.' : 'That expired, so nothing was done.');
   if (p.userId !== auth.userId) throw conflict('Only the coach who asked can confirm this.');
+  if (text != null && !String(text).trim() && ['send_message', 'add_note'].includes(p.type)) throw badRequest(p.type === 'send_message' ? 'The message is empty.' : 'The note is empty.');
+  if (!EXECUTE[p.type]) throw conflict('That can’t be done from here.');
   // Claim it atomically so a double tap (or two tabs) can only run it once.
   const claimed = await db.assistProposal.updateMany({ where: { id, status: 'pending', expiresAt: { gt: now } }, data: { status: 'confirmed', decidedAt: now } });
   if (claimed.count !== 1) throw conflict('That was already done.');
@@ -125,14 +129,18 @@ export async function confirmProposal(db, auth, id, { text } = {}) {
     audit({ businessId: auth.businessId, actorUserId: auth.userId, action: `assist_${p.type}_confirmed`, target: p.id, meta: { source: p.source } });
     return { status: 'confirmed', ...result };
   } catch (e) {
-    await db.assistProposal.update({ where: { id }, data: { status: 'pending', decidedAt: null } });
-    throw e;
+    // Part of it may already have happened (e.g. some reminders sent), so it is never re-armed:
+    // a second Confirm can't send anything twice. The coach finishes it on the normal screen.
+    await db.assistProposal.update({ where: { id }, data: { status: 'failed', result: { error: String(e.message || e).slice(0, 300) } } });
+    audit({ businessId: auth.businessId, actorUserId: auth.userId, action: `assist_${p.type}_failed`, target: p.id, meta: { source: p.source } });
+    throw new HttpError(e.status && e.status < 500 ? e.status : 500, `That didn’t finish: ${e.message || 'something went wrong'}. Nothing will be repeated; open ${SCREEN[p.type] || 'the screen'} to check and finish it.`, { code: 'proposal_failed' });
   }
 }
 
 export async function cancelProposal(db, auth, id) {
   const p = must(await db.assistProposal.findFirst({ where: { id } }), 'That proposal');
-  if (p.status !== 'pending') throw conflict('That was already handled.');
-  await db.assistProposal.update({ where: { id }, data: { status: 'cancelled', decidedAt: new Date() } });
+  if (p.userId !== auth.userId) throw conflict('Only the coach who asked can cancel this.');
+  const done = await db.assistProposal.updateMany({ where: { id, status: 'pending' }, data: { status: 'cancelled', decidedAt: new Date() } });
+  if (done.count !== 1) throw conflict(p.status === 'confirmed' ? 'That was already done.' : 'That was already handled.');
   return { status: 'cancelled', message: 'Cancelled. Nothing was done.' };
 }

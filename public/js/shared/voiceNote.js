@@ -7,6 +7,7 @@ import { icon, arc } from './icons.js';
 import { createRecorder, meter, recordingSupported, MIC_OFF } from './media.js';
 import { listenOnce, dictationSupported } from './dictation.js';
 import { toast } from './ui.js';
+import { onRemoved } from './lifecycle.js';
 
 export const fmtDur = s => `${Math.floor((s || 0) / 60)}:${String(Math.round(s || 0) % 60).padStart(2, '0')}`;
 const BARS = [5, 9, 13, 8, 15, 11, 6, 12, 16, 9, 7, 13, 10, 6, 11, 8];
@@ -63,7 +64,7 @@ if (typeof document !== 'undefined') {
  * @param {{ maxSeconds?: number, provider?: string, send: (fd: FormData) => Promise<any>, onSent?: (r: any) => void }} opts
  */
 export async function recordVoiceNote(form, { maxSeconds = 60, provider = 'mock', send, onSent }) {
-  if (form.classList.contains('recording')) return;
+  if (form.classList.contains('recording') || form.dataset.vnStarting) return; // ignore taps while the mic is starting
   stopPlayback();
   const bar = document.createElement('div');
   bar.className = 'vnote-rec';
@@ -71,10 +72,15 @@ export async function recordVoiceNote(form, { maxSeconds = 60, provider = 'mock'
   const dot = bar.querySelector('.rec-dot'), sendBtn = bar.querySelector('[data-vn="send"]');
   let hint = '', listening = null, timer = null, finished = false;
   const recorder = createRecorder({ maxMs: maxSeconds * 1000, onLevel: meter(bar.querySelector('.wave')), onAutoStop: () => { clearInterval(timer); dot.textContent = `${fmtDur(maxSeconds)} · that’s the limit. Send or cancel.`; dot.classList.add('stopped'); } });
-  const close = () => { finished = true; clearInterval(timer); listenOnce.stop?.(); bar.remove(); form.classList.remove('recording'); };
+  let unwatch = () => {};
+  const close = () => { finished = true; unwatch(); clearInterval(timer); listenOnce.stop?.(); bar.remove(); form.classList.remove('recording'); };
+  form.dataset.vnStarting = '1';
   try { await recorder.start(); }
-  catch (e) { toast(e.code === 'denied' ? MIC_OFF : e.message, { ms: 6000 }); return; }
+  catch (e) { delete form.dataset.vnStarting; toast(e.code === 'denied' ? MIC_OFF : e.message, { ms: 6000 }); return; }
+  delete form.dataset.vnStarting;
+  if (!document.contains(form)) { recorder.cancel(); return; } // left the screen while the mic was starting
   form.classList.add('recording'); form.appendChild(bar); sendBtn.focus();
+  unwatch = onRemoved(form, () => { recorder.cancel(); close(); }); // navigating away discards the recording
   const t0 = Date.now();
   timer = setInterval(() => { dot.textContent = `Recording ${fmtDur((Date.now() - t0) / 1000)} / ${fmtDur(maxSeconds)}`; }, 250);
   // Development (mock voice): the browser's own transcript stands in for the speech provider.

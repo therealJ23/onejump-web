@@ -79,4 +79,10 @@ Choices made while building the MVP, and why. Newest last.
 52. **A meal photo’s Assist analysis is stored as a pending `AIInsight`** until the client taps Add, so the server (not the browser) supplies the estimated numbers that get saved, labelled “estimate”. Unsaved photos are deleted by the nightly job.
 53. **Food data is cached for 30 days** (not-found barcodes for 1 day) in a global `FoodCache` table; it holds public food facts only, no client data.
 54. **Community dictation is waiting for Community**, which isn’t built yet; the same 🎤 button drops in when it is.
+55. **Voice minutes are measured on the server**, not trusted from the browser: the larger of what the provider measured, what the browser reported, and a size-based lower bound (WAV exactly; compressed audio at an assumed 128 kbps). Recordings far over the limit for their kind are refused.
+56. **Meal photos never fall back to the mock.** If the AI provider is down or the workspace is over its AI budget, the client sees “I couldn’t read this photo right now. Search for the food instead” rather than a made-up meal. Other drafts still fall back to the mock text as before.
+57. **“Never read aloud” covers food behaviour and at-risk language too**, not just medical words, including third-person phrasing in Assist summaries (“she skipped dinner to make up for…”). Check-ins with a private nutrition flag are treated as flagged in Ask Assist and the briefing.
+58. **A proposal that fails partway is final** (status `failed`), so a second Confirm can never repeat what already happened; the coach finishes it on the normal screen. Cancel only works on pending proposals.
+59. **Hide numbers holds everywhere a client can look:** numeric fields are removed and calorie/gram mentions are scrubbed from text (coach note, meal plan, habit and food names), in the app, the food search and the client’s own data export.
+60. **The microphone stops when its screen goes away** (navigation, closing a modal, a re-render), and taps are ignored while the mic is starting, so nothing records without the on-screen indicator.
 

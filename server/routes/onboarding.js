@@ -13,7 +13,7 @@ import { runRadar } from '../core/radar.js';
 import { runAutomations } from '../core/automations.js';
 
 export const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 3 * 1024 * 1024, files: 1 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 3 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
 
 const SPECS = ['Fat loss', 'Strength', 'Muscle gain', 'Beginners', 'Athletes', 'Older adults', 'Pre and postnatal', 'Mobility', 'Endurance and hybrid', 'Nutrition coaching'];
 const GOALS = ['Save time', 'Keep clients longer', 'Get more clients', 'Make more per client', 'Look more professional'];

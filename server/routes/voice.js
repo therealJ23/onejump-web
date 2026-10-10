@@ -3,7 +3,7 @@
 // transcript is kept. Proposals still wait for an on-screen Confirm.
 import { Router } from 'express';
 import multer from 'multer';
-import { body, z } from '../lib/validate.js';
+import { body, z, audioFields } from '../lib/validate.js';
 import { badRequest } from '../lib/errors.js';
 import { requireFeature } from '../auth/middleware.js';
 import { VoiceService, assertUnderLimit, minutesUsed } from '../voice/VoiceService.js';
@@ -12,7 +12,7 @@ import { ask } from '../assist/AssistService.js';
 import { config } from '../config.js';
 
 export const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
 const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
 const pro = requireFeature('PRO', 'Talk to Assist');
 
@@ -20,7 +20,7 @@ router.get('/config', async (req, res) => {
   res.json({ provider: VoiceService.provider, tts: config.voice.tts, limitMinutes: config.voice.monthlyMinutes, usedMinutes: Math.round(await minutesUsed(req.db) * 10) / 10, maxSeconds: 30 });
 });
 
-router.post('/ask', pro, upload.single('audio'), async (req, res) => {
+router.post('/ask', pro, upload.single('audio'), body(audioFields), async (req, res) => {
   if (!req.file) throw badRequest('No audio was received. Tap the circle, talk, then tap again.');
   const mimeType = sniffAudio(req.file.buffer);
   if (!mimeType) throw badRequest('That recording couldn’t be read. Try again.');

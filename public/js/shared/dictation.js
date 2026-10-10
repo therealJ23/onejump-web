@@ -4,6 +4,7 @@
 // Note: some browsers (Chrome, Safari) send dictation audio to their own servers to turn it into
 // text; the privacy policy says so.
 import { icon } from './icons.js';
+import { onRemoved } from './lifecycle.js';
 
 const SR = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 export const dictationSupported = !!SR;
@@ -45,7 +46,9 @@ export function toggleDictation(btn, { onError, onFinal, lang } = {}) {
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') onError?.(MIC_OFF);
     else if (!['no-speech', 'aborted'].includes(e.error)) onError?.('Dictation stopped. Try again, or type instead.');
   };
+  let unwatch = () => {};
   rec.onend = () => {
+    unwatch();
     btn.classList.remove('mic-live'); btn.setAttribute('aria-pressed', 'false'); btn.title = 'Dictate: talk instead of type';
     if (active?.rec === rec) active = null;
     if (heard) onFinal?.(heard.trim());
@@ -54,6 +57,7 @@ export function toggleDictation(btn, { onError, onFinal, lang } = {}) {
   try { rec.start(); } catch { onError?.('Dictation couldn’t start. Try again.'); return null; }
   btn.classList.add('mic-live'); btn.setAttribute('aria-pressed', 'true'); btn.title = 'Stop dictation';
   active = { rec, btn };
+  unwatch = onRemoved(target, () => { try { rec.abort(); } catch { rec.stop(); } }); // left the screen: stop listening
   return rec;
 }
 
