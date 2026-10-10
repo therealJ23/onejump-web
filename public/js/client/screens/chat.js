@@ -13,6 +13,8 @@ function bubbles(list) {
   return list.map(m => { const d = dayLabel(m.at), sep = d !== last ? `<div class="day-sep">${d}</div>` : ''; last = d; return `${sep}<div class="bubble ${m.from === 'me' ? 'me' : 'them'}${m.voice ? ' voice' : ''}">${m.voice ? voiceNoteBody(m, `/api/me/messages/${m.id}/audio`) : esc(m.body)}<span class="time">${fmtTime(m.at)}${m.voice ? ' · voice note' : ''}</span></div>`; }).join('');
 }
 let poll = null;
+/** The newest message in view (the app scrolls inside .scroll on phones, the window elsewhere). */
+const toBottom = () => { window.scrollTo(0, document.body.scrollHeight); const sc = document.getElementById('msgs')?.closest('.scroll'); if (sc) sc.scrollTop = sc.scrollHeight; };
 
 export default {
   tab: 'chat',
@@ -25,20 +27,20 @@ export default {
     ${d.features?.voiceNotes ? '<p class="tiny faint" style="text-align:center;margin:0">Voice notes: your coach gets the audio and a written transcript.</p>' : ''}`;
   },
   mount(root, _d, _p, ctx) {
-    window.scrollTo(0, document.body.scrollHeight);
+    requestAnimationFrame(toBottom); // after the router's scroll-to-top
     root.querySelector('[data-voice-note]')?.addEventListener('click', () => {
       const form = root.querySelector('form.cchat');
       recordVoiceNote(form, {
         provider: ctx.data.features?.voiceProvider,
         send: fd => api.post('/api/me/voice-notes', fd),
-        onSent: r => { ctx.data.messages.push(r.message); const list = document.getElementById('msgs'); if (list) list.innerHTML = bubbles(ctx.data.messages); window.scrollTo(0, document.body.scrollHeight); toast('Voice note sent. Your coach gets the audio plus a transcript.'); },
+        onSent: r => { ctx.data.messages.push(r.message); const list = document.getElementById('msgs'); if (list) list.innerHTML = bubbles(ctx.data.messages); toBottom(); toast('Voice note sent. Your coach gets the audio plus a transcript.'); },
       });
     });
     clearInterval(poll);
     poll = setInterval(async () => {
       if (!document.getElementById('msgs')) { clearInterval(poll); return; }
       if (document.hidden) return;
-      try { const r = await api.get('/api/me/thread'); if (r.messages.length !== ctx.data.messages.length) { ctx.data = r; document.getElementById('msgs').innerHTML = bubbles(r.messages); window.scrollTo(0, document.body.scrollHeight); } } catch { /* offline: try next time */ }
+      try { const r = await api.get('/api/me/thread'); if (r.messages.length !== ctx.data.messages.length) { ctx.data = r; document.getElementById('msgs').innerHTML = bubbles(r.messages); toBottom(); } } catch { /* offline: try next time */ }
     }, 20000);
   },
   forms: {
@@ -49,7 +51,7 @@ export default {
         const r = await api.post('/api/me/messages', { body });
         ctx.data.messages.push(r.message); input.value = '';
         document.getElementById('msgs').innerHTML = bubbles(ctx.data.messages);
-        window.scrollTo(0, document.body.scrollHeight);
+        toBottom();
       } catch (e) { toastError(e); }
       btn.disabled = false; input.focus();
     },
