@@ -86,3 +86,4 @@ Choices made while building the MVP, and why. Newest last.
 59. **Hide numbers holds everywhere a client can look:** numeric fields are removed and calorie/gram mentions are scrubbed from text (coach note, meal plan, habit and food names), in the app, the food search and the client’s own data export.
 60. **The microphone stops when its screen goes away** (navigation, closing a modal, a re-render), and taps are ignored while the mic is starting, so nothing records without the on-screen indicator.
 
+61. **Patched database drivers are pinned with npm `overrides`** (`mariadb` 3.5.4 everywhere, `mysql2` and `deepmerge-ts` inside the Prisma CLI), so `npm audit` reports 0 vulnerabilities without downgrading Prisma. Prisma 8 is still a release candidate; we stay on Prisma 7 until 8 is stable.
