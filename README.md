@@ -52,6 +52,14 @@ Emails (invites, login links) aren’t really sent locally; they show up at **/d
 | Client app (installable) | `/client` |
 | Booking page | `/coach/dani` |
 | Client join link | `/join/dani` |
+| Ask Assist / Talk to Assist | `/app/assist`, or the 🎤 in the coach top bar |
+| Nutrition (coach) | `/app/nutrition`, and Clients → a client → Nutrition |
+| Nutrition (client) | `/client/nutrition` |
+| Food data credits | `/data-sources` |
+
+### Voice and nutrition locally
+
+Everything runs on mocks until you add keys: mock voice (it uses your browser’s own transcript as a stand-in), mock Assist, and a small offline food list. Allow the microphone when the browser asks. Dictation (🎤 in text boxes) works in Chrome, Edge and Safari. Talk to Assist, voice notes and the morning briefing are Pro features (the sample coach is on a Pro trial). New settings live in `.env.example` under *Voice* and *Nutrition*.
 
 ## Commands
 

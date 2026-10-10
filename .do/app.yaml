@@ -44,6 +44,13 @@ services:
       - { key: R2_ACCESS_KEY_ID, type: SECRET }
       - { key: R2_SECRET_ACCESS_KEY, type: SECRET }
       - { key: R2_BUCKET, value: onejump-private }
+      - { key: VOICE_PROVIDER, value: deepgram }
+      - { key: VOICE_TTS, value: browser }
+      - { key: DEEPGRAM_API_KEY, type: SECRET }
+      - { key: VOICE_MONTHLY_MINUTES, value: "300" }
+      - { key: FDC_API_KEY, type: SECRET }
+      - { key: NUTRITION_PHOTO_MODEL, value: claude-haiku-4-5-20251001 }
+      - { key: NUTRITION_PHOTOS_MONTHLY, value: "3000" }
       - { key: JOBS_ENABLED, value: "true" }
 jobs:
   - name: migrate

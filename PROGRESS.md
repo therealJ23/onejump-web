@@ -134,3 +134,16 @@ Your client-facing website (the `Website` folder) already uses onejumpfit.com, s
 3. Tell me when it’s done; I’ll check HTTPS works and the links in emails point to it.
 
 **As soon as I have each key** I’ll: switch that service from mock to real, run the tests against it, deploy, and tell you what to click to try it yourself.
+
+### 8. USDA FoodData Central key (real food search) — 2 min, free
+1. Go to **fdc.nal.usda.gov/api-key-signup.html** (it uses api.data.gov).
+2. Enter your first name, last name and email → **Sign up**.
+3. The key arrives by email (a long string of letters and numbers).
+4. Send it to me. I’ll set `FDC_API_KEY` and food search switches from the small offline list to the full USDA database (barcodes use Open Food Facts, which needs no key).
+
+### 9. Deepgram (Talk to Assist and voice notes) — 5 min
+Dictation in text boxes is free and already works without this. Deepgram turns recorded speech into text for Talk to Assist, voice notes and voice logging on phones whose browser can’t do it. Spoken answers and the briefing use the device’s own voice for free.
+1. Go to **console.deepgram.com** and sign up (new accounts get free credit to start).
+2. In the left menu open **API Keys → Create a New API Key**. Name it `onejump-prod`, permission **Member**, no expiry → **Create Key**.
+3. Copy the key (it’s shown only once).
+4. Send it to me. I’ll set `VOICE_PROVIDER=deepgram` and keep the 300-minute monthly limit per coach (about $2.30 a month per coach at most).
