@@ -1,9 +1,10 @@
 // Development-only helpers (never mounted in production): the email outbox, running the
-// nightly jobs on demand, and simulating a failed client payment without Stripe.
+// nightly jobs on demand, simulating a failed client payment without Stripe, and giving the
+// signed-in client an open workout (browser tests log workouts more than once a day).
 import { Router } from 'express';
 import { EmailService } from '../email/EmailService.js';
 import { hourly, processJobs } from '../jobs/nightly.js';
-import { requireCoach } from '../auth/middleware.js';
+import { requireCoach, requireClient } from '../auth/middleware.js';
 import { body, z } from '../lib/validate.js';
 import { must } from '../lib/errors.js';
 import { runAutomations } from '../core/automations.js';
@@ -24,4 +25,14 @@ router.post('/simulate-failed-payment', requireCoach, body(z.object({ clientId: 
   const tz = (await req.db.business.findFirst({ select: { timezone: true } })).timezone;
   await runAutomations(req.db, { tz, only: ['failed_payment'], clientId: c.id });
   res.json({ ok: true, paymentId: p.id });
+});
+
+/** An open workout for the signed-in client: the next scheduled one, or today's reopened. */
+router.post('/open-workout', requireClient, async (req, res) => {
+  let a = await req.db.workoutAssignment.findFirst({ where: { status: 'scheduled' }, orderBy: { scheduledFor: 'desc' } });
+  if (!a) {
+    a = must(await req.db.workoutAssignment.findFirst({ orderBy: { scheduledFor: 'desc' } }), 'A workout');
+    await req.db.workoutAssignment.update({ where: { id: a.id }, data: { status: 'scheduled' } });
+  }
+  res.json({ assignmentId: a.id });
 });

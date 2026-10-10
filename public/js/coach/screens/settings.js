@@ -11,7 +11,7 @@ import { renderShell } from '../shell.js';
 
 const TABS = [['profile', 'Profile'], ['business', 'Business & branding'], ['assist', 'Assist'], ['notifications', 'Notifications'], ['switch', 'Switch from another app'], ['team', 'Team'], ['integrations', 'Integrations'], ['security', 'Security & privacy']];
 const COLORS = ['#D6FF3D', '#7FD1C1', '#F4B942', '#F28C6B', '#A7B8FF'];
-const NOTIFS = [['checkins', 'Check-in submitted'], ['messages', 'New message'], ['payments', 'Payment received or failed'], ['risk', 'Client at risk'], ['clients', 'New client joined'], ['daily', 'Daily summary at 7 AM (email)']];
+const NOTIFS = [['checkins', 'Check-in submitted'], ['messages', 'New message'], ['payments', 'Payment received or failed'], ['risk', 'Client at risk'], ['clients', 'New client joined'], ['daily', 'Daily summary at 7 AM (email)'], ['briefingEmail', 'Morning briefing by email at 7 AM (Pro; it’s always in the app)']];
 const row = (title, sub, ctrl) => `<div class="li" style="padding:16px 20px;flex-wrap:wrap"><div class="grow stack s4" style="min-width:220px"><div class="strong small">${title}</div>${sub ? `<div class="tiny muted">${sub}</div>` : ''}</div>${ctrl}</div>`;
 const tog = (on, label, act, extra = '', disabled = false) => `<button class="toggle ${on ? 'on' : ''}" data-act="${act}" ${extra} aria-pressed="${on}" aria-label="${esc(label)}" ${disabled ? 'disabled' : ''}></button>`;
 const owner = () => state.me.role === 'OWNER';
@@ -49,7 +49,7 @@ const T = {
   },
   notifications(d) {
     const n = d.notifications;
-    return `<section class="card"><div class="card-head"><div class="h3">Notify me about</div><span class="tiny muted">In the app (bell) · daily summary by email</span></div><div class="list">${NOTIFS.map(([k, l]) => row(l, '', tog(n[k] !== false && (k !== 'daily' || n.daily), l, 'notifPref', `data-k="${k}"`, !owner()))).join('')}</div></section>
+    return `<section class="card"><div class="card-head"><div class="h3">Notify me about</div><span class="tiny muted">In the app (bell) · daily summary by email</span></div><div class="list">${NOTIFS.map(([k, l]) => row(l, '', tog(n[k] !== false && (!['daily', 'briefingEmail'].includes(k) || n[k]), l, 'notifPref', `data-k="${k}"`, !owner()))).join('')}</div></section>
     <p class="tiny faint">Push notifications to your phone arrive with the native apps in V2.</p>`;
   },
   switch() {

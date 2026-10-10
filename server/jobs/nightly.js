@@ -2,7 +2,8 @@
 //  - every 5 minutes: queued jobs (e.g. Assist summaries for new check-ins)
 //  - every hour: automations for every workspace; the radar at 2 AM in each coach's time zone
 import cron from 'node-cron';
-import { businesses, jobs } from '../db/system.js';
+import { businesses, jobs, memberships } from '../db/system.js';
+import { briefingTick } from '../assist/briefing.js';
 import { dbForBusiness } from '../db/tenant.js';
 import { runRadar } from '../core/radar.js';
 import { runAutomations } from '../core/automations.js';
@@ -58,11 +59,17 @@ export async function hourly(now = new Date(), { forceRadar = false } = {}) {
   return summary;
 }
 
+/** Every 15 minutes: morning briefings (built from 6:30 AM local, notification at 7:00). */
+export async function briefings(now = new Date()) {
+  return briefingTick(now, { list: await businesses.allIds(), dbForBusiness, coachesFor: memberships.coachesFor });
+}
+
 export function startJobs() {
   const tasks = [
     cron.schedule('*/5 * * * *', () => processJobs().catch(e => console.error('[jobs]', e.message))),
     cron.schedule('7 * * * *', () => hourly().catch(e => console.error('[jobs] hourly', e.message))),
+    cron.schedule('*/15 * * * *', () => briefings().catch(e => console.error('[jobs] briefings', e.message))),
   ];
-  console.log('[jobs] scheduled: queued jobs every 5 min, automations hourly, radar nightly at 2 AM local');
+  console.log('[jobs] scheduled: queued jobs every 5 min, automations hourly, radar nightly at 2 AM local, morning briefings at 6:30/7:00 local');
   return { stop: () => tasks.forEach(t => t.stop()) };
 }

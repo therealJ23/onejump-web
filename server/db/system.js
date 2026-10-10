@@ -36,6 +36,8 @@ export const memberships = {
     create: { userId, businessId, role: 'CLIENT' },
     update: {},
   }),
+  /** Owners and coaches of a workspace (for the morning briefing). */
+  coachesFor: async businessId => (await db().membership.findMany({ where: { businessId, role: { in: ['OWNER', 'COACH'] } }, select: { userId: true, user: { select: { name: true, email: true } } } })).map(m => ({ userId: m.userId, name: m.user.name, email: m.user.email })),
   coachNameFor: async businessId => {
     const m = await db().membership.findFirst({ where: { businessId, role: 'OWNER' }, select: { title: true, bio: true, user: { select: { name: true, email: true } } } });
     return m ? { name: m.user.name, email: m.user.email, title: m.title, bio: m.bio } : null;

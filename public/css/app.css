@@ -667,3 +667,10 @@ form.recording > :not(.vnote-rec) { display: none !important; }
 .set-flash { animation: setflash 1.2s ease-out; }
 @keyframes setflash { from { background: var(--volt); } to { background: transparent; } }
 @media (prefers-reduced-motion: reduce) { .set-flash { animation: none; } }
+
+/* Morning briefing */
+.brief-banner { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--r-lg, 16px); background: var(--assist-tint); color: var(--ink); border: 1px solid var(--line); }
+.brief-banner > .ico { color: var(--assist-ink); flex: none; }
+.brief-lines { margin: 0; padding-left: 20px; }
+.brief-lines li { transition: font-weight .1s; }
+.brief-lines li.on { font-weight: 700; color: var(--ink); }

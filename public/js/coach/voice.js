@@ -87,4 +87,54 @@ export async function openTalk() {
   obs.observe(document.body, { childList: true });
 }
 
-export async function openBriefing() { toast('The morning briefing is coming in a later step.'); }
+// ---------------------------------------------------------------- morning briefing
+/** Plays today's briefing line by line, highlighting the line being read. */
+export async function openBriefing({ autoplay = false } = {}) {
+  stopSpeaking();
+  const c = await loadCfg();
+  const m = openModal(`${modalHead(`${icon('speaker')} Morning briefing`, '<span id="br-sub">About 40 seconds · listen while you drive or warm up</span>')}
+    <div class="modal-body" id="br-body" aria-busy="true"><div class="skel" style="height:40px;width:180px"></div>${'<div class="skel"></div>'.repeat(4)}</div>
+    <div class="modal-foot"><button class="btn" data-act="closeModal">Close</button><a class="btn primary" href="/app">Open Today</a></div>`, { label: 'Morning briefing' });
+  const body = m.querySelector('#br-body');
+  let b, playing = false, marked = false;
+  const load = async (refresh = false) => {
+    try { b = (refresh ? await api.post('/api/briefing/today/refresh') : await api.get('/api/briefing/today')).briefing; }
+    catch (e) {
+      body.removeAttribute('aria-busy');
+      body.innerHTML = e.data?.upgrade ? `<div class="upsell">${arc()}<div class="grow stack s4"><div class="h3">The morning briefing is part of Pro</div><div class="muted small">A 40-second spoken rundown of your day at 7 AM: who needs you, check-ins, payments and one piece of good news.</div></div><a class="btn primary" href="/app/billing">See plans</a></div>`
+        : `<div class="notice small" role="alert">${esc(e.message)}</div><button class="btn" id="br-retry">Try again</button>`;
+      body.querySelector('#br-retry')?.addEventListener('click', () => load(refresh));
+      return false;
+    }
+    body.removeAttribute('aria-busy');
+    m.querySelector('#br-sub').textContent = `About ${b.seconds} seconds · listen while you drive or warm up`;
+    body.innerHTML = `<div class="row wrap"><button class="btn assist" id="br-play">${icon('play')} Play briefing</button><div class="wave" id="br-wave" aria-hidden="true">${'<i></i>'.repeat(9)}</div><button class="btn ghost sm" id="br-refresh" style="margin-left:auto">${icon('repeat')} Refresh</button></div>
+      <ol class="stack s8 brief-lines" id="br-lines">${b.lines.map((l, i) => `<li data-i="${i}" class="small">${esc(l)}</li>`).join('')}</ol>
+      ${speechSupported || c.tts === 'deepgram' ? '' : '<div class="pill warn">This browser can’t speak, so the transcript is shown instead.</div>'}
+      <p class="tiny faint">Built from your data at 6:30 AM; a notification arrives at 7. Health details are never read aloud; they stay on screen in the app.</p>`;
+    body.querySelector('#br-play').addEventListener('click', toggle);
+    body.querySelector('#br-refresh').addEventListener('click', async ev => { stop(); ev.currentTarget.disabled = true; if (await load(true)) toast('Briefing updated with the latest data.'); });
+    return true;
+  };
+  const btn = () => body.querySelector('#br-play'), wave = () => body.querySelector('#br-wave');
+  const mark = (i = -1) => body.querySelectorAll('#br-lines li').forEach(li => { const on = +li.dataset.i === i; li.classList.toggle('on', on); if (on) li.setAttribute('aria-current', 'true'); else li.removeAttribute('aria-current'); });
+  function stop() { playing = false; stopSpeaking(); mark(); wave()?.classList.remove('on'); if (btn()) btn().innerHTML = `${icon('play')} Play briefing`; }
+  async function toggle() {
+    if (playing) { stop(); return; }
+    playing = true; btn().innerHTML = `${icon('stop')} Stop`; wave()?.classList.add('on');
+    if (!marked) { marked = true; api.post('/api/briefing/today/played').then(() => refreshBanner()).catch(() => {}); }
+    for (let i = 0; i < b.lines.length && playing && document.contains(m); i++) {
+      mark(i);
+      await new Promise(r => speak(b.lines[i], { tts: c.tts, force: true, onEnd: r }));
+    }
+    if (!playing) return;
+    playing = false; mark(); wave()?.classList.remove('on');
+    if (btn()) btn().innerHTML = `${icon('play')} Play again`;
+  }
+  const obs = new MutationObserver(() => { if (!document.contains(m)) { obs.disconnect(); playing = false; stopSpeaking(); } });
+  obs.observe(document.body, { childList: true });
+  if (await load() && autoplay) toggle();
+}
+
+/** Hides the Today banner once the briefing was played (on any device). */
+export function refreshBanner() { document.querySelector('[data-brief-banner]')?.remove(); }

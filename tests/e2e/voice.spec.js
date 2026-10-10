@@ -1,7 +1,7 @@
 // Voice in the browser: dictation, Talk to Assist, client voice (set logging), with a fake
 // speech recognizer / microphone so the tests don't need real audio.
 import { test, expect } from '@playwright/test';
-import { watchErrors, coachLogin, clientLogin } from './helpers.js';
+import { watchErrors, coachLogin, clientLogin, openWorkoutId } from './helpers.js';
 
 /** A stand-in for the browser's SpeechRecognition that "hears" a phrase (or fails). */
 const fakeSpeech = (phrase, error = null) => `(() => {
@@ -110,9 +110,7 @@ test('client: “10 reps at 55” fills the next set; Undo restores it @phone', 
   const done = watchErrors(page);
   await page.addInitScript(fakeSpeech('10 reps at 55'));
   await clientLogin(page);
-  const today = await (await page.request.get('/api/me/today')).json();
-  const a = today.today?.status === 'scheduled' ? today.today : today.next;
-  await page.goto(`/client/workout/${a.assignmentId}`);
+  await page.goto(`/client/workout/${await openWorkoutId(page)}`);
   const row = page.locator('[data-row="0-0"]');
   const reps = row.locator('[data-f="r"]'), weight = row.locator('[data-f="w"]'), check = row.locator('[data-act="setDone"]');
   const before = { reps: await reps.inputValue(), weight: await weight.inputValue() };
@@ -175,4 +173,33 @@ test('voice food logging without browser speech recognition: records, transcribe
   await page.getByRole('button', { name: 'Find foods' }).click();
   await expect(page.getByRole('button', { name: /^Add/ }).first()).toBeVisible();
   done();
+});
+
+/** Instant speech so the briefing plays through quickly in tests. */
+const fastSpeech = `(() => { const s = window.speechSynthesis; if (!s) return; s.speak = u => { window.__spoken = (window.__spoken || []).concat(u.text); setTimeout(() => u.onend?.(), 60); }; s.cancel = () => {}; })()`;
+
+test('morning briefing: Today → Play reads it line by line', async ({ page }) => {
+  const done = watchErrors(page);
+  await page.addInitScript(fastSpeech);
+  await coachLogin(page);
+  await page.locator('.page-head [data-act="briefing"]').click();
+  const lines = page.locator('#br-lines li');
+  await expect(lines.first()).toContainText('Good morning, Dani.');
+  await page.getByRole('button', { name: 'Play briefing' }).click();
+  await expect(page.getByRole('button', { name: 'Play again' })).toBeVisible({ timeout: 10000 });
+  const spoken = await page.evaluate(() => window.__spoken || []);
+  expect(spoken.length).toBe(await lines.count());
+  expect(spoken.join(' ')).not.toMatch(/knee|pain|hurt/i);
+  expect((await (await page.request.get('/api/briefing/status')).json()).ready).toBe(false);
+  done();
+});
+
+test('“Start my morning briefing” in Talk to Assist opens and plays it', async ({ page }) => {
+  await page.addInitScript(fastSpeech);
+  await coachLogin(page);
+  await page.locator('header [data-act="talk"]').click();
+  await page.locator('#v-type').fill('Start my morning briefing');
+  await page.locator('#v-form button[type="submit"]').click();
+  await expect(page.locator('#br-lines li').first()).toContainText('Good morning');
+  await expect(page.getByRole('button', { name: /Stop|Play again/ })).toBeVisible();
 });

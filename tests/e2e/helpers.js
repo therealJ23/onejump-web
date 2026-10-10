@@ -27,3 +27,12 @@ export async function clientLogin(page, email = 'mike.t@example.com') {
   await page.goto(new URL(link).pathname + new URL(link).search);
   await page.waitForURL('**/client');
 }
+
+/** An assignment the signed-in client can log right now (independent of the weekday). */
+export async function openWorkoutId(page) {
+  const today = await (await page.request.get('/api/me/today')).json();
+  const a = today.today?.status === 'scheduled' ? today.today : today.next;
+  if (a) return a.assignmentId;
+  const csrf = (await (await page.request.get('/api/auth/csrf')).json()).csrfToken;
+  return (await (await page.request.post('/api/dev/open-workout', { headers: { 'X-CSRF-Token': csrf } })).json()).assignmentId;
+}

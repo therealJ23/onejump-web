@@ -1,14 +1,12 @@
 // Client app: log in with an email link, log a workout, send a check-in, message the coach.
 import { test, expect } from '@playwright/test';
-import { watchErrors, clientLogin } from './helpers.js';
+import { watchErrors, clientLogin, openWorkoutId } from './helpers.js';
 
 test('client opens the app from a login link and logs a workout @phone', async ({ page }) => {
   const done = watchErrors(page);
   await clientLogin(page);
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Mike');
-  const today = await (await page.request.get('/api/me/today')).json();
-  const a = today.today?.status === 'scheduled' ? today.today : today.next;
-  await page.goto(`/client/workout/${a.assignmentId}`);
+  await page.goto(`/client/workout/${await openWorkoutId(page)}`);
   await page.getByRole('button', { name: 'Set 1 done' }).first().click();
   await expect(page.getByRole('timer')).toBeVisible();
   await page.getByRole('button', { name: 'Skip' }).click();

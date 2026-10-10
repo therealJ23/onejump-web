@@ -38,6 +38,7 @@ import { router as meNutritionRoutes } from './routes/meNutrition.js';
 import { router as meVoiceRoutes } from './routes/meVoice.js';
 import { router as foodRoutes } from './routes/foods.js';
 import { router as voiceRoutes } from './routes/voice.js';
+import { router as briefingRoutes } from './routes/briefing.js';
 import { unauthorized } from './lib/errors.js';
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
@@ -106,6 +107,7 @@ export function createApp({ sessionStore } = {}) {
   app.use('/api/assist', requireCoach, assistRoutes);
   app.use('/api/nutrition', requireCoach, nutritionRoutes);
   app.use('/api/voice', requireCoach, voiceRoutes);
+  app.use('/api/briefing', requireCoach, briefingRoutes);
   const foodLimit = rateLimit({ windowMs: 60e3, limit: 60, standardHeaders: 'draft-7', legacyHeaders: false, skip: () => config.isTest, message: { error: 'Too many food searches. Wait a minute and try again.' } });
   app.use('/api/foods', (req, _res, next) => next(req.auth && req.db ? undefined : unauthorized()), foodLimit, foodRoutes);
   app.use('/api/me', requireClient, meNutritionRoutes, meVoiceRoutes, meRoutes);

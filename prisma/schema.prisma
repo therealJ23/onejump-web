@@ -581,6 +581,7 @@ model Briefing {
   lines      Json?
   audioKey   String?
   notifiedAt DateTime?
+  playedAt   DateTime?
   createdAt  DateTime  @default(now())
 
   @@unique([businessId, userId, date])

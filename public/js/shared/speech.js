@@ -14,10 +14,10 @@ export function stopSpeaking() {
   if (audio) { audio.pause(); audio = null; }
 }
 
-/** Speaks text (if the toggle is on). Calls onEnd when finished, or right away if muted. */
-export async function speak(text, { onEnd, tts = 'browser' } = {}) {
+/** Speaks text (if the toggle is on, or force for an explicit Play). Calls onEnd when finished, or right away if muted. */
+export async function speak(text, { onEnd, tts = 'browser', force = false } = {}) {
   const done = () => onEnd?.();
-  if (!text || !speakOn()) { setTimeout(done, 0); return; }
+  if (!text || (!force && !speakOn())) { setTimeout(done, 0); return; }
   stopSpeaking();
   if (tts === 'deepgram') {
     try {
