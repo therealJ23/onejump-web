@@ -37,3 +37,4 @@ api.post = (url, body = {}) => api('POST', url, body);
 api.put = (url, body = {}) => api('PUT', url, body);
 api.patch = (url, body = {}) => api('PATCH', url, body);
 api.del = (url, body) => api('DELETE', url, body);
+api.csrf = () => csrf;

@@ -1,0 +1,40 @@
+// Talk to Assist (coach, Pro): push-to-talk audio → transcript → the same Ask Assist answers and
+// proposals as typing, plus a short spoken answer. Audio is transcribed and dropped; only the
+// transcript is kept. Proposals still wait for an on-screen Confirm.
+import { Router } from 'express';
+import multer from 'multer';
+import { body, z } from '../lib/validate.js';
+import { badRequest } from '../lib/errors.js';
+import { requireFeature } from '../auth/middleware.js';
+import { VoiceService, assertUnderLimit, minutesUsed } from '../voice/VoiceService.js';
+import { sniffAudio } from '../storage/StorageService.js';
+import { ask } from '../assist/AssistService.js';
+import { config } from '../config.js';
+
+export const router = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1 } });
+const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
+const pro = requireFeature('PRO', 'Talk to Assist');
+
+router.get('/config', async (req, res) => {
+  res.json({ provider: VoiceService.provider, tts: config.voice.tts, limitMinutes: config.voice.monthlyMinutes, usedMinutes: Math.round(await minutesUsed(req.db) * 10) / 10, maxSeconds: 30 });
+});
+
+router.post('/ask', pro, upload.single('audio'), async (req, res) => {
+  if (!req.file) throw badRequest('No audio was received. Tap the circle, talk, then tap again.');
+  const mimeType = sniffAudio(req.file.buffer);
+  if (!mimeType) throw badRequest('That recording couldn’t be read. Try again.');
+  await assertUnderLimit(req.db);
+  const durationMs = Math.min(31000, Number(req.body?.durationMs) || 0);
+  const v = await VoiceService.transcribe(req.db, req.file.buffer, { mimeType, durationMs, hint: req.body?.hint, userId: req.auth.userId, kind: 'ask' });
+  if (!v.transcript) return res.json({ transcript: '', answerHtml: '<p>I didn’t catch that. Try again, or type your question.</p>', spokenText: 'I didn’t catch that. Try again.', proposals: [], trace: [], followups: [] });
+  const r = await ask(req.db, req.auth, v.transcript, { voice: true, tz: await tzOf(req.db) });
+  res.json({ transcript: v.transcript, ...r });
+});
+
+/** Spoken answer as audio (VOICE_TTS=deepgram). With browser speech this returns 204 and the browser speaks. */
+router.post('/speak', pro, body(z.object({ text: z.string().trim().min(1).max(600) })), async (req, res) => {
+  const audio = await VoiceService.speak(req.db, req.body.text);
+  if (!audio) return res.status(204).end();
+  res.set('Content-Type', 'audio/mpeg').set('Cache-Control', 'no-store').send(audio);
+});

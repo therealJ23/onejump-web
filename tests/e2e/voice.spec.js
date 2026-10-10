@@ -66,3 +66,42 @@ test('the client can dictate a message to their coach @phone', async ({ page }) 
   await page.locator('[data-dictate][data-target="cchat-in"]').click();
   await expect(page.locator('#cchat-in')).toHaveValue('Can we move Friday to seven');
 });
+
+// A working microphone (a quiet tone) and a denied one.
+const fakeMic = `(() => { navigator.mediaDevices.getUserMedia = async () => { const ctx = new AudioContext(); const o = ctx.createOscillator(); const g = ctx.createGain(); g.gain.value = 0.2; const d = ctx.createMediaStreamDestination(); o.connect(g).connect(d); o.start(); return d.stream; }; })()`;
+const deniedMic = `(() => { navigator.mediaDevices.getUserMedia = async () => { throw new DOMException('Permission denied', 'NotAllowedError'); }; })()`;
+
+test('Talk to Assist: push to talk, a confirmation card, and nothing sent until Confirm', async ({ page }) => {
+  const done = watchErrors(page);
+  await page.addInitScript(fakeSpeech('Send Marcus the drafted message'));
+  await page.addInitScript(fakeMic);
+  await coachLogin(page);
+  const { clients } = await (await page.request.get('/api/clients')).json();
+  const marcus = clients.find(c => c.name === 'Marcus Johnson').id;
+  const count = async () => (await (await page.request.get(`/api/threads/${marcus}`)).json()).messages.length;
+  const before = await count();
+  await page.locator('header [data-act="talk"]').click();
+  await page.locator('#v-orb').click();
+  await expect(page.locator('.rec-dot')).toBeVisible();
+  await page.waitForTimeout(600);
+  await page.locator('#v-orb').click();
+  const card = page.locator('.proposal');
+  await expect(card).toContainText('Marcus Johnson');
+  expect(await count()).toBe(before);
+  await card.getByRole('button', { name: /Confirm/ }).click();
+  await expect(card).toContainText('You confirmed it on screen.');
+  expect(await count()).toBe(before + 1);
+  done();
+});
+
+test('Talk to Assist with the microphone off: clear message, and typing still works', async ({ page }) => {
+  await page.addInitScript(deniedMic);
+  await coachLogin(page);
+  await page.locator('header [data-act="talk"]').click();
+  await page.locator('#v-orb').click();
+  await expect(page.locator('#v-said')).toHaveText('Microphone access is off. Turn it on in your browser settings to use voice.');
+  await page.locator('#v-type').fill('Which clients haven’t paid?');
+  await page.locator('#v-form button[type="submit"]').click();
+  await expect(page.locator('#v-answer')).not.toBeEmpty();
+  await expect(page.locator('#v-answer .thinking')).toHaveCount(0);
+});

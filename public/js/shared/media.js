@@ -32,7 +32,8 @@ function pickMime() {
 }
 
 /**
- * Push-to-talk recorder with a level meter. Call start(), then stop() (or it stops itself at maxMs).
+ * Push-to-talk recorder with a level meter. await start() (asks for the microphone the first
+ * time), then stop() resolves with the audio. It also stops itself at maxMs.
  * onLevel(0..1) is called about 30 times a second while recording.
  */
 export function createRecorder({ maxMs = 30000, onLevel, onAutoStop } = {}) {
@@ -59,9 +60,9 @@ export function createRecorder({ maxMs = 30000, onLevel, onAutoStop } = {}) {
       } catch { /* level meter is optional */ }
       rec.start(250);
       startedAt = Date.now();
-      timer = setTimeout(() => { if (rec.state === 'recording') { rec.stop(); onAutoStop?.(); } }, maxMs);
+      timer = setTimeout(() => { if (rec.state === 'recording') { onAutoStop?.(); if (rec.state === 'recording') rec.stop(); } }, maxMs);
       this.done = done;
-      return done;
+      return true; // recording has started; stop() resolves with { blob, durationMs, mimeType }
     },
     stop() { if (rec?.state === 'recording') rec.stop(); return this.done; },
     cancel() { if (rec?.state === 'recording') { rec.onstop = () => cleanup(); rec.stop(); } else cleanup(); },

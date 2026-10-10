@@ -9,8 +9,8 @@ import { startOfMonthUtc } from '../lib/time.js';
 export const router = Router();
 const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
 
-router.post('/ask', requireFeature('PRO', 'Ask Assist'), body(z.object({ question: z.string().trim().min(1, 'Ask a question.').max(600) })), async (req, res) => {
-  res.json(await ask(req.db, req.auth, req.body.question, { voice: false, tz: await tzOf(req.db) }));
+router.post('/ask', requireFeature('PRO', 'Ask Assist'), body(z.object({ question: z.string().trim().min(1, 'Ask a question.').max(600), voice: z.boolean().default(false) })), async (req, res) => {
+  res.json(await ask(req.db, req.auth, req.body.question, { voice: req.body.voice, tz: await tzOf(req.db) }));
 });
 
 router.post('/proposals/:id/confirm', body(z.object({ text: z.string().trim().min(1).max(5000).optional() })), async (req, res) => {
