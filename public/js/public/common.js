@@ -2,6 +2,10 @@
 import { api, setCsrf } from '../shared/api.js';
 
 export { api };
+
+// Until a page's script has wired up its forms (body[data-ready]), block plain browser form posts:
+// a very quick tap on a slow connection would otherwise post the form to a page that doesn't exist.
+document.addEventListener('submit', e => { if (!document.body.dataset.ready) e.preventDefault(); }, true);
 export const $ = (sel, root = document) => root.querySelector(sel);
 
 /** Shows a form-level error (role=alert) and marks fields the API flagged. */

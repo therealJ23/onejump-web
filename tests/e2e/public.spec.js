@@ -5,8 +5,8 @@ import { watchErrors } from './helpers.js';
 test('landing and pricing load without errors @phone', async ({ page }) => {
   const done = watchErrors(page);
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your clients, handled.');
-  await page.getByRole('link', { name: 'Start your 14-day free trial' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Get 9 hours back');
+  await page.getByRole('link', { name: 'Start free for 14 days' }).first().click();
   await page.waitForURL('**/signup');
   await page.goto('/pricing');
   await expect(page.getByText('$59')).toBeVisible();

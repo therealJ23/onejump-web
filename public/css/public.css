@@ -9,3 +9,50 @@ html { scroll-behavior: smooth; }
 .form-error { color: var(--crit); font-size: .88rem; font-weight: 600; }
 .otp { letter-spacing: .4em; font-size: 1.3rem; text-align: center; max-width: 220px; }
 .slot-days { display: flex; flex-direction: column; gap: 10px; }
+
+/* ------------------------------------------------------------------ light landing + pricing
+   White pages with OneJump greens. Volt stays the Assist colour (badges, buttons, the arc). */
+.pub.light { background: #fff; color: var(--ink); }
+.pub.light .pub-nav { background: rgba(255, 255, 255, .92); -webkit-backdrop-filter: saturate(1.4) blur(10px); backdrop-filter: saturate(1.4) blur(10px); color: var(--ink); border-bottom: 1px solid var(--line); }
+.pub.light .pub-nav .btn.assist, .pub.light .btn.assist { color: var(--deep); }
+.pub.light svg.wordmark { color: var(--deep); }
+.pub.light svg.wordmark [stroke="#D6FF3D"] { stroke: var(--volt-deep); }
+.pub.light svg.wordmark [fill="#D6FF3D"] { fill: var(--volt-deep); }
+.pub.light .hero { background: radial-gradient(55% 65% at 88% 8%, rgba(214, 255, 61, .30), transparent 62%), radial-gradient(40% 50% at 0% 100%, rgba(47, 93, 78, .08), transparent 70%), linear-gradient(180deg, #fff 0%, #F3F7EE 100%); color: var(--ink); border-bottom: 1px solid var(--line); }
+.pub.light .hero h1 { color: var(--deep); }
+.pub.light .hero h1 .jump svg path { stroke: var(--volt-deep); }
+.pub.light .hero h1 .jump svg circle { fill: var(--volt-deep); }
+.pub.light .hero .lede { color: var(--muted); }
+.pub.light .hero .lede b { color: var(--ink); }
+.pub.light .hero .fine { color: var(--faint); }
+.pub.light .hero .btn.outline-light { color: var(--ink); border-color: var(--line-strong); background: #fff; }
+.pub.light .hero .btn.outline-light:hover { border-color: var(--ink); background: var(--surface-2); }
+.pub.light .hero-shot { background: #F8FAF5; color: var(--ink); box-shadow: 0 -10px 60px -20px rgba(47, 93, 78, .35); border: 1px solid var(--line); border-bottom: 0; }
+.pub.light .section.tint { background: #F3F7EE; border-block: 1px solid var(--line); }
+.pub.light .section h2 { color: var(--deep); }
+.pub.light .hours-row { grid-template-columns: 180px minmax(0, 1fr) 92px; }
+.pub.light .step-card { padding: 24px; border-radius: 16px; background: #fff; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow-1); }
+.pub.light .step-n { font-size: 2.4rem; line-height: 1; color: var(--green); }
+.pub.light .job { transition: transform .15s, box-shadow .15s; }
+.pub.light .job:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+.saves { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; padding: 3px 9px; border-radius: 999px; background: var(--assist-tint); color: var(--assist-ink); font-size: .74rem; font-weight: 750; white-space: nowrap; }
+.saves .ico { width: 13px; height: 13px; }
+.time-save { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 10px; background: var(--assist-tint); color: var(--assist-ink); font-weight: 750; font-size: .9rem; }
+.time-save .ico { width: 17px; height: 17px; flex: none; }
+.pub.light .price.feature { background: #fff; color: var(--ink); border: 2px solid var(--green); box-shadow: 0 24px 50px -26px rgba(47, 93, 78, .5); }
+.pub.light .price.feature .muted { color: var(--muted); }
+.pub.light .price.feature li svg { color: var(--green); }
+.pub.light .row-time td { background: var(--assist-soft); font-weight: 750; }
+.nut-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.nut-bar { height: 86px; width: 100%; max-width: 30px; border-radius: 8px; background: var(--surface-3); display: flex; align-items: flex-end; overflow: hidden; }
+.nut-bar i { display: block; width: 100%; border-radius: 8px; background: var(--stone); }
+.nut-bar i.ok { background: var(--green); }
+.pub.light .footer { background: #F3F7EE; color: var(--muted); border-top: 1px solid var(--line); }
+.pub.light .footer a:hover { color: var(--ink); }
+@media (max-width: 560px) { .pub.light .hours-row { grid-template-columns: 120px minmax(0, 1fr) 80px; font-size: .8rem; } }
+.pub.light .hero-in { grid-template-columns: minmax(0, 1.12fr) minmax(0, .98fr); }
+@media (max-width: 960px) { .pub.light .hero-in { grid-template-columns: minmax(0, 1fr); } }
+.pub.light .hero h1 { font-size: clamp(2.5rem, 1.3rem + 3.3vw, 4.4rem); }
+.pub.light .hero-shot .q-item { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+.pub.light .hero-shot .q-item .btn { align-self: center; }
+@media (max-width: 480px) { .pub.light .hero-shot .q-item { grid-template-columns: auto minmax(0, 1fr); } .pub.light .hero-shot .q-item .btn { display: none; } }

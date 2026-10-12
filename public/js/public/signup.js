@@ -1,12 +1,13 @@
 // Coach sign-up: creates the account + workspace (14-day Pro trial), then onboarding.
 import { api, $, showError, busy, validEmail, whoAmI, homeFor } from './common.js';
 
-const me = await whoAmI();
-if (me) location.replace(homeFor(me));
-
+// The submit handler is attached before anything is awaited, so a quick tap on a slow connection
+// never falls through to a plain browser form post.
 const form = $('#signup-form'), err = $('#su-err');
+const ready = whoAmI().then(me => { if (me) location.replace(homeFor(me)); return me; });
 form.addEventListener('submit', async e => {
   e.preventDefault();
+  await ready; // primes the CSRF token
   const f = Object.fromEntries(new FormData(form));
   if (!f.name.trim()) return showError(err, { message: 'Enter your name.', data: { fields: { name: 1 } } }, form);
   if (!validEmail(f.email)) return showError(err, { message: 'Enter a valid email.', data: { fields: { email: 1 } } }, form);
