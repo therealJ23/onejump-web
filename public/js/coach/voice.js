@@ -1,5 +1,6 @@
 // Talk to Assist (hands-free, spoken answers, confirmation cards) and the morning briefing.
-// Opening the window is the only tap: it starts listening right away, sends when the coach stops
+// Opening the window is the only tap: a chime (and, the first time each day, a spoken "how can I
+// help?"), then it listens, sends when the coach stops
 // talking, and listens again after Assist answers. It only listens while this window is open
 // (closing it stops the mic), shows a "Listening" dot whenever the mic is on, pauses after a few
 // quiet seconds, and still never acts without an on-screen Confirm.
@@ -7,11 +8,13 @@ import { api } from '../shared/api.js';
 import { esc } from '../shared/format.js';
 import { icon, arc } from '../shared/icons.js';
 import { openModal, closeModal, modalHead, toast } from '../shared/ui.js';
-import { createRecorder, meter, recordingSupported, MIC_OFF } from '../shared/media.js';
+import { createRecorder, recordingSupported, MIC_OFF } from '../shared/media.js';
 import { listenOnce, dictationSupported } from '../shared/dictation.js';
 import { speak, stopSpeaking, speakOn, setSpeakOn, speechSupported } from '../shared/speech.js';
 import { answerBlock, proposalEvents } from './assist.js';
 import { refreshCounts } from './shell.js';
+import { chime } from '../shared/sounds.js';
+import { coachFirst } from './state.js';
 
 const PHRASES = ['Who hasn’t checked in this week?', 'Which clients are at risk of leaving?', 'Who’s struggling with nutrition this week?', 'What was my revenue last month?', 'Send Marcus the drafted message', 'Add a lead: Jake, wants to get stronger for climbing, found me on Instagram', 'Remind everyone who hasn’t checked in', 'Start my morning briefing'];
 let cfg = null;
@@ -29,7 +32,7 @@ export async function openTalk() {
       <button class="voice-orb" id="v-orb" aria-label="Pause listening" aria-pressed="false" ${recordingSupported ? '' : 'disabled'}>${arc()}</button>
       <div class="wave" id="v-wave" aria-hidden="true">${'<i></i>'.repeat(9)}</div>
       <div id="v-rec" class="tiny" aria-live="polite"></div>
-      <div class="voice-said" id="v-said" aria-live="polite">${recordingSupported ? 'Starting the microphone…' : 'Voice isn’t available in this browser. Type below or tap a phrase.'}</div>
+      <div class="voice-said" id="v-said" aria-live="polite">${recordingSupported ? 'How can I help?' : 'Voice isn’t available in this browser. Type below or tap a phrase.'}</div>
       <div id="v-answer" class="stack s8" style="width:100%;text-align:left" aria-live="polite"></div>
       <form class="row" id="v-form" style="width:100%"><label class="grow"><span class="sr">Or type to Assist</span><input class="input" id="v-type" placeholder="Or type here" autocomplete="off" maxlength="600" style="border-radius:999px"></label><button class="btn assist icon" type="submit" aria-label="Ask">${icon('send')}</button></form>
       <div class="stack s8" style="width:100%"><div class="tiny faint">Try saying</div><div class="suggest" style="justify-content:center">${PHRASES.map(p => `<button type="button" data-say="${esc(p)}">“${esc(p)}”</button>`).join('')}</div></div>
@@ -37,7 +40,8 @@ export async function openTalk() {
     </div>`, { wide: true, label: 'Talk to Assist' });
   const $ = s => m.querySelector(s);
   const orb = $('#v-orb'), wave = $('#v-wave'), said = $('#v-said'), ans = $('#v-answer'), rec = $('#v-rec');
-  const draw = meter(wave);
+  let glow = 0;
+  const draw = level => { glow = glow * 0.7 + level * 0.3; orb.style.setProperty('--lvl', Math.min(1, glow * 1.6).toFixed(3)); }; // the orb glows with your voice
   let recorder = null, hint = '', listening = null, starting = false, busy = false, vad = null;
   const open = () => document.contains(m);
 
@@ -46,7 +50,8 @@ export async function openTalk() {
     orb.setAttribute('aria-label', st === 'listening' ? 'Pause listening' : 'Start listening');
     wave.classList.toggle('on', st === 'speaking'); wave.classList.toggle('live', st === 'listening');
     if (st !== 'listening') wave.querySelectorAll('i').forEach(i => { i.style.height = ''; });
-    rec.innerHTML = st === 'listening' ? '<span class="rec-dot">Listening</span>' : ''; // the mic is on: always visible
+    rec.innerHTML = st === 'listening' ? '<span class="sr">Listening</span>' : ''; // the glowing orb shows the mic is on
+    if (st !== 'listening') { glow = 0; orb.style.setProperty('--lvl', 0); }
   };
   /** After Assist has finished talking, listen again (hands-free). */
   const listenAgain = () => { if (open() && !recorder && !starting && !busy) start(); };
@@ -84,7 +89,8 @@ export async function openTalk() {
     starting = false;
     if (!open()) { r.cancel(); return; } // closed while the mic was starting
     recorder = r; vad = { startedAt: Date.now(), heard: false, quietSince: 0 };
-    setOrb('listening'); said.textContent = 'Listening… just ask';
+    setOrb('listening'); if (!said.dataset.greeting) said.textContent = 'Go ahead, ask me anything';
+    delete said.dataset.greeting;
     // Development (mock voice): the browser's live transcript stands in for the speech provider.
     if (c.provider === 'mock' && dictationSupported) listening = listenOnce({ onInterim: v => { hint = v; said.textContent = `“${v}”`; } }).then(v => { if (v) hint = v; }).catch(() => {});
   }
@@ -117,7 +123,22 @@ export async function openTalk() {
   proposalEvents.addEventListener('done', onDone);
   const obs = new MutationObserver(() => { if (!open()) { obs.disconnect(); proposalEvents.removeEventListener('done', onDone); recorder?.cancel(); recorder = null; listenOnce.stop?.(); stopSpeaking(); } });
   obs.observe(document.body, { childList: true });
-  if (recordingSupported) start(); // hands-free: opening the window is the only tap
+  if (recordingSupported) welcome(); // hands-free: opening the window is the only tap
+
+  /** A chime so you know Assist is on; the first time each day it also asks how it can help. */
+  async function welcome() {
+    setOrb('speaking');
+    await chime();
+    if (!open()) return;
+    const today = new Date().toDateString();
+    let first = false;
+    try { first = localStorage.getItem('oj.talk.greeted') !== today; localStorage.setItem('oj.talk.greeted', today); } catch { first = false; }
+    if (first) {
+      const hi = `Hi ${coachFirst() || 'there'}, how can I help you today?`;
+      said.textContent = hi; said.dataset.greeting = '1';
+      speak(hi, { tts: c.tts, onEnd: () => { if (open()) { setOrb(''); start(); } } });
+    } else { setOrb(''); start(); }
+  }
 }
 
 // ---------------------------------------------------------------- morning briefing

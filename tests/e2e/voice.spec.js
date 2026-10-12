@@ -19,6 +19,9 @@ const fakeSpeech = (phrase, error = null) => `(() => {
 })()`;
 const noSpeech = '(() => { delete window.SpeechRecognition; delete window.webkitSpeechRecognition; })()';
 
+/** Instant speech so the briefing plays through quickly in tests. */
+const fastSpeech = `(() => { const s = window.speechSynthesis; if (!s) return; s.speak = u => { window.__spoken = (window.__spoken || []).concat(u.text); setTimeout(() => u.onend?.(), 60); }; s.cancel = () => {}; })()`;
+
 async function mikeId(page) {
   const { clients } = await (await page.request.get('/api/clients')).json();
   return clients.find(c => c.name === 'Mike Torres').id;
@@ -77,13 +80,16 @@ test('Talk to Assist is hands-free: it listens on open, sends when you stop talk
   const done = watchErrors(page);
   await page.addInitScript(fakeSpeech('Send Marcus the drafted message'));
   await page.addInitScript(talkOnceMic);
+  await page.addInitScript(fastSpeech);
   await coachLogin(page);
   const { clients } = await (await page.request.get('/api/clients')).json();
   const marcus = clients.find(c => c.name === 'Marcus Johnson').id;
   const count = async () => (await (await page.request.get(`/api/threads/${marcus}`)).json()).messages.length;
   const before = await count();
   await page.locator('header [data-act="talk"]').click(); // the only tap
-  await expect(page.locator('#v-rec .rec-dot')).toHaveText('Listening'); // visible while the mic is on, no timer
+  await expect.poll(() => page.evaluate(() => (window.__spoken || [])[0])).toBe('Hi Dani, how can I help you today?'); // first time today: a spoken greeting
+  await expect(page.locator('#v-orb.listening')).toBeVisible(); // then it glows while listening (no timer, no label)
+  await expect(page.locator('.rec-dot')).toHaveCount(0);
   const card = page.locator('.proposal');
   await expect(card).toContainText('Marcus Johnson', { timeout: 10000 }); // sent on its own after the pause
   expect(await count()).toBe(before);
@@ -173,8 +179,6 @@ test('voice food logging without browser speech recognition: records, transcribe
   done();
 });
 
-/** Instant speech so the briefing plays through quickly in tests. */
-const fastSpeech = `(() => { const s = window.speechSynthesis; if (!s) return; s.speak = u => { window.__spoken = (window.__spoken || []).concat(u.text); setTimeout(() => u.onend?.(), 60); }; s.cancel = () => {}; })()`;
 
 test('morning briefing: Today → Play reads it line by line', async ({ page }) => {
   const done = watchErrors(page);
