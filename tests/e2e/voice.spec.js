@@ -69,24 +69,23 @@ test('the client can dictate a message to their coach @phone', async ({ page }) 
 
 // A working microphone (a quiet tone) and a denied one.
 const fakeMic = `(() => { navigator.mediaDevices.getUserMedia = async () => { const ctx = new AudioContext(); const o = ctx.createOscillator(); const g = ctx.createGain(); g.gain.value = 0.2; const d = ctx.createMediaStreamDestination(); o.connect(g).connect(d); o.start(); return d.stream; }; })()`;
+/** Hands-free: the first time the mic opens it "talks" for 0.8 s and then goes quiet; later it stays quiet. */
+const talkOnceMic = `(() => { let n = 0; navigator.mediaDevices.getUserMedia = async () => { const ctx = new AudioContext(); await ctx.resume(); const o = ctx.createOscillator(); const g = ctx.createGain(); g.gain.value = n++ === 0 ? 0.3 : 0; g.gain.setValueAtTime(0, ctx.currentTime + 0.8); const d = ctx.createMediaStreamDestination(); o.connect(g).connect(d); o.start(); return d.stream; }; })()`;
 const deniedMic = `(() => { navigator.mediaDevices.getUserMedia = async () => { throw new DOMException('Permission denied', 'NotAllowedError'); }; })()`;
 
-test('Talk to Assist: push to talk, a confirmation card, and nothing sent until Confirm', async ({ page }) => {
+test('Talk to Assist is hands-free: it listens on open, sends when you stop talking, and nothing is sent until Confirm', async ({ page }) => {
   const done = watchErrors(page);
   await page.addInitScript(fakeSpeech('Send Marcus the drafted message'));
-  await page.addInitScript(fakeMic);
+  await page.addInitScript(talkOnceMic);
   await coachLogin(page);
   const { clients } = await (await page.request.get('/api/clients')).json();
   const marcus = clients.find(c => c.name === 'Marcus Johnson').id;
   const count = async () => (await (await page.request.get(`/api/threads/${marcus}`)).json()).messages.length;
   const before = await count();
-  await page.locator('header [data-act="talk"]').click();
-  await page.locator('#v-orb').click();
-  await expect(page.locator('.rec-dot')).toBeVisible();
-  await page.waitForTimeout(600);
-  await page.locator('#v-orb').click();
+  await page.locator('header [data-act="talk"]').click(); // the only tap
+  await expect(page.locator('#v-rec .rec-dot')).toHaveText('Listening'); // visible while the mic is on, no timer
   const card = page.locator('.proposal');
-  await expect(card).toContainText('Marcus Johnson');
+  await expect(card).toContainText('Marcus Johnson', { timeout: 10000 }); // sent on its own after the pause
   expect(await count()).toBe(before);
   await card.getByRole('button', { name: /Confirm/ }).click();
   await expect(card).toContainText('You confirmed it on screen.');
@@ -98,7 +97,6 @@ test('Talk to Assist with the microphone off: clear message, and typing still wo
   await page.addInitScript(deniedMic);
   await coachLogin(page);
   await page.locator('header [data-act="talk"]').click();
-  await page.locator('#v-orb').click();
   await expect(page.locator('#v-said')).toHaveText('Microphone access is off. Turn it on in your browser settings to use voice.');
   await page.locator('#v-type').fill('Which clients haven’t paid?');
   await page.locator('#v-form button[type="submit"]').click();

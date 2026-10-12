@@ -87,3 +87,5 @@ Choices made while building the MVP, and why. Newest last.
 60. **The microphone stops when its screen goes away** (navigation, closing a modal, a re-render), and taps are ignored while the mic is starting, so nothing records without the on-screen indicator.
 
 61. **Patched database drivers are pinned with npm `overrides`** (`mariadb` 3.5.4 everywhere, `mysql2` and `deepmerge-ts` inside the Prisma CLI), so `npm audit` reports 0 vulnerabilities without downgrading Prisma. Prisma 8 is still a release candidate; we stay on Prisma 7 until 8 is stable.
+62. **Talk to Assist is hands-free (owner’s change to the spec’s push-to-talk rule, Oct 12).** Opening the window is the only tap: it listens right away, sends after about a second of quiet once you’ve spoken, and listens again after Assist answers. It never listens outside the open window, shows a red “Listening” dot whenever the mic is on (the timer was removed), pauses after 8 quiet seconds, and still needs an on-screen Confirm for any action. An always-on wake word (“Hey Assist”) isn’t built: browsers can’t listen with the page closed, and it would break the “never record in the background” rule.
+
