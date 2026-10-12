@@ -20,7 +20,17 @@ export async function migrate({ url, reset = false, log = console.log } = {}) {
   if (!url) throw new Error('Set MIGRATE_DATABASE_URL (or DATABASE_URL) first.');
   if (reset && process.env.NODE_ENV === 'production') throw new Error('Refusing to reset a production database.');
   const { poolConfigFromUrl } = await import('../server/db/connection.js');
-  const conn = await mariadb.createConnection({ ...poolConfigFromUrl(url), multipleStatements: true });
+  const cfg = { ...poolConfigFromUrl(url), multipleStatements: true };
+  let conn;
+  try { conn = await mariadb.createConnection(cfg); }
+  catch (e) {
+    if (e.errno !== 1049 || !/^[\w-]+$/.test(cfg.database)) throw e; // 1049 = unknown database
+    // First deploy (e.g. Railway): create our own database on the server, then connect to it.
+    const admin = await mariadb.createConnection({ ...cfg, database: undefined });
+    try { await admin.query(`CREATE DATABASE IF NOT EXISTS \`${cfg.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`); } finally { await admin.end(); }
+    log(`[migrate] created database ${cfg.database}`);
+    conn = await mariadb.createConnection(cfg);
+  }
   try {
     if (reset) {
       const tables = await conn.query('SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()');
@@ -62,6 +72,7 @@ export async function migrate({ url, reset = false, log = console.log } = {}) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  const url = args.has('--test') ? (process.env.TEST_MIGRATE_DATABASE_URL || process.env.TEST_DATABASE_URL) : (process.env.MIGRATE_DATABASE_URL || process.env.DATABASE_URL);
+  const { config } = await import('../server/config.js');
+  const url = args.has('--test') ? (process.env.TEST_MIGRATE_DATABASE_URL || process.env.TEST_DATABASE_URL) : config.migrateDatabaseUrl;
   migrate({ url, reset: args.has('--reset') }).then(() => process.exit(0), e => { console.error('[migrate] failed:', e.message); process.exit(1); });
 }

@@ -19,7 +19,8 @@
     "test": "node scripts/lint.js && vitest run",
     "test:e2e": "playwright test",
     "jobs:nightly": "node server/jobs/run-once.js",
-    "db:setup-local": "mysql -u root < scripts/setup-local-db.sql"
+    "db:setup-local": "mysql -u root < scripts/setup-local-db.sql",
+    "admin:grant": "node scripts/make-admin.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1147.0",

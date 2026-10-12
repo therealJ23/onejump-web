@@ -74,6 +74,9 @@ See `DECISIONS.md` for the choices behind all of this.
 
 ## What I need from you
 
+**Going live on Railway (your existing server) at onejumpfit.com:** follow `DEPLOY-RAILWAY.md`. It replaces steps 5 (R2), 6 (DigitalOcean) and 7 (app.onejumpfit.com) below.
+
+
 Nothing here blocks building; everything already works locally with mocks. These are only for going live. Do them in any order and paste each key to me in chat when you have it (keys go in the server’s environment settings, never in the code).
 
 ### 1. GitHub (where the code lives) — 2 min

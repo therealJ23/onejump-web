@@ -5,6 +5,15 @@ const env = process.env;
 const isTest = env.NODE_ENV === 'test' || env.VITEST === 'true';
 const isProd = env.NODE_ENV === 'production';
 
+/** Railway: the MySQL service's MYSQL_URL, pointed at our own database (default "onejump") so the
+ *  app never shares tables with anything else on that server. */
+function railwayDbUrl() {
+  if (!env.MYSQL_URL) return '';
+  const u = new URL(env.MYSQL_URL);
+  u.pathname = `/${env.DATABASE_NAME || 'onejump'}`;
+  return u.toString();
+}
+
 function bool(v, def = false) {
   if (v == null || v === '') return def;
   return /^(1|true|yes|on)$/i.test(String(v));
@@ -16,8 +25,8 @@ export const config = {
   isTest,
   appUrl: (env.APP_URL || 'http://localhost:3000').replace(/\/$/, ''),
   port: Number(env.PORT || 3000),
-  databaseUrl: isTest ? (env.TEST_DATABASE_URL || env.DATABASE_URL) : env.DATABASE_URL,
-  migrateDatabaseUrl: isTest ? (env.TEST_MIGRATE_DATABASE_URL || env.TEST_DATABASE_URL) : (env.MIGRATE_DATABASE_URL || env.DATABASE_URL),
+  databaseUrl: isTest ? (env.TEST_DATABASE_URL || env.DATABASE_URL) : (env.DATABASE_URL || railwayDbUrl()),
+  migrateDatabaseUrl: isTest ? (env.TEST_MIGRATE_DATABASE_URL || env.TEST_DATABASE_URL) : (env.MIGRATE_DATABASE_URL || env.DATABASE_URL || railwayDbUrl()),
   databaseSsl: bool(env.DATABASE_SSL) || !!env.DATABASE_CA_CERT,
   databaseCaCert: env.DATABASE_CA_CERT || '',
   sessionSecret: env.SESSION_SECRET || (isProd ? '' : 'dev-only-secret-change-me-dev-only-secret'),
@@ -48,7 +57,8 @@ export const config = {
     r2AccessKeyId: env.R2_ACCESS_KEY_ID || '',
     r2Secret: env.R2_SECRET_ACCESS_KEY || '',
     r2Bucket: env.R2_BUCKET || 'onejump-private',
-    localDir: env.LOCAL_STORAGE_DIR || 'var/uploads',
+    // On Railway, a Volume keeps uploads across deploys (RAILWAY_VOLUME_MOUNT_PATH is set when one is attached).
+    localDir: env.LOCAL_STORAGE_DIR || (env.RAILWAY_VOLUME_MOUNT_PATH ? `${env.RAILWAY_VOLUME_MOUNT_PATH.replace(/\/$/, '')}/uploads` : 'var/uploads'),
   },
   voice: {
     provider: (env.VOICE_PROVIDER || 'mock').toLowerCase(), // mock | deepgram | openai
@@ -83,7 +93,7 @@ export function assertProductionConfig() {
   if (config.voice.provider === 'openai' && !config.ai.openaiKey) missing.push('OPENAI_API_KEY');
   if (missing.length) throw new Error(`Missing production settings: ${missing.join(', ')}`);
   if (config.email.provider === 'console') console.warn('[config] EMAIL_PROVIDER=console in production: invites and login links are NOT emailed. Set up Resend.');
-  if (config.storage?.provider === 'local') console.warn('[config] STORAGE_PROVIDER=local in production: uploaded photos are lost on every deploy. Set up Cloudflare R2.');
+  if (config.storage?.provider === 'local' && !env.LOCAL_STORAGE_DIR && !env.RAILWAY_VOLUME_MOUNT_PATH) console.warn('[config] STORAGE_PROVIDER=local in production: uploaded photos are lost on every deploy. Attach a Railway Volume or set up Cloudflare R2.');
   if (config.payments.provider === 'mock') console.warn('[config] PAYMENTS_PROVIDER=mock in production: no real payments.');
   if (config.voice.provider === 'mock') console.warn('[config] VOICE_PROVIDER=mock in production: Talk to Assist and voice notes use placeholder transcripts. Set up Deepgram.');
   if (config.nutrition.provider === 'mock') console.warn('[config] FOOD_DATA_PROVIDER=mock in production: food search uses the small offline list. Add FDC_API_KEY.');
