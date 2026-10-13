@@ -13,7 +13,7 @@ async function boot() {
   if (!me?.user) { location.replace('/login'); return; }
   setCsrf(me.csrfToken);
   if (!me.isPlatformAdmin) { location.replace(me.role === 'CLIENT' ? '/client' : '/app'); return; }
-  app.innerHTML = `<div class="pub"><header class="pub-nav"><span style="display:flex;align-items:center;gap:12px">${wordmark()}<span class="tiny" style="opacity:.7;letter-spacing:.08em;text-transform:uppercase">HQ</span></span><button class="btn ghost sm" style="color:var(--bone)" id="logout">${icon('logout')} Log out</button></header><main class="section"><div class="section-in" id="view" style="gap:20px"><div class="skel" style="height:120px"></div></div></main></div>`;
+  app.innerHTML = `<div class="pub"><header class="pub-nav"><span style="display:flex;align-items:center;gap:12px">${wordmark()}<span class="tiny" style="opacity:.7;letter-spacing:.08em;text-transform:uppercase">HQ</span></span><span style="display:flex;gap:6px">${me.business ? `<a class="btn ghost sm" style="color:var(--bone)" href="/app">Coach app</a>` : ''}<button class="btn ghost sm" style="color:var(--bone)" id="logout">${icon('logout')} Log out</button></span></header><main class="section"><div class="section-in" id="view" style="gap:20px"><div class="skel" style="height:120px"></div></div></main></div>`;
   document.getElementById('logout').addEventListener('click', async () => { await api.post('/api/auth/logout').catch(() => {}); location.href = '/login'; });
   try { render(await api.get('/api/admin/overview')); } catch (e) { document.getElementById('view').innerHTML = errorState(e.message); }
 }
