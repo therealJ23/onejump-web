@@ -1,34 +1,99 @@
 import SwiftUI
 
+/// The coach app: five tabs, each with its own navigation stack.
 struct CoachRootView: View {
-    let settings: AppSettings
-    @State private var toast = ToastCenter()
-    @State private var mode = Appearance.system
-    @State private var count = 3
+    @State private var store: CoachStore
+    @Environment(\.lang) private var lang
+
+    init(settings: AppSettings) {
+        _store = State(initialValue: CoachStore(settings: settings))
+    }
 
     var body: some View {
-        ScreenScroll {
-            ScreenHeader(eyebrow: "Tuesday", title: "Good morning, Alex") {
-                CircleIconButton(systemName: "moon", label: "Theme") { toast.show("Hi") }
+        TabView(selection: $store.tab) {
+            NavigationStack(path: $store.todayPath) {
+                TodayView().coachDestinations()
             }
-            HStack { OneJumpWordmark(height: 22); AssistMark(); Pill("At risk", tone: .crit); CountBadge(count: count) }
-            AssistCard(label: "Assist draft") { DraftText("Hello") }
-            StatTile(value: "$1,972", label: "Monthly revenue", note: "+8%", labelFirst: true)
-            ProgressBar(value: 0.5)
-            AppearancePicker(appearance: $mode)
-            ListCard { LanguageList(current: .english, fullNote: "Full", partialNote: "Soon") { _ in } }
-            VoiceOrb(active: true)
-            ListenBar(text: "Listening")
-            VoiceWave()
-            SectionHeader("Needs you", link: "Undo") {}
-            SectionHeader("Sessions", note: "3 booked")
-            Button("Approve") {}.buttonStyle(.oj(.primary, fullWidth: true))
-            ValueStepper(value: "30 lb", decreaseLabel: "-", increaseLabel: "+", onDecrease: {}, onIncrease: {})
-            EmptyStateCard(title: "All caught up")
-            DoneChip("Sent")
-            Text(YesNo.parse("Sí, envíalo") == .yes ? "yes" : "no")
-            Text(Fmt.money(1972) + Fmt.trimmed(2.25) + settings.voice.voiceName)
+            .tabItem { Label(CT.today(lang), systemImage: "house") }
+            .badge(store.pendingQueue.count)
+            .tag(CoachTab.today)
+
+            NavigationStack(path: $store.clientsPath) {
+                ClientsView().coachDestinations()
+            }
+            .tabItem { Label(CT.clients(lang), systemImage: "person.2") }
+            .tag(CoachTab.clients)
+
+            NavigationStack(path: $store.assistPath) {
+                AssistView().coachDestinations()
+            }
+            .tabItem {
+                Label {
+                    Text(CT.assist(lang))
+                } icon: {
+                    Image("AssistTab")
+                }
+            }
+            .tag(CoachTab.assist)
+
+            NavigationStack(path: $store.inboxPath) {
+                InboxView().coachDestinations()
+            }
+            .tabItem { Label(CT.inbox(lang), systemImage: "bubble.left.and.bubble.right") }
+            .badge(store.unreadCount + store.openCheckInCount)
+            .tag(CoachTab.inbox)
+
+            NavigationStack(path: $store.morePath) {
+                MoreView().coachDestinations()
+            }
+            .tabItem { Label(CT.more(lang), systemImage: "square.grid.2x2") }
+            .tag(CoachTab.more)
         }
-        .toastOverlay(toast)
+        .environment(store)
+        .toastOverlay(store.toast)
+        .sheet(isPresented: $store.showAddClient) {
+            AddClientSheet()
+                .environment(store)
+        }
+        .onChange(of: store.tab) { _, newTab in
+            if newTab != .assist, store.listenMode != nil {
+                store.voice.stopListening()
+                store.listenMode = nil
+            }
+        }
+    }
+}
+
+// MARK: - Routing
+
+extension View {
+    /// Every screen a coach tab can open.
+    func coachDestinations() -> some View {
+        navigationDestination(for: CoachRoute.self) { route in
+            CoachDestination(route: route)
+        }
+    }
+}
+
+private struct CoachDestination: View {
+    let route: CoachRoute
+
+    var body: some View {
+        switch route {
+        case .client(let id): ClientDetailView(clientID: id)
+        case .thread(let id): ThreadView(threadID: id)
+        case .checkIn(let id): CheckInReviewView(clientID: id)
+        case .payments: PaymentsView()
+        case .leads: LeadsView()
+        case .programs: ProgramsView()
+        case .program(let id): ProgramDetailView(programID: id)
+        case .workoutBuilder: WorkoutBuilderView()
+        case .library: ExerciseLibraryView()
+        case .exercise(let id): ExerciseDetailView(exerciseID: id)
+        case .nutrition: NutritionView()
+        case .automations: AutomationsView()
+        case .settings: CoachSettingsView()
+        case .billing: BillingView()
+        }
     }
 }
