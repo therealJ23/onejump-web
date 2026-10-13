@@ -27,7 +27,7 @@ final class VoiceService {
 
     @ObservationIgnored private let synthesizer = AVSpeechSynthesizer()
     @ObservationIgnored private let speechDelegate = SpeechDelegate()
-    @ObservationIgnored private var speakToken = 0
+    @ObservationIgnored private var currentUtterance: AVSpeechUtterance?
     @ObservationIgnored private var speakCompletion: (() -> Void)?
 
     @ObservationIgnored private let audioEngine = AVAudioEngine()
@@ -42,8 +42,8 @@ final class VoiceService {
 
     init() {
         synthesizer.delegate = speechDelegate
-        speechDelegate.onFinish = { [weak self] in
-            DispatchQueue.main.async { self?.utteranceFinished() }
+        speechDelegate.onFinish = { [weak self] utterance in
+            DispatchQueue.main.async { self?.utteranceFinished(utterance) }
         }
     }
 
@@ -58,7 +58,6 @@ final class VoiceService {
     /// Speaks text in Assist's voice. `completion` runs when it finishes (not when cancelled).
     func speak(_ text: String, completion: (() -> Void)? = nil) {
         stopSpeaking()
-        speakToken += 1
         speakCompletion = completion
         configureAudioSession()
         let utterance = AVSpeechUtterance(string: text)
@@ -66,12 +65,13 @@ final class VoiceService {
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 1.02
         utterance.pitchMultiplier = 1
         utterance.postUtteranceDelay = 0.05
+        currentUtterance = utterance
         isSpeaking = true
         synthesizer.speak(utterance)
     }
 
     func stopSpeaking() {
-        speakToken += 1
+        currentUtterance = nil
         speakCompletion = nil
         if synthesizer.isSpeaking {
             synthesizer.stopSpeaking(at: .immediate)
@@ -79,8 +79,10 @@ final class VoiceService {
         isSpeaking = false
     }
 
-    private func utteranceFinished() {
-        guard !synthesizer.isSpeaking else { return }
+    /// Only the utterance we're waiting for counts; finishes from stopped ones are ignored.
+    private func utteranceFinished(_ utterance: AVSpeechUtterance) {
+        guard let current = currentUtterance, current === utterance else { return }
+        currentUtterance = nil
         isSpeaking = false
         let done = speakCompletion
         speakCompletion = nil
@@ -277,10 +279,10 @@ final class VoiceService {
 
 /// Receives "finished speaking" callbacks from AVSpeechSynthesizer.
 private final class SpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
-    var onFinish: (() -> Void)?
+    var onFinish: ((AVSpeechUtterance) -> Void)?
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        onFinish?()
+        onFinish?(utterance)
     }
 }
 
