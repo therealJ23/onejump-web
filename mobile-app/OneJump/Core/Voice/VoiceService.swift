@@ -38,6 +38,7 @@ final class VoiceService {
     @ObservationIgnored private var maxWork: DispatchWorkItem?
     @ObservationIgnored private var listenDone: ((String) -> Void)?
     @ObservationIgnored private var recognitionUnavailable = false
+    @ObservationIgnored private var tapInstalled = false
 
     init() {
         synthesizer.delegate = speechDelegate
@@ -191,10 +192,11 @@ final class VoiceService {
             request.shouldReportPartialResults = true
             recognitionRequest = request
 
-            input.removeTap(onBus: 0)
+            if tapInstalled { input.removeTap(onBus: 0) }
             input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
                 request.append(buffer)
             }
+            tapInstalled = true
             audioEngine.prepare()
             try audioEngine.start()
 
@@ -242,7 +244,10 @@ final class VoiceService {
         if audioEngine.isRunning {
             audioEngine.stop()
         }
-        audioEngine.inputNode.removeTap(onBus: 0)
+        if tapInstalled {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
         recognitionRequest?.endAudio()
         recognitionRequest = nil
         recognitionTask?.cancel()

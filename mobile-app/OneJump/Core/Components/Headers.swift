@@ -109,6 +109,7 @@ struct ScreenScroll<Content: View>: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .defaultScrollAnchor(Self.launchAnchor)
+        .statusBarBackdrop()
         .background(Palette.bg.ignoresSafeArea())
     }
 
@@ -123,6 +124,16 @@ struct ScreenScroll<Content: View>: View {
 }
 
 extension View {
+    /// A soft blurred band behind the status bar, so content scrolling under it stays readable
+    /// on screens that hide the navigation bar.
+    func statusBarBackdrop() -> some View {
+        safeAreaInset(edge: .top, spacing: 0) {
+            Color.clear
+                .frame(height: 0)
+                .background(.bar)
+        }
+    }
+
     /// Inline navigation title styled for the app, used on pushed screens.
     func ojNavigationTitle(_ title: String) -> some View {
         navigationTitle(title)

@@ -47,6 +47,7 @@ struct CoachChatView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
+            .statusBarBackdrop()
             .onChange(of: store.chatExtra.count) { _, _ in
                 withAnimation(.snappy) { proxy.scrollTo("bottom", anchor: .bottom) }
             }

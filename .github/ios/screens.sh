@@ -18,6 +18,7 @@ xcrun simctl bootstatus "$UDID" -b
 xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 || true
 xcrun simctl install "$UDID" "$APP"
 BUNDLE=com.onejumpfit.OneJump
+xcrun simctl privacy "$UDID" grant microphone "$BUNDLE" || true
 
 # shot NAME ROLE LANG APPEARANCE LINK [WAIT] [SCROLL: center|bottom]
 shot() {
@@ -59,7 +60,6 @@ shot 17-coach-library coach en light library
 shot 18-coach-nutrition coach en light nutrition
 shot 19-coach-automations coach en light automations
 shot 20-coach-billing coach en light billing
-shot 21-coach-ask coach en light "ask:Who needs me today?" 6
 shot 30-client-today client en light today
 shot 30b-client-today-bottom client en light today 4 bottom
 shot 31-client-today-es-dark client es dark today
@@ -75,6 +75,8 @@ shot 39-client-checkin client en light checkIn
 shot 39b-client-checkin-bottom client es light checkIn 4 bottom
 shot 40-client-book client en light book
 shot 41-client-quick client en light quick 5
+# Last, because talking to Assist triggers the speech-recognition permission prompt.
+shot 50-coach-ask coach en light "ask:Who needs me today?" 6
 
 # Crash reports, if any
 cp ~/Library/Logs/DiagnosticReports/OneJump* "$OUT/" 2>/dev/null || true

@@ -38,6 +38,7 @@ struct AssistView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollDismissesKeyboard(.interactively)
+            .statusBarBackdrop()
             .onChange(of: store.assistMessages.count) { _, _ in scrollDown(proxy) }
             .onChange(of: store.thinking) { _, _ in scrollDown(proxy) }
             .onChange(of: store.voice.heard) { _, _ in scrollDown(proxy) }
