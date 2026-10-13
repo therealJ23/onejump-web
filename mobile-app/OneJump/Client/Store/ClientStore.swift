@@ -96,6 +96,39 @@ final class ClientStore {
 
     init(settings: AppSettings) {
         self.settings = settings
+        // Launch argument used for previews and screenshots: -ojOpen "food" or "workout"
+        if let link = UserDefaults.standard.string(forKey: "ojOpen") {
+            open(link: link)
+        }
+    }
+
+    /// Opens a screen from a short link like "food", "workout", "log:voice" or "me".
+    /// Ready for push notifications and universal links later.
+    func open(link: String) {
+        let parts = link.split(separator: ":", maxSplits: 1).map(String.init)
+        let detail = parts.count > 1 ? parts[1] : ""
+        switch parts.first ?? "" {
+        case "today": go(.today)
+        case "food": go(.food)
+        case "progress": go(.progress)
+        case "coach": go(.coach)
+        case "me": go(.today); push(.me)
+        case "book": go(.today); push(.book)
+        case "checkIn": go(.today); push(.checkIn)
+        case "quick": showQuickLog = true
+        case "workout": startWorkout()
+        case "log":
+            let mode: LogMode
+            switch detail {
+            case "voice": mode = .voice
+            case "barcode": mode = .barcode
+            case "search": mode = .search
+            default: mode = .photo
+            }
+            go(.food)
+            openLogger(mode)
+        default: break
+        }
     }
 
     // MARK: - Navigation

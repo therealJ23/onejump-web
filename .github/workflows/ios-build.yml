@@ -8,6 +8,7 @@ on:
     paths:
       - 'mobile-app/**'
       - '.github/workflows/ios-build.yml'
+      - '.github/ios/**'
   workflow_dispatch:
 
 permissions:
@@ -30,7 +31,7 @@ jobs:
           cd mobile-app
           xcodebuild -project OneJump.xcodeproj -scheme OneJump -configuration Debug \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build > "$GITHUB_WORKSPACE/build.log" 2>&1
+            -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build > "$GITHUB_WORKSPACE/build.log" 2>&1
           code=$?
           echo "code=$code" >> "$GITHUB_OUTPUT"
           cd "$GITHUB_WORKSPACE"
@@ -42,6 +43,12 @@ jobs:
           grep " error: " build.log | sort -u | head -50 | while IFS= read -r line; do echo "::error::$line"; done
           exit 0
 
+      - name: Screenshots on an iPhone simulator
+        if: steps.build.outputs.code == '0'
+        timeout-minutes: 20
+        run: |
+          bash .github/ios/screens.sh "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/OneJump.app" "$GITHUB_WORKSPACE/shots" || true
+
       - name: Save results to ios-ci-logs branch
         if: always()
         env:
@@ -51,6 +58,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/logs" && cd "$RUNNER_TEMP/logs"
           git init -q && git checkout -q -b ios-ci-logs
           cp "$GITHUB_WORKSPACE"/errors.txt "$GITHUB_WORKSPACE"/errors-context.txt "$GITHUB_WORKSPACE"/warnings.txt "$GITHUB_WORKSPACE"/build-tail.txt . 2>/dev/null || true
+          if [ -d "$GITHUB_WORKSPACE/shots" ]; then cp -R "$GITHUB_WORKSPACE/shots" . ; fi
           printf "sha=%s\nexit=%s\nxcode=%s\n" "$GITHUB_SHA" "$CODE" "$(xcodebuild -version | head -1)" > result.txt
           git -c user.name=ci -c user.email=ci@users.noreply.github.com add -A
           git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "iOS build log for $GITHUB_SHA"

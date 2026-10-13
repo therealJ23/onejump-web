@@ -111,6 +111,39 @@ final class CoachStore {
 
     init(settings: AppSettings) {
         self.settings = settings
+        // Launch argument used for previews and screenshots: -ojOpen "inbox" or "client:maya"
+        if let link = UserDefaults.standard.string(forKey: "ojOpen") {
+            open(link: link)
+        }
+    }
+
+    /// Opens a screen from a short link like "today", "inbox", "client:maya" or "thread:lucas".
+    /// Ready for push notifications and universal links later.
+    func open(link: String) {
+        let parts = link.split(separator: ":", maxSplits: 1).map(String.init)
+        let id = parts.count > 1 ? parts[1] : ""
+        switch parts.first ?? "" {
+        case "today": go(.today)
+        case "clients": go(.clients)
+        case "assist": go(.assist)
+        case "inbox": go(.inbox)
+        case "checkins": openInbox(.checkIns)
+        case "more": go(.more)
+        case "client": go(.clients); push(.client(id))
+        case "thread": go(.inbox); openThread(id)
+        case "checkIn": openInbox(.checkIns); push(.checkIn(id))
+        case "payments": go(.more); push(.payments)
+        case "leads": go(.more); push(.leads)
+        case "programs": go(.more); push(.programs)
+        case "builder": go(.more); push(.workoutBuilder)
+        case "library": go(.more); push(.library)
+        case "nutrition": go(.more); push(.nutrition)
+        case "automations": go(.more); push(.automations)
+        case "settings": go(.more); push(.settings)
+        case "billing": go(.more); push(.billing)
+        case "ask": send(id)
+        default: break
+        }
     }
 
     // MARK: - Lookups
