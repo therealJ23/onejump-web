@@ -32,6 +32,8 @@ export async function migrate({ url, reset = false, log = console.log } = {}) {
     conn = await mariadb.createConnection(cfg);
   }
   try {
+    // One migration run at a time, even if two app instances start together.
+    await conn.query("SELECT GET_LOCK('onejump_migrate', 120)");
     if (reset) {
       const tables = await conn.query('SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()');
       await conn.query('SET FOREIGN_KEY_CHECKS = 0');

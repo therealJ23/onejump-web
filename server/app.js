@@ -136,6 +136,7 @@ export function createApp({ sessionStore } = {}) {
   // Errors
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, _next) => {
+    if (res.headersSent) { console.error(`[error] ${req.method} ${req.originalUrl} (after response):`, err?.message || err); return; }
     let status = err.status || err.statusCode || 500;
     let body = { error: err.message || 'Something went wrong.' };
     if (err instanceof HttpError) body = { error: err.message, ...err.extra };
