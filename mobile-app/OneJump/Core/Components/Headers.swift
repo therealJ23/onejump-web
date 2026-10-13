@@ -108,7 +108,17 @@ struct ScreenScroll<Content: View>: View {
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
+        .defaultScrollAnchor(Self.launchAnchor)
         .background(Palette.bg.ignoresSafeArea())
+    }
+
+    /// Previews and screenshots can start a screen scrolled: launch with -ojScroll bottom (or center).
+    private static var launchAnchor: UnitPoint? {
+        switch UserDefaults.standard.string(forKey: "ojScroll") {
+        case "bottom": return .bottom
+        case "center": return .center
+        default: return nil
+        }
     }
 }
 
@@ -117,6 +127,7 @@ extension View {
     func ojNavigationTitle(_ title: String) -> some View {
         navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarRole(.editor)
             .toolbarBackground(Palette.bg, for: .navigationBar)
     }
 }

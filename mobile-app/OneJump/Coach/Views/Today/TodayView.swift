@@ -82,8 +82,7 @@ struct TimeSavedCard: View {
                 Text("6h 40m")
                     .font(OJFont.display)
                     .tracking(-1.4)
-                SubText(CT.savedSub(lang))
-                    .foregroundStyle(Palette.bone.opacity(0.75))
+                SubText(CT.savedSub(lang), color: Palette.bone.opacity(0.75))
             }
             Spacer(minLength: 0)
             HStack(alignment: .bottom, spacing: 4) {

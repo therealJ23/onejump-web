@@ -20,7 +20,7 @@ struct StatTile: View {
                 Text(label).font(OJFont.sub).foregroundStyle(Palette.muted).lineLimit(2)
             }
             if let note {
-                Text(note).font(.archivo(12, .bold)).foregroundStyle(noteColor).lineLimit(1)
+                Text(note).font(.archivo(12, .bold)).foregroundStyle(noteColor).lineLimit(2)
             }
         }
         .padding(12)

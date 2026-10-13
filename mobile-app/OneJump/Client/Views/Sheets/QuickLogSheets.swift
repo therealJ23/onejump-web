@@ -25,7 +25,7 @@ struct QuickLogSheet: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 24)
         }
-        .background(Palette.surface.ignoresSafeArea())
+        .background(Palette.bg.ignoresSafeArea())
     }
 
     private func tile(_ title: String, _ sub: String, _ icon: String, volt: Bool = false, action: @escaping () -> Void) -> some View {
@@ -39,7 +39,7 @@ struct QuickLogSheet: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
-            .background(Palette.surface2, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Palette.line, lineWidth: 1))
         }
         .buttonStyle(.plain)

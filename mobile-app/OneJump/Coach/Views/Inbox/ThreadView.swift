@@ -40,6 +40,7 @@ struct ThreadView: View {
         .background(Palette.bg.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) { composer }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarRole(.editor)
         .toolbar {
             ToolbarItem(placement: .principal) { header }
         }

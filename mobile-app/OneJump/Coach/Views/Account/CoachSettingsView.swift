@@ -230,9 +230,9 @@ struct BillingView: View {
         let chosen = CoachData.plans.first { $0.id == store.selectedPlan } ?? CoachData.plans[1]
         ScreenScroll {
             VStack(alignment: .leading, spacing: 6) {
-                SubText(CT.currentPlan(lang)).foregroundStyle(Palette.bone.opacity(0.75))
+                SubText(CT.currentPlan(lang), color: Palette.bone.opacity(0.75))
                 Text(CT.proTrial(lang)).font(.archivo(34, .heavy)).tracking(-1)
-                SubText(CT.trialSub(lang)).foregroundStyle(Palette.bone.opacity(0.75))
+                SubText(CT.trialSub(lang), color: Palette.bone.opacity(0.75))
             }
             .heroCard()
 

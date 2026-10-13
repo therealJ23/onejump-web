@@ -71,12 +71,17 @@ struct Eyebrow: View {
 /// Muted secondary text.
 struct SubText: View {
     let text: String
-    init(_ text: String) { self.text = text }
+    var color: Color = Palette.muted
+
+    init(_ text: String, color: Color = Palette.muted) {
+        self.text = text
+        self.color = color
+    }
 
     var body: some View {
         Text(text)
             .font(OJFont.sub)
-            .foregroundStyle(Palette.muted)
+            .foregroundStyle(color)
             .fixedSize(horizontal: false, vertical: true)
     }
 }

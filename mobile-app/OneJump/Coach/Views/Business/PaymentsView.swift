@@ -8,9 +8,9 @@ struct PaymentsView: View {
     var body: some View {
         ScreenScroll {
             VStack(alignment: .leading, spacing: 8) {
-                SubText(CT.mrrLabel(lang)).foregroundStyle(Palette.bone.opacity(0.75))
+                SubText(CT.mrrLabel(lang), color: Palette.bone.opacity(0.75))
                 Text("$1,972").font(OJFont.display).tracking(-1.4)
-                SubText(CT.mrrSub(lang)).foregroundStyle(Palette.bone.opacity(0.75))
+                SubText(CT.mrrSub(lang), color: Palette.bone.opacity(0.75))
                 HStack(spacing: 24) {
                     heroStat(CT.collected(lang), "$1,574")
                     heroStat(CT.outstanding(lang), "$398")
@@ -100,7 +100,7 @@ struct PaymentsView: View {
 
     private func heroStat(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            SubText(label).foregroundStyle(Palette.bone.opacity(0.75))
+            SubText(label, color: Palette.bone.opacity(0.75))
             Text(value).font(OJFont.stat)
         }
     }

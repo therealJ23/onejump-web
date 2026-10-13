@@ -120,7 +120,7 @@ struct Sparkline: View {
                     .interpolationMethod(.catmullRom)
                     .foregroundStyle(Palette.chart)
                     .lineStyle(StrokeStyle(lineWidth: 2.6, lineCap: .round))
-                AreaMark(x: .value("Week", pair.offset), y: .value("Trend", -pair.element))
+                AreaMark(x: .value("Week", pair.offset), yStart: .value("Base", -32), yEnd: .value("Trend", -pair.element))
                     .interpolationMethod(.catmullRom)
                     .foregroundStyle(LinearGradient(colors: [Palette.chart.opacity(0.18), Palette.chart.opacity(0)], startPoint: .top, endPoint: .bottom))
             }
@@ -349,14 +349,17 @@ struct PhotoPlaceholder: View {
     var systemImage: String?
 
     var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: systemImage ?? (locked ? "lock.fill" : "camera"))
-                .font(.system(size: 15, weight: .semibold))
-            Text(label).font(.archivo(12, .semibold))
-        }
-        .foregroundStyle(Palette.muted)
-        .frame(maxWidth: .infinity)
+        Color.clear
         .aspectRatio(3 / 4, contentMode: .fit)
+        .frame(maxWidth: .infinity)
+        .overlay {
+            VStack(spacing: 4) {
+                Image(systemName: systemImage ?? (locked ? "lock.fill" : "camera"))
+                    .font(.system(size: 15, weight: .semibold))
+                Text(label).font(.archivo(12, .semibold)).lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(Palette.muted)
+        }
         .background {
             if dashed {
                 RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Palette.surface)
