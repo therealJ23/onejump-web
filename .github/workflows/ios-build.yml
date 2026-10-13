@@ -1,0 +1,61 @@
+name: iOS build
+
+# Builds the native iPhone app (mobile-app/) on a Mac so compile errors show up
+# without needing Xcode locally. Results are also saved to the ios-ci-logs branch.
+on:
+  push:
+    branches: [ios-app]
+    paths:
+      - 'mobile-app/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build for iOS Simulator
+        id: build
+        run: |
+          set +e
+          cd mobile-app
+          xcodebuild -project OneJump.xcodeproj -scheme OneJump -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build > "$GITHUB_WORKSPACE/build.log" 2>&1
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          cd "$GITHUB_WORKSPACE"
+          grep -E "error:|\*\* BUILD" build.log | sort -u > errors.txt || true
+          grep -E -B3 -A8 " error: " build.log | head -3000 > errors-context.txt || true
+          grep -E " warning: " build.log | grep "/mobile-app/OneJump/" | sort -u | head -400 > warnings.txt || true
+          tail -n 120 build.log > build-tail.txt
+          echo "exit code: $code"; head -n 60 errors.txt
+          grep " error: " build.log | sort -u | head -50 | while IFS= read -r line; do echo "::error::$line"; done
+          exit 0
+
+      - name: Save results to ios-ci-logs branch
+        if: always()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CODE: ${{ steps.build.outputs.code }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/logs" && cd "$RUNNER_TEMP/logs"
+          git init -q && git checkout -q -b ios-ci-logs
+          cp "$GITHUB_WORKSPACE"/errors.txt "$GITHUB_WORKSPACE"/errors-context.txt "$GITHUB_WORKSPACE"/warnings.txt "$GITHUB_WORKSPACE"/build-tail.txt . 2>/dev/null || true
+          printf "sha=%s\nexit=%s\nxcode=%s\n" "$GITHUB_SHA" "$CODE" "$(xcodebuild -version | head -1)" > result.txt
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com add -A
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "iOS build log for $GITHUB_SHA"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ios-ci-logs
+
+      - name: Fail if the build failed
+        if: steps.build.outputs.code != '0'
+        run: exit 1
