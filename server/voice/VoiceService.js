@@ -25,7 +25,8 @@ export const MOCK_CLIENT_PHRASES = {
 };
 // USD per minute of audio (check the providers' pricing pages when switching).
 const PRICE_PER_MIN = { deepgram: 0.0077, openai: 0.006, mock: 0 };
-const TTS_PRICE_PER_1K_CHARS = 0.03;
+const TTS_PRICE_PER_1K_CHARS = 0.03; // Aura-2
+const FLUX_TTS_PRICE_PER_1K_CHARS = 0.045;
 
 class MockVoice {
   constructor() { this.name = 'mock'; }
@@ -48,10 +49,11 @@ class DeepgramVoice {
     return { transcript: json.results?.channels?.[0]?.alternatives?.[0]?.transcript || '', durationMs: json.metadata?.duration ? Math.round(json.metadata.duration * 1000) : null };
   }
   async speak(text, voice = config.voice.deepgramVoice) {
-    const res = await this.fetch(`https://api.deepgram.com/v1/speak?model=${encodeURIComponent(voice)}&encoding=mp3`, {
+    const version = voice.startsWith('flux-') ? 'v2' : 'v1'; // Flux voices use the newer endpoint
+    const res = await this.fetch(`https://api.deepgram.com/${version}/speak?model=${encodeURIComponent(voice)}&encoding=mp3`, {
       method: 'POST', headers: { Authorization: `Token ${this.key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal: AbortSignal.timeout(20000),
     });
-    if (!res.ok) throw new Error(`Deepgram TTS ${res.status}`);
+    if (!res.ok) { const why = (await res.text().catch(() => '')).slice(0, 200); console.error(`[voice] Deepgram TTS ${res.status} for ${voice}: ${why}`); throw new Error(`Deepgram TTS ${res.status}`); }
     return Buffer.from(await res.arrayBuffer());
   }
 }
@@ -135,7 +137,7 @@ export const VoiceService = {
     if (config.voice.tts !== 'deepgram' || !config.voice.deepgramKey) return null;
     const dg = active() instanceof DeepgramVoice ? active() : new DeepgramVoice({ apiKey: config.voice.deepgramKey, model: config.voice.deepgramModel });
     const audio = await dg.speak(String(text).slice(0, 1000));
-    await db.aIUsage.create({ data: { kind: 'voice_tts', provider: 'deepgram', model: config.voice.deepgramVoice, costMicros: Math.round(text.length / 1000 * TTS_PRICE_PER_1K_CHARS * 1e6) } }).catch(() => null);
+    await db.aIUsage.create({ data: { kind: 'voice_tts', provider: 'deepgram', model: config.voice.deepgramVoice, costMicros: Math.round(text.length / 1000 * (config.voice.deepgramVoice.startsWith('flux-') ? FLUX_TTS_PRICE_PER_1K_CHARS : TTS_PRICE_PER_1K_CHARS) * 1e6) } }).catch(() => null);
     return audio;
   },
 };

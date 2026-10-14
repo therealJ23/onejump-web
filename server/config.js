@@ -19,11 +19,22 @@ function bool(v, def = false) {
   return /^(1|true|yes|on)$/i.test(String(v));
 }
 
-/** Deepgram voice names are lowercase ("aura-2-thalia-en"). Accepts "Thalia", "aura-2-Thalia-en", extra spaces. */
-function deepgramVoiceName(raw) {
+// Deepgram voices: Aura-2 (POST /v1/speak) and Flux (POST /v2/speak). Model names are lowercase.
+const AURA2_VOICES = 'amalthea andromeda apollo arcas aries asteria athena atlas aurora callista cora cordelia delia draco electra harmonia helena hera hermes hyperion iris janus juno jupiter luna mars minerva neptune odysseus ophelia orion orpheus pandora phoebe pluto saturn selene thalia theia vesta zeus'.split(' ');
+const FLUX_VOICES = 'hannah kit alexis cliff sienna cole brooke colin gemma haley heather miles sean bree brittany bruce conor donovan drew elise jack kai kelsey maeve marcelo marcus meena meghan naveen paige priya rufus sharon tanner wade wes'.split(' ');
+/** Accepts any capitalization and short names: "Thalia" → aura-2-thalia-en, "Elise" → flux-elise-en. */
+export function deepgramVoiceName(raw) {
   const v = String(raw || '').trim().toLowerCase();
   if (!v) return 'aura-2-thalia-en';
-  return /^[a-z]+$/.test(v) ? `aura-2-${v}-en` : v;
+  if (/^[a-z]+$/.test(v)) {
+    if (AURA2_VOICES.includes(v)) return `aura-2-${v}-en`;
+    if (FLUX_VOICES.includes(v)) return `flux-${v}-en`;
+    return 'aura-2-thalia-en';
+  }
+  // "aura-2-elise-en" is not an Aura-2 voice, but Elise is a Flux voice: use that.
+  const m = v.match(/^aura-2-([a-z]+)-en$/);
+  if (m && !AURA2_VOICES.includes(m[1]) && FLUX_VOICES.includes(m[1])) return `flux-${m[1]}-en`;
+  return v;
 }
 
 export const config = {
