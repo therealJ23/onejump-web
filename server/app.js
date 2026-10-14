@@ -88,7 +88,7 @@ export function createApp({ sessionStore } = {}) {
   app.use('/api', rateLimit({ windowMs: 60e3, limit: 600, standardHeaders: 'draft-7', legacyHeaders: false, skip: () => config.isTest }));
   app.use('/api', csrfProtect);
 
-  app.get('/api/health', (_req, res) => res.json({ ok: true, ai: config.ai.provider, payments: config.payments.provider, email: config.email.provider, storage: StorageService.provider() }));
+  app.get('/api/health', (_req, res) => res.json({ ok: true, ai: config.ai.provider, payments: config.payments.provider, email: config.email.provider, storage: StorageService.provider(), voice: config.voice.provider, tts: config.voice.tts === 'deepgram' && config.voice.deepgramKey ? 'deepgram' : 'browser' }));
   app.use('/api/auth', authRoutes);
   app.use('/api/join', joinRoutes);
   app.use('/api/onboarding', requireOwner, onboardingRoutes);
