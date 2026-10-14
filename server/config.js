@@ -19,6 +19,13 @@ function bool(v, def = false) {
   return /^(1|true|yes|on)$/i.test(String(v));
 }
 
+/** Deepgram voice names are lowercase ("aura-2-thalia-en"). Accepts "Thalia", "aura-2-Thalia-en", extra spaces. */
+function deepgramVoiceName(raw) {
+  const v = String(raw || '').trim().toLowerCase();
+  if (!v) return 'aura-2-thalia-en';
+  return /^[a-z]+$/.test(v) ? `aura-2-${v}-en` : v;
+}
+
 export const config = {
   env: env.NODE_ENV || 'development',
   isProd,
@@ -61,11 +68,11 @@ export const config = {
     localDir: env.LOCAL_STORAGE_DIR || (env.RAILWAY_VOLUME_MOUNT_PATH ? `${env.RAILWAY_VOLUME_MOUNT_PATH.replace(/\/$/, '')}/uploads` : 'var/uploads'),
   },
   voice: {
-    provider: (env.VOICE_PROVIDER || 'mock').toLowerCase(), // mock | deepgram | openai
-    tts: (env.VOICE_TTS || 'browser').toLowerCase(), // browser | deepgram
-    deepgramKey: env.DEEPGRAM_API_KEY || '',
+    provider: (env.VOICE_PROVIDER || 'mock').trim().toLowerCase(), // mock | deepgram | openai
+    tts: (env.VOICE_TTS || 'browser').trim().toLowerCase(), // browser | deepgram
+    deepgramKey: (env.DEEPGRAM_API_KEY || '').trim(),
     deepgramModel: env.DEEPGRAM_MODEL || 'nova-3',
-    deepgramVoice: env.DEEPGRAM_TTS_VOICE || 'aura-2-thalia-en',
+    deepgramVoice: deepgramVoiceName(env.DEEPGRAM_TTS_VOICE),
     openaiTranscribeModel: env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1',
     monthlyMinutes: Number(env.VOICE_MONTHLY_MINUTES || 300),
   },
