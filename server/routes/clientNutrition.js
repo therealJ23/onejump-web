@@ -11,6 +11,7 @@ import { StorageService } from '../storage/StorageService.js';
 import { addDays, ymdToDate } from '../lib/time.js';
 import { effectivePlan, isPro, requireFeature } from '../auth/middleware.js';
 import { weeklySummary } from '../nutrition/attention.js';
+import { draftNutritionPlan, applyNutritionPlan } from '../nutrition/assistPlan.js';
 
 export const router = Router();
 const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
@@ -85,6 +86,29 @@ router.post('/:id/nutrition-plan/estimate', body(z.object({
   const est = estimateTargets({ ...inputs, ...req.body, weightLb: req.body.weightLb || inputs.weightLb, age: req.body.age || inputs.age });
   if (!est.ok) throw badRequest(`Add ${est.missing.join(' and ')} first.`, { missing: est.missing });
   res.json({ estimate: est });
+});
+
+// ---------------------------------------------------------------- Assist builds the plan
+// A draft for the coach only; "Use this plan" (apply-draft) is the coach's approval.
+const assistPro = requireFeature('PRO', 'Assist nutrition plans');
+router.post('/:id/nutrition-plan/assist', assistPro, body(z.object({ request: z.string().trim().max(1500).default(''), lang: z.enum(['en', 'es']).default('en') })), async (req, res) => {
+  const c = await getClient(req.db, req.params.id);
+  res.json(await draftNutritionPlan(req.db, c, req.body));
+});
+const draftBody = z.object({
+  approach: z.enum(APPROACHES),
+  calories: n(0, 10000), proteinG: n(0, 1000), carbsG: n(0, 2000), fatG: n(0, 1000),
+  habits: z.array(z.string().trim().min(2).max(80)).max(8).default([]),
+  mealPlan: z.object({ name: z.string().trim().min(2).max(80), days: z.array(z.object({ label: z.string().trim().max(40), meals: z.array(z.object({ meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']), items: z.array(z.string().trim().min(1).max(200)).max(12) })).max(8) })).min(1).max(14) }).nullable().default(null),
+  coachNote: z.string().trim().max(2000).nullable().optional(),
+  confirmLowTarget: z.boolean().default(false),
+});
+router.post('/:id/nutrition-plan/apply-draft', assistPro, body(draftBody), async (req, res) => {
+  const c = await getClient(req.db, req.params.id);
+  const b = await req.db.business.findFirst({ select: { plan: true, planStatus: true, trialEndsAt: true, settings: true } });
+  const { confirmLowTarget, ...d } = req.body;
+  const r = await applyNutritionPlan(req.db, req.auth, c, d, { pro: isPro(effectivePlan(b)), confirmLowTarget });
+  res.json({ ...(await shapePlan(req.db, c, r.plan, b.settings)), habitsAdded: r.habitsAdded, message: r.message });
 });
 
 // ---------------------------------------------------------------- tab data + food log

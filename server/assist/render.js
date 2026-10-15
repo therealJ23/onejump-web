@@ -18,11 +18,11 @@ const relDays = d => { if (!d) return 'never'; const n = Math.floor((Date.now() 
 const levelPill = l => `<span class="pill ${l === 'HIGH' ? 'crit' : l === 'MEDIUM' ? 'warn' : 'good'}"><span class="dot"></span>${l === 'HIGH' ? 'High' : l === 'MEDIUM' ? 'Medium' : 'Low'}</span>`;
 
 /** At most two short sentences, and nothing health-related read aloud. */
-export function speakable(text, max = 220) {
+export function speakable(text, max = 220, sentences = 2) {
   const t = String(text || '').replace(/\s+/g, ' ').trim().replace(/(\d)\.(\d)/g, '$1\u2024$2');
   const parts = (t.match(/[^.!?]+[.!?]+/g) || [t]).map(p => p.replace(/\u2024/g, '.'));
   let out = '';
-  for (const p of parts.slice(0, 2)) { if ((out + p).length > max && out) break; out += p; }
+  for (const p of parts.slice(0, sentences)) { if ((out + p).length > max && out) break; out += p; }
   out = (out || t.replace(/\u2024/g, '.').slice(0, max)).trim();
   return sensitive(out) ? 'I’ve put the details on screen.' : out;
 }

@@ -100,7 +100,7 @@ test('Ask Assist: the green button greets the coach by name; tapping the logo ta
   await expect(card).toContainText('Marcus Johnson', { timeout: 10000 }); // sent on its own after the pause
   expect(await count()).toBe(before);
   await card.getByRole('button', { name: /Confirm/ }).click();
-  await expect(card).toContainText('You confirmed it on screen.');
+  await expect(card).toContainText('You confirmed it.');
   expect(await count()).toBe(before + 1);
   done();
 });
@@ -210,8 +210,9 @@ test('morning briefing: Today → Play reads it line by line', async ({ page }) 
   await expect(lines.first()).toContainText('Good morning, Dani.');
   await page.getByRole('button', { name: 'Play briefing' }).click();
   await expect(page.getByRole('button', { name: 'Play again' })).toBeVisible({ timeout: 10000 });
-  const spoken = await page.evaluate(() => window.__spoken || []);
-  expect(spoken.length).toBe(await lines.count());
+  const spoken = (await page.evaluate(() => window.__spoken || [])).filter(x => x.trim()); // one utterance per sentence
+  const norm = x => x.replace(/\s+/g, ' ').trim();
+  expect(norm(spoken.join(' '))).toBe(norm((await lines.allTextContents()).join(' ')));
   expect(spoken.join(' ')).not.toMatch(/knee|pain|hurt/i);
   expect((await (await page.request.get('/api/briefing/status')).json()).ready).toBe(false);
   done();
@@ -225,4 +226,29 @@ test('“Start my morning briefing” in Ask Assist opens and plays it', async (
   await page.locator('#v-form button[type="submit"]').click();
   await expect(page.locator('#br-lines li').first()).toContainText('Good morning');
   await expect(page.getByRole('button', { name: /Stop|Play again/ })).toBeVisible();
+});
+
+test('Ask Assist: a typed or spoken “yes” approves what Assist just prepared; “no” cancels', async ({ page }) => {
+  const done = watchErrors(page);
+  await coachLogin(page);
+  const { clients } = await (await page.request.get('/api/clients')).json();
+  const marcus = clients.find(c => c.name === 'Marcus Johnson').id;
+  const count = async () => (await (await page.request.get(`/api/threads/${marcus}`)).json()).messages.length;
+  const before = await count();
+  await page.locator('header [data-act="copilot"]').click();
+  const ask = async q => { await page.locator('#v-type').fill(q); await page.locator('#v-form button[type="submit"]').click(); await expect(page.locator('#v-thread .thinking')).toHaveCount(0); };
+  await ask('Message Marcus: see you at 6 tomorrow');
+  const card = page.locator('.proposal').last();
+  await expect(card).toContainText('see you at 6 tomorrow');
+  await expect(card).toContainText('Nothing happens until you confirm or say yes.');
+  expect(await count()).toBe(before);
+  await ask('yes');
+  await expect(card).toContainText('Sent to Marcus.');
+  expect(await count()).toBe(before + 1);
+  await ask('Message Marcus: second one');
+  await ask('no');
+  await expect(page.locator('.proposal').last()).toContainText('Cancelled');
+  expect(await count()).toBe(before + 1);
+  if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/talk-approve.png` });
+  done();
 });

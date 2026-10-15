@@ -7,6 +7,7 @@ import { toast, toastError, busy } from '../../shared/ui.js';
 import { state, ui, setUi, coachFirst } from '../state.js';
 import { refreshCounts } from '../shell.js';
 import { editDraft } from '../modals.js';
+import { loadBusiness, businessSection } from '../businessCharts.js';
 
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 const STYLE = () => (state.me.business.writingStyle || 'Supportive').toLowerCase();
@@ -34,8 +35,8 @@ export default {
   nav: 'today',
   title: () => 'Today',
   async load() {
-    const [d, b] = await Promise.all([api.get('/api/today'), api.get('/api/briefing/status').catch(() => ({ ready: false }))]);
-    return { ...d, briefingReady: d.pro && b.ready };
+    const [d, b, biz] = await Promise.all([api.get('/api/today'), api.get('/api/briefing/status').catch(() => ({ ready: false })), loadBusiness()]);
+    return { ...d, briefingReady: d.pro && b.ready, biz };
   },
   mount() {
     // Opened from the 7 AM notification: /app?briefing=1
@@ -95,7 +96,8 @@ export default {
           <div class="bar"><i style="width:${pay.expectedCents ? Math.min(100, pay.collectedCents / pay.expectedCents * 100) : 0}%"></i></div>
         </section>
       </div>
-    </div>`;
+    </div>
+    <div style="margin-top:24px">${businessSection(d.biz)}</div>`;
   },
   actions: {
     briefingPlay() { return import('../voice.js').then(m => m.openBriefing({ autoplay: true })); },

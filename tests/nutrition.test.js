@@ -374,3 +374,76 @@ describe('Assist on nutrition: Today queue, radar, check-ins', async () => {
     expect(a.body.insight.summary).toMatch(/Food log: \d of 7 days logged, protein target reached on \d/);
   });
 });
+
+describe('Assist builds a nutrition plan (draft → coach approves)', () => {
+  let c;
+  beforeAll(async () => {
+    c = await f.dbA.client.create({ data: { name: 'Plan Tester', goalType: 'Fat loss', birthYear: new Date().getFullYear() - 30, status: 'ACTIVE', why: 'Wants more energy for her kids' } });
+    await f.dbA.measurement.create({ data: { clientId: c.id, weight: 170, takenAt: new Date() } });
+    await f.dbA.nutritionPlan.create({ data: { clientId: c.id, approach: 'habits', sex: 'female', heightIn: 65 } });
+  });
+  afterAll(async () => {
+    const plan = await f.dbA.nutritionPlan.findFirst({ where: { clientId: c.id } });
+    await f.dbA.habit.deleteMany({ where: { clientId: c.id } });
+    await f.dbA.nutritionPlan.deleteMany({ where: { clientId: c.id } });
+    if (plan?.mealPlanId) await f.dbA.mealPlanTemplate.deleteMany({ where: { id: plan.mealPlanId } });
+    await f.dbA.measurement.deleteMany({ where: { clientId: c.id } });
+    await f.dbA.client.deleteMany({ where: { id: c.id } });
+  });
+
+  it('drafts from the client’s details, never below resting needs, and saves nothing', async () => {
+    const r = await dani.post(`/api/clients/${c.id}/nutrition-plan/assist`, { request: 'fat loss, simple meals, a meal plan please' });
+    expect(r.status).toBe(200);
+    const d = r.body.draft;
+    expect(d.approach).toBe('meal_plan');
+    expect(d.calories).toBeGreaterThanOrEqual(r.body.estimate.rmr);
+    expect(d.proteinG).toBeGreaterThanOrEqual(170 * 0.7 - 5);
+    expect(d.proteinG).toBeLessThanOrEqual(170 + 5);
+    expect(d.mealPlan.days.length).toBeGreaterThan(0);
+    expect(r.body.scopeReminder).toMatch(/dietitian/);
+    const plan = await f.dbA.nutritionPlan.findFirst({ where: { clientId: c.id } });
+    expect(plan.calories).toBeNull(); // still the coach's plan, untouched
+    expect(await f.dbA.habit.count({ where: { clientId: c.id } })).toBe(0);
+  });
+
+  it('“Use this plan” saves targets, habits and the meal plan; the client sees the note', async () => {
+    const { draft } = (await dani.post(`/api/clients/${c.id}/nutrition-plan/assist`, { request: 'meal plan' })).body;
+    const r = await dani.post(`/api/clients/${c.id}/nutrition-plan/apply-draft`, draft);
+    expect(r.status).toBe(200);
+    expect(r.body.plan).toMatchObject({ approach: 'meal_plan', calories: draft.calories, proteinG: draft.proteinG, coachNote: draft.coachNote });
+    expect(r.body.plan.mealPlanId).toBeTruthy();
+    expect(await f.dbA.habit.count({ where: { clientId: c.id, active: true } })).toBe(draft.habits.length);
+    const again = await dani.post(`/api/clients/${c.id}/nutrition-plan/apply-draft`, { ...draft, mealPlan: null });
+    expect(again.body.habitsAdded).toBe(0); // no duplicate habits
+  });
+
+  it('an edited target below resting needs needs “I’ve reviewed this target”', async () => {
+    const { draft } = (await dani.post(`/api/clients/${c.id}/nutrition-plan/assist`, { request: '' })).body;
+    const low = await dani.post(`/api/clients/${c.id}/nutrition-plan/apply-draft`, { ...draft, mealPlan: null, calories: 900 });
+    expect(low.status).toBe(400);
+    expect(low.body.code).toBe('low_target');
+  });
+
+  it('code holds the line: below-RMR raised, medical topics or missing data → no numbers', async () => {
+    const { enforcePlan } = await import('../server/nutrition/assistPlan.js');
+    const est = estimateTargets({ sex: 'female', weightLb: 170, heightIn: 65, age: 30, goal: 'lose' });
+    const raw = { summary: 's', approach: 'targets', calories: 800, proteinG: 400, carbsG: 10, fatG: 5, habits: ['Protein at every meal', 'Take a fat burner supplement'], mealPlan: null, coachNote: null, needsProfessional: false, professionalReason: null };
+    const a = enforcePlan(raw, { est, inputs: { weightLb: 170 }, texts: ['simple'], credentialed: false });
+    expect(a.draft.calories).toBeGreaterThanOrEqual(est.rmr);
+    expect(a.draft.calories).toBeLessThan(est.rmr + 10);
+    expect(a.draft.proteinG).toBeLessThanOrEqual(170);
+    expect(a.draft.habits).toEqual(['Protein at every meal']);
+    const m = enforcePlan(raw, { est, inputs: { weightLb: 170 }, texts: ['She has type 2 diabetes'], credentialed: false });
+    expect(m.draft).toMatchObject({ needsProfessional: true, calories: null, approach: 'habits', mealPlan: null });
+    const es = enforcePlan(raw, { est, inputs: { weightLb: 170 }, texts: ['Está embarazada'], credentialed: false });
+    expect(es.draft.calories).toBeNull();
+    const none = enforcePlan(raw, { est: estimateTargets({ weightLb: 170 }), inputs: { weightLb: 170 }, texts: [''], credentialed: false });
+    expect(none.draft.calories).toBeNull();
+    expect(none.notes[0]).toMatch(/sex/);
+  });
+
+  it('another business can’t draft or apply for this client', async () => {
+    expect((await alex.post(`/api/clients/${c.id}/nutrition-plan/assist`, { request: '' })).status).toBe(404);
+    expect((await alex.post(`/api/clients/${c.id}/nutrition-plan/apply-draft`, { approach: 'habits' })).status).toBe(404);
+  });
+});

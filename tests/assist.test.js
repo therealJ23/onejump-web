@@ -65,6 +65,8 @@ describe('check-ins with pain', () => {
     expect((a.actions || []).some(x => x.op?.type === 'increase_load')).toBe(false);
     const notif = await f.dbA.notification.findFirst({ where: { link: `/app/checkins/${k.id}` } });
     expect(notif.body).toMatch(/hurts/);
+    // Leave the seeded queue as it was for the other test files (they may run after this one).
+    await f.dbA.checkIn.update({ where: { id: k.id }, data: { status: 'reviewed', reviewedAt: new Date() } });
   });
 });
 
@@ -145,5 +147,105 @@ describe('Ask Assist with Claude: memory, full data tools, language', () => {
       expect(r.answerHtml).toContain('<ul class="answer-list">');
       expect(r.answerHtml).not.toContain('**');
     } finally { AI.provider = before; }
+  });
+});
+
+describe('hands-free approvals: Assist reads it back, a spoken yes or no decides', () => {
+  it('understands a short yes or no (English and Spanish), and nothing else', async () => {
+    const { yesNo } = await import('../server/assist/approvals.js');
+    for (const t of ['Yes.', 'yeah send it', 'um, yes please', 'Go ahead', 'Sí, envíalo', 'Dale', 'claro que sí']) expect(yesNo(t), t).toBe('yes');
+    for (const t of ['No.', 'no, don’t send it', 'Cancel that', 'no lo envíes']) expect(yesNo(t), t).toBe('no');
+    for (const t of ['yes but change the last line', 'okay what about Sarah?', 'Yesterday was a good day', 'hold on', 'I’m not sure', 'Send Mike a message saying the gym is closed tomorrow because of the storm']) expect(yesNo(t), t).toBe(null);
+  });
+
+  it('reads the message back and asks; “yes” sends exactly that message', async () => {
+    const before = await countMsgs();
+    const r = await dani.post('/api/assist/ask', { question: 'Message Mike: see you Monday at 6!', voice: true });
+    expect(r.status).toBe(200);
+    expect(r.body.proposals[0].type).toBe('send_message');
+    expect(r.body.spokenText).toMatch(/Here’s what I’d send Mike: see you Monday at 6! Should I send it\?/);
+    expect(r.body.awaiting).toBe(r.body.proposals[0].id);
+    expect(await countMsgs()).toBe(before); // nothing yet
+    const yes = await dani.post('/api/assist/ask', { question: 'Yes, send it.', voice: true, pendingProposalId: r.body.awaiting });
+    expect(yes.body.decided).toMatchObject({ id: r.body.awaiting, confirmed: true });
+    expect(yes.body.spokenText).toMatch(/^Done\. Sent to Mike/);
+    expect(await countMsgs()).toBe(before + 1);
+    const again = await dani.post('/api/assist/ask', { question: 'yes', voice: true, pendingProposalId: r.body.awaiting });
+    expect(again.body.decided.confirmed).toBe(false); // can't run twice
+    expect(await countMsgs()).toBe(before + 1);
+  });
+
+  it('“no” cancels; anything that isn’t a clear answer goes to Assist and the proposal stays', async () => {
+    const r = await dani.post('/api/assist/ask', { question: 'Message Mike: quick test', voice: true });
+    const other = await dani.post('/api/assist/ask', { question: 'yes but change it to say hello', voice: true, pendingProposalId: r.body.awaiting });
+    expect(other.body.decided).toBeUndefined();
+    expect((await f.dbA.assistProposal.findFirst({ where: { id: r.body.awaiting } })).status).toBe('pending');
+    const no = await dani.post('/api/assist/ask', { question: 'No.', voice: true, pendingProposalId: r.body.awaiting, lang: 'es' });
+    expect(no.body.decided).toMatchObject({ confirmed: false });
+    expect(no.body.spokenText).toBe('Está bien, no lo haré.');
+    expect((await f.dbA.assistProposal.findFirst({ where: { id: r.body.awaiting } })).status).toBe('cancelled');
+  });
+
+  it('health details are never read aloud and can’t be approved by voice', async () => {
+    const before = await countMsgs();
+    const r = await dani.post('/api/assist/ask', { question: 'Message Mike: hope the knee pain is better', voice: true });
+    expect(r.body.spokenText).toMatch(/on screen/);
+    expect(r.body.spokenText).not.toMatch(/knee/);
+    expect(r.body.awaiting).toBeNull();
+    const yes = await dani.post('/api/assist/ask', { question: 'yes', voice: true, pendingProposalId: r.body.proposals[0].id });
+    expect(yes.body.decided.confirmed).toBe(false);
+    expect(await countMsgs()).toBe(before);
+  });
+
+  it('another coach’s proposal id is ignored', async () => {
+    const r = await dani.post('/api/assist/ask', { question: 'Message Mike: test two', voice: true });
+    const alex = await loginCoach('alex@northsidebarbell.com');
+    const x = await alex.post('/api/assist/ask', { question: 'yes', voice: true, pendingProposalId: r.body.awaiting });
+    expect(x.body.decided).toBeUndefined();
+    expect((await f.dbA.assistProposal.findFirst({ where: { id: r.body.awaiting } })).status).toBe('pending');
+  });
+
+  it('builds a nutrition plan by voice; saying yes saves it', async () => {
+    const c = await f.dbA.client.create({ data: { name: 'Voicey Planner', goalType: 'Muscle', birthYear: new Date().getFullYear() - 28, status: 'ACTIVE' } });
+    await f.dbA.measurement.create({ data: { clientId: c.id, weight: 180, takenAt: new Date() } });
+    await f.dbA.nutritionPlan.create({ data: { clientId: c.id, approach: 'habits', sex: 'male', heightIn: 70 } });
+    try {
+      const r = await dani.post('/api/assist/ask', { question: 'Build a nutrition plan for Voicey Planner with a meal plan', voice: true });
+      const p = r.body.proposals[0];
+      expect(p.type).toBe('nutrition_plan');
+      expect(r.body.spokenText).toMatch(/For Voicey: about [\d,]+ calories and \d+ grams of protein a day.*Should I save it to Voicey’s plan\?/);
+      expect((await f.dbA.nutritionPlan.findFirst({ where: { clientId: c.id } })).calories).toBeNull();
+      const yes = await dani.post('/api/assist/ask', { question: 'yes', voice: true, pendingProposalId: r.body.awaiting });
+      expect(yes.body.decided.confirmed).toBe(true);
+      const plan = await f.dbA.nutritionPlan.findFirst({ where: { clientId: c.id } });
+      expect(plan.calories).toBe(p.payload.draft.calories);
+      expect(plan.mealPlanId).toBeTruthy();
+      await f.dbA.mealPlanTemplate.deleteMany({ where: { id: plan.mealPlanId } });
+    } finally {
+      await f.dbA.habit.deleteMany({ where: { clientId: c.id } });
+      await f.dbA.nutritionPlan.deleteMany({ where: { clientId: c.id } });
+      await f.dbA.measurement.deleteMany({ where: { clientId: c.id } });
+      await f.dbA.client.deleteMany({ where: { id: c.id } });
+    }
+  });
+
+  it('off-topic questions get a friendly, human decline that steers back to the business', async () => {
+    const r = await dani.post('/api/assist/ask', { question: 'Who won the World Series last year?' });
+    expect(r.body.answerText).toMatch(/business|clients/);
+    expect(r.body.answerText).not.toMatch(/AI|language model/);
+  });
+
+  it('caches the system prompt and tools when talking to Claude', async () => {
+    const { AnthropicProvider } = await import('../server/ai/providers/anthropic.js');
+    let sent;
+    const p = new AnthropicProvider({ apiKey: 'x', model: 'claude-haiku-4-5', fetchImpl: async (_u, o) => { sent = JSON.parse(o.body); return { ok: true, status: 200, json: async () => ({ content: [], usage: { input_tokens: 10, cache_read_input_tokens: 1000, output_tokens: 5 } }) }; } });
+    const msgs = [{ role: 'user', content: 'hi' }];
+    const r = await p.chat({ system: 'sys', messages: msgs, tools: [{ name: 'a', input_schema: {} }, { name: 'b', input_schema: {} }], cache: true });
+    expect(sent.system[0].cache_control).toEqual({ type: 'ephemeral' });
+    expect(sent.tools[1].cache_control).toEqual({ type: 'ephemeral' });
+    expect(sent.tools[0].cache_control).toBeUndefined();
+    expect(sent.messages[0].content[0]).toMatchObject({ text: 'hi', cache_control: { type: 'ephemeral' } });
+    expect(msgs[0].content).toBe('hi'); // caller's array untouched
+    expect(r.usage.costMicros).toBe(Math.round(10 * 1 + 1000 * 0.1 + 5 * 5));
   });
 });

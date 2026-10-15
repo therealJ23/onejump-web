@@ -97,6 +97,25 @@ export const SCHEMAS = {
     description: 'Summarize a client’s voice note for their coach in one short line.',
     zod: z.object({ summary: str(160) }),
   },
+  nutrition_plan: {
+    description: 'Draft a starting nutrition plan for one client, for the coach to review, edit and approve.',
+    zod: z.object({
+      summary: str(700),
+      approach: z.enum(['habits', 'targets', 'meal_plan']),
+      calories: z.number().int().min(0).max(6000).nullable(),
+      proteinG: z.number().int().min(0).max(500).nullable(),
+      carbsG: z.number().int().min(0).max(1000).nullable(),
+      fatG: z.number().int().min(0).max(400).nullable(),
+      habits: z.array(str(80)).max(5),
+      mealPlan: z.object({
+        name: str(80),
+        days: z.array(z.object({ label: str(40), meals: z.array(z.object({ meal: z.enum(['breakfast', 'lunch', 'dinner', 'snack']), items: z.array(str(200)).min(1).max(8) })).min(1).max(6) })).min(1).max(7),
+      }).nullable(),
+      coachNote: z.string().trim().max(600).nullable(),
+      needsProfessional: z.boolean(),
+      professionalReason: z.string().trim().max(300).nullable(),
+    }),
+  },
   briefing: {
     description: 'Word a coach’s morning briefing from the facts given. Only use those facts.',
     zod: z.object({ lines: z.array(str(240)).min(2).max(8) }),

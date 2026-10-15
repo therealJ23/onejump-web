@@ -8,6 +8,7 @@ import { toast, toastError, busy, confirmDialog } from '../../shared/ui.js';
 import { state } from '../state.js';
 import { newPackage } from '../modals.js';
 import { refreshCounts } from '../shell.js';
+import { loadBusiness, revenueCard, packagesCard } from '../businessCharts.js';
 
 const dateOf = p => p.paidAt || p.failedAt || p.dueAt || p.createdAt;
 
@@ -21,7 +22,7 @@ function connectCard(d) {
 export default {
   nav: 'payments',
   title: () => 'Payments',
-  load: () => api.get('/api/payments'),
+  load: async () => { const [d, biz] = await Promise.all([api.get('/api/payments'), loadBusiness()]); return { ...d, biz }; },
   mount(_root, _d, params) { if (params.query?.connect === 'done') toast('Stripe connected. You can take payments now.'); },
   render(d) {
     const s = d.summary;
@@ -37,6 +38,7 @@ export default {
       <div class="kpi"><span class="eyebrow">Failed</span><span class="big-num" style="color:${s.failedCount ? 'var(--crit)' : 'inherit'}">${money(s.failedCents)}</span><span class="tiny muted">${plural(s.failedCount, 'payment')}</span></div>
       <div class="kpi"><span class="eyebrow">Average per client</span><span class="big-num">${money(s.avgPerClientCents)}</span><span class="tiny muted">per month</span></div>
     </section>
+    ${d.biz ? `<div class="biz-grid">${revenueCard(d.biz)}${packagesCard(d.biz)}</div>` : ''}
     ${failed.length ? `<section class="card" style="border-color:var(--crit)"><div class="card-head"><div class="h3" style="color:var(--crit)">${icon('alert')} Failed payments</div><span class="tiny muted">Stripe retries automatically on days 3, 5 and 7</span></div>
       <div class="list">${failed.map(p => `<div class="li sev crit" style="flex-wrap:wrap">${avatar(p.client || { name: '?' }, 'sm')}<div class="grow" style="min-width:180px"><div class="strong small">${esc(p.client?.name || 'Client')} · ${money(p.amountCents)}</div><div class="tiny muted">${esc(p.failureReason || 'Payment failed')} · ${fmtDate(dateOf(p))} · ${plural(p.attempts || 1, 'attempt')}${p.remindedAt ? ' · <b>reminder sent</b>' : ''}</div></div><div class="row wrap"><button class="btn sm" data-act="payRetry" data-p="${p.id}">${icon('refresh')} Retry now</button><button class="btn sm ${p.remindedAt ? '' : 'primary'}" data-act="payRemind" data-p="${p.id}" ${p.remindedAt ? 'disabled' : ''}>${p.remindedAt ? 'Reminder sent' : 'Send card-update reminder'}</button>${p.client ? `<a class="btn ghost sm" href="/app/inbox/${p.client.id}">Message</a>` : ''}</div></div>`).join('')}</div></section>` : ''}
     <div class="split">

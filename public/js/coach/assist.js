@@ -19,16 +19,39 @@ export const proposalEvents = new EventTarget();
 const decided = new Map();
 
 // ---------------------------------------------------------------- proposal cards
+const doneHtml = done => (done.confirmed ? `<div class="row small">${icon('check')}<span>${esc(done.message || 'Done.')}</span><span class="muted">${done.via === 'voice' ? 'You said yes.' : 'You confirmed it.'}</span></div>` : `<div class="small muted">${esc(done.message || 'Cancelled. Nothing was done.')}</div>`);
+/** A proposal answered by voice (or a typed yes/no): remember it and update its card if it's on screen. */
+export function markDecided(id, confirmed, message, via = 'voice') {
+  const done = { confirmed, message: confirmed ? message : (message || 'Cancelled. Nothing was done.'), via };
+  decided.set(id, done);
+  document.querySelectorAll(`[data-proposal="${CSS.escape(id)}"]`).forEach(card => { card.innerHTML = doneHtml(done); });
+  if (confirmed) refreshCounts();
+}
+const MEAL = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
+const ORDER = ['breakfast', 'lunch', 'snack', 'dinner'];
+function nutritionPlanBody(d) {
+  const x = d.draft || {}, nums = x.calories != null;
+  return `<div class="row">${avatar({ name: d.clientName }, 'sm')}<span class="strong small grow">Nutrition plan for ${esc(d.clientName)}</span><span class="tiny faint">Assist draft</span></div>
+    <div class="small" data-no-translate>${esc(x.summary || d.line || '')}</div>
+    ${x.needsProfessional ? `<div class="target-warn small">${icon('alert')} <span>${esc(x.professionalReason || '')}</span> <span>A registered dietitian or doctor should guide it.</span></div>` : ''}
+    ${nums ? `<div class="grid g4 small" style="grid-template-columns:repeat(4,minmax(0,1fr))">${[['Calories', x.calories.toLocaleString('en-US')], ['Protein', `${x.proteinG} g`], ['Carbs', `${x.carbsG} g`], ['Fat', `${x.fatG} g`]].map(([l, v]) => `<div><div class="tiny faint">${l}</div><div class="strong">${v}</div></div>`).join('')}</div>` : ''}
+    ${(d.notes || []).map(n => `<div class="tiny muted">• ${esc(n)}</div>`).join('')}
+    ${x.habits?.length ? `<div class="small"><span class="tiny faint">Daily habits</span><div data-no-translate>${x.habits.map(h => `<span class="tag">${esc(h)}</span>`).join(' ')}</div></div>` : ''}
+    ${x.mealPlan ? `<details class="small"><summary style="cursor:pointer">${esc(x.mealPlan.name)} · ${x.mealPlan.days.length}-day meal plan</summary><div class="stack s8" style="margin-top:6px">${x.mealPlan.days.map(day => `<div><div class="strong tiny">${esc(day.label)}</div>${[...day.meals].sort((a, b) => ORDER.indexOf(a.meal) - ORDER.indexOf(b.meal)).map(m => `<div class="tiny"><span class="muted">${MEAL[m.meal]}:</span> <span data-no-translate>${m.items.map(esc).join('; ')}</span></div>`).join('')}</div>`).join('')}</div></details>` : ''}
+    ${d.scopeReminder ? `<div class="tiny muted">${icon('alert')} ${esc(d.scopeReminder)}</div>` : ''}
+    ${x.coachNote ? `<div class="tiny"><span class="faint">Note for ${esc(first(d.clientName))}:</span> <span data-no-translate>“${esc(x.coachNote)}”</span></div>` : ''}`;
+}
+
 export function proposalCard(p) {
   const done = decided.get(p.id);
-  if (done) return `<div class="proposal" data-proposal="${esc(p.id)}">${done.confirmed ? `<div class="row small">${icon('check')}<span>${esc(done.message || 'Done.')} You confirmed it on screen.</span></div>` : `<div class="small muted">${esc(done.message)}</div>`}</div>`;
+  if (done) return `<div class="proposal" data-proposal="${esc(p.id)}">${doneHtml(done)}</div>`;
   const d = p.payload || {};
   const id = esc(p.id);
   const foot = (confirm, extra = '') => `<div class="row wrap"><button class="btn primary sm" data-act="proposalConfirm" data-id="${id}">${confirm}</button>${extra}<button class="btn sm" data-act="proposalCancel" data-id="${id}">Cancel</button></div>`;
   let body = '';
   if (p.type === 'send_message') {
     body = `<div class="row">${avatar({ name: d.clientName }, 'sm')}<span class="strong small grow">Message to ${esc(d.clientName)}</span>${d.fromDraft ? '<span class="tiny faint">Assist draft</span>' : '<span class="tiny faint">your words</span>'}</div>
-      <div class="q-draft" id="pt-${id}">${esc(d.text)}</div>
+      <div class="q-draft" id="pt-${id}" data-no-translate>${esc(d.text)}</div>
       ${foot(`${icon('send')} Confirm and send`, `<button class="btn sm" data-act="proposalEdit" data-id="${id}">${icon('edit')} Edit</button>`)}`;
   } else if (p.type === 'create_lead') {
     body = `<div class="strong small">New lead</div>
@@ -37,14 +60,25 @@ export function proposalCard(p) {
   } else if (p.type === 'send_reminders') {
     body = `<div class="strong small">Check-in reminder to ${d.recipients.length} client${d.recipients.length === 1 ? '' : 's'}</div>
       <div class="row wrap" style="gap:6px">${d.recipients.map(n => `<span class="tag">${esc(n)}</span>`).join('')}</div>
-      <div class="q-draft" id="pt-${id}">${esc(d.template)}</div><div class="tiny faint">Your fixed reminder. {first} becomes each client’s first name; each client gets it individually.</div>
+      <div class="q-draft" id="pt-${id}" data-no-translate>${esc(d.template)}</div><div class="tiny faint">Your fixed reminder. {first} becomes each client’s first name; each client gets it individually.</div>
       ${foot(`${icon('send')} Send all ${d.recipients.length}`, `<button class="btn sm" data-act="proposalEdit" data-id="${id}">${icon('edit')} Edit</button>`)}`;
   } else if (p.type === 'add_note') {
     body = `<div class="row">${avatar({ name: d.clientName }, 'sm')}<span class="strong small">Private note on ${esc(d.clientName)}’s profile</span></div>
-      <div class="q-draft" id="pt-${id}">${esc(d.text)}</div>
+      <div class="q-draft" id="pt-${id}" data-no-translate>${esc(d.text)}</div>
       ${foot('Save note', `<button class="btn sm" data-act="proposalEdit" data-id="${id}">${icon('edit')} Edit</button>`)}`;
   }
-  return `<div class="proposal" data-proposal="${id}" role="group" aria-label="${esc(p.summary)}">${body}<div class="tiny faint">Nothing happens until you confirm. Expires in 10 minutes.</div></div>`;
+  else if (p.type === 'reply_checkin') {
+    body = `<div class="row">${avatar({ name: d.clientName }, 'sm')}<span class="strong small grow">Reply to ${esc(d.clientName)}’s check-in</span><span class="tiny faint">marks it reviewed</span></div>
+      <div class="q-draft" id="pt-${id}" data-no-translate>${esc(d.text)}</div>
+      ${foot(`${icon('send')} Confirm and send`, `<button class="btn sm" data-act="proposalEdit" data-id="${id}">${icon('edit')} Edit</button><a class="btn ghost sm" href="/app/checkins/${esc(d.checkinId)}">Open check-in</a>`)}`;
+  } else if (p.type === 'assign_program') {
+    body = `<div class="row">${avatar({ name: d.clientName }, 'sm')}<span class="strong small">Start ${esc(d.clientName)} on ${esc(d.programName)}</span></div>
+      <div class="tiny muted"><span>${d.weeks ? `${d.weeks} weeks` : ''}${d.daysPerWeek ? ` · ${d.daysPerWeek} days a week` : ''}</span> · <span>${d.startDate ? `Starts ${esc(d.startDate)}` : 'Starts next Monday'}</span></div>
+      ${foot('Start program')}`;
+  } else if (p.type === 'nutrition_plan') {
+    body = `${nutritionPlanBody(d)}${foot(`${icon('check')} Use this plan`, `<a class="btn ghost sm" href="/app/clients/${esc(d.clientId)}/nutrition">Open Nutrition tab</a>`)}`;
+  }
+  return `<div class="proposal" data-proposal="${id}" role="group" aria-label="${esc(p.summary)}">${body}<div class="tiny faint">${d.voiceOk === false ? 'Has health details, so it’s on screen only: tap to confirm. Expires in 10 minutes.' : 'Nothing happens until you confirm or say yes. Expires in 10 minutes.'}</div></div>`;
 }
 
 export const proposalActions = {
@@ -61,8 +95,8 @@ export const proposalActions = {
     busy(el, true, 'Working…');
     try {
       const r = await api.post(`/api/assist/proposals/${id}/confirm`, ta ? { text: ta.value.trim() } : {});
-      decided.set(id, { confirmed: true, message: r.message });
-      card.innerHTML = `<div class="row small">${icon('check')}<span>${esc(r.message || 'Done.')} You confirmed it on screen.</span></div>`;
+      decided.set(id, { confirmed: true, message: r.message, via: 'tap' });
+      card.innerHTML = doneHtml(decided.get(id));
       proposalEvents.dispatchEvent(new CustomEvent('done', { detail: { id, confirmed: true, message: r.message } }));
       refreshCounts();
     } catch (e) {

@@ -15,7 +15,7 @@ import { HttpError } from '../lib/errors.js';
 const NO_MOCK_FALLBACK = new Set(['meal_photo']);
 const unavailable = task => new HttpError(503, task === 'meal_photo' ? 'I couldn’t read this photo right now. Search for the food instead, or try again in a minute.' : 'Assist is unavailable right now. Try again in a minute.', { code: 'ai_unavailable' });
 
-const MAX_TOKENS = { checkin: 1400, message: 500, risk: 700, workout: 1800, adjust: 900, progress: 700, lead: 500, meal_photo: 700, food_text: 500, set_text: 120, nutrition_summary: 500, nutrition_nudge: 300, voice_summary: 120, briefing: 500 };
+const MAX_TOKENS = { checkin: 1400, message: 500, risk: 700, workout: 1800, adjust: 900, progress: 700, lead: 500, meal_photo: 700, food_text: 500, set_text: 120, nutrition_summary: 500, nutrition_nudge: 300, voice_summary: 120, briefing: 500, nutrition_plan: 2600 };
 
 export function makeProvider(name = config.ai.provider) {
   if (name === 'anthropic') return new AnthropicProvider({ apiKey: config.ai.anthropicKey, model: config.ai.anthropicModel });
@@ -125,6 +125,11 @@ export class AIService {
   }
   summarizeVoiceNote(text, opts) { return this.run('voice_summary', { text: String(text).slice(0, 2000) }, opts); }
   wordBriefing(ctx, opts) { return this.run('briefing', ctx, opts); }
+  async draftNutritionPlan(ctx, opts) {
+    const r = await this.run('nutrition_plan', ctx, opts);
+    if (r.data.coachNote) r.data.coachNote = guardNutrition(r.data.coachNote, { firstName: ctx.client?.first }).text;
+    return r;
+  }
   async parseLead(ctx, opts) {
     const r = await this.run('lead', ctx, opts);
     r.data.reply = guardDraft(r.data.reply, { contextTexts: [ctx.dm] }).text;

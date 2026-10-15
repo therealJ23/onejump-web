@@ -4,8 +4,8 @@
 // knows (from ./i18n-es.js) as the page draws, including text that appears later (modals,
 // toasts, drawers). Strings built in code can also call t('English text', { name }) directly.
 //
-// Language: the coach's choice in Settings (or the switch on public pages), remembered on this
-// device; otherwise the device's own language (a phone set to Spanish gets Spanish).
+// Language: the coach's choice in Settings, remembered on this device; otherwise the device's own
+// language (a phone set to Spanish gets Spanish).
 import { ES, ES_PATTERNS } from './i18n-es.js';
 
 const KEY = 'oj-lang';
@@ -28,10 +28,19 @@ export function setLang(lang) {
 const fill = (s, vars) => (vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : s);
 const norm = s => s.replace(/\s+/g, ' ').trim();
 
+// Spanish we already produced. The translator sees its own changes as new text, and a broad pattern
+// (e.g. "<name> plan" → "Plan <name>") must not translate "Usar este plan" a second time.
+const produced = new Set();
+
 /** Spanish for one piece of text (or the English if there's no translation yet). */
 function lookup(text) {
   const key = norm(text);
-  if (!key) return null;
+  if (!key || produced.has(key)) return null;
+  const es = lookupRaw(key);
+  if (es != null && produced.size < 20000) produced.add(norm(es));
+  return es;
+}
+function lookupRaw(key) {
   if (Object.prototype.hasOwnProperty.call(ES, key)) return ES[key];
   for (const [re, out] of ES_PATTERNS) {
     const m = key.match(re);
@@ -42,7 +51,7 @@ function lookup(text) {
   // "A · B · C" lists of system phrases (risk reasons, payment details): translate the parts.
   if (key.includes(' · ')) {
     const parts = key.split(' · ');
-    const es = parts.map(p => (p ? lookup(p) : null));
+    const es = parts.map(p => (p ? lookupRaw(norm(p)) : null));
     if (es.some(x => x != null)) return parts.map((p, i) => es[i] ?? p).join(' · ');
   }
   return null;

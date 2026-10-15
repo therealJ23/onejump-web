@@ -1,16 +1,17 @@
 // Ask Assist: the green "Ask Assist" button opens this window. Assist greets the coach by name and
 // says what it can do. Typing works straight away; tapping the OneJump logo (the orb) turns on
 // talking: it listens, sends when the coach stops talking, answers out loud and listens again,
-// until the coach taps the logo again or closes the window. It never acts without an on-screen
-// Confirm. The conversation is kept while the tab is open, so follow-up questions work.
+// until the coach taps the logo again or closes the window. When Assist prepares something (a
+// message, a reply, a plan), it reads it back and asks; the coach can say "yes" or "no", or tap
+// Confirm. Nothing happens without one of those. The conversation is kept while the tab is open.
 import { api } from '../shared/api.js';
 import { esc } from '../shared/format.js';
 import { icon, arc } from '../shared/icons.js';
 import { openModal, closeModal, modalHead } from '../shared/ui.js';
 import { createRecorder, recordingSupported, MIC_OFF } from '../shared/media.js';
 import { listenOnce, dictationSupported } from '../shared/dictation.js';
-import { speak, stopSpeaking, speakOn, setSpeakOn, speechSupported } from '../shared/speech.js';
-import { answerBlock, proposalEvents } from './assist.js';
+import { speak, stopSpeaking, speakOn, setSpeakOn, speechSupported, unlockAudio } from '../shared/speech.js';
+import { answerBlock, proposalEvents, markDecided } from './assist.js';
 import { refreshCounts } from './shell.js';
 import { chime } from '../shared/sounds.js';
 import { coachFirst } from './state.js';
@@ -21,7 +22,7 @@ const loadCfg = async () => (cfg ||= await api.get('/api/voice/config').catch(()
 
 // Voice detection: louder than this counts as talking; this much quiet after talking sends it;
 // this long with no talking at all pauses listening (so the mic is never left on for nothing).
-const TALK_LEVEL = 0.1, END_AFTER_MS = 1200, PAUSE_AFTER_MS = 8000;
+const TALK_LEVEL = 0.1, END_AFTER_MS = 850, PAUSE_AFTER_MS = 8000;
 
 /** The conversation in this tab: [{ role: 'q'|'a', text, r? }]. Sent back as context so follow-ups work. */
 const thread = [];
@@ -37,6 +38,7 @@ function greetingText() {
 const greetingHtml = () => `<p>${esc(greetingText())}</p><p class="small muted">${esc(t('Type your question below, or tap the OneJump logo above to talk to me.'))}</p>`;
 
 export async function openTalk(q) {
+  unlockAudio(); // the Ask Assist tap: lets the answers be heard later
   stopSpeaking();
   const c = await loadCfg();
   const m = openModal(`${modalHead(`${arc()} ${t('Ask Assist')}`, t('Type below, or tap the OneJump logo to talk. Nothing happens without your OK.'))}
@@ -55,11 +57,12 @@ export async function openTalk(q) {
   let glow = 0;
   const draw = level => { glow = glow * 0.7 + level * 0.3; orb.style.setProperty('--lvl', Math.min(1, glow * 1.6).toFixed(3)); }; // the orb glows with your voice
   let recorder = null, hint = '', listening = null, starting = false, busy = false, vad = null, talking = false;
+  let awaiting = null; // the proposal Assist just read back; a "yes" or "no" answers it
   const open = () => document.contains(m);
 
   if (!thread.length) thread.push({ role: 'a', greeting: true, html: greetingHtml() });
   const draw_ = () => {
-    list.innerHTML = thread.map(x => x.role === 'q' ? `<div class="q">${esc(x.text)}</div>`
+    list.innerHTML = thread.map(x => x.role === 'q' ? `<div class="q" data-no-translate>${esc(x.text)}</div>`
       : `<div class="a"><span class="who">${arc()}</span><div class="body">${x.pending ? `<div class="thinking" role="status">${arc()}<span>${esc(t('Looking at your data…'))}</span></div>` : x.error ? `<p class="small" style="color:var(--crit)">${esc(x.error)}</p>` : x.r ? answerBlock(x.r) : x.html}</div></div>`).join('');
     list.scrollTop = list.scrollHeight;
   };
@@ -83,6 +86,8 @@ export async function openTalk(q) {
     return a;
   }
   function settle(a, r, spokenQuestion) {
+    if (r.decided) markDecided(r.decided.id, r.decided.confirmed, r.decided.message, r.transcript != null ? 'voice' : 'typed');
+    awaiting = r.awaiting || null;
     a.pending = false; a.r = r; a.text = plain(r.answerText || r.answerHtml) || r.spokenText || '';
     if (r.transcript != null) { const qm = thread[thread.indexOf(a) - 1]; if (qm?.role === 'q') qm.text = r.transcript || t('(I didn’t catch that)'); }
     draw_();
@@ -101,7 +106,7 @@ export async function openTalk(q) {
     stopSpeaking();
     const history = historyFor(thread);
     const a = push(text); setOrb('thinking'); busy = true;
-    try { const r = await api.post('/api/assist/ask', { question: text, voice: talking, history, lang: getLang() }); busy = false; settle(a, r, false); }
+    try { const r = await api.post('/api/assist/ask', { question: text, voice: talking, history, lang: getLang(), pendingProposalId: awaiting }); busy = false; settle(a, r, false); }
     catch (e) { busy = false; failed(a, e); }
   }
   /** Voice detection on the live mic level: send after a short pause once the coach has spoken. */
@@ -139,6 +144,7 @@ export async function openTalk(q) {
     fd.append('durationMs', String(out.durationMs));
     fd.append('lang', getLang());
     fd.append('history', JSON.stringify(historyFor(thread)));
+    if (awaiting) fd.append('pendingProposalId', awaiting);
     if (hint) fd.append('hint', hint);
     const a = push('…');
     try { const res = await api.post('/api/voice/ask', fd); busy = false; settle(a, res, true); } catch (e) { busy = false; failed(a, e); }
@@ -146,6 +152,7 @@ export async function openTalk(q) {
 
   // The logo turns talking on and off. Taps while the mic starts or Assist is thinking are ignored.
   orb.addEventListener('click', () => {
+    unlockAudio();
     if (starting || busy) return;
     if (talking) {
       talking = false;
@@ -154,19 +161,21 @@ export async function openTalk(q) {
     }
     talking = true; stopSpeaking(); chime().catch(() => {}); start();
   });
-  $('#v-form').addEventListener('submit', e => { e.preventDefault(); const v = $('#v-type').value.trim(); if (!v) return; $('#v-type').value = ''; ask(v); });
-  $('#v-speak').addEventListener('click', e => { const on = !speakOn(); setSpeakOn(on); e.currentTarget.classList.toggle('on', on); e.currentTarget.setAttribute('aria-pressed', on); });
-  $('#v-new').addEventListener('click', () => { pause(null); stopSpeaking(); talking = false; thread.length = 0; thread.push({ role: 'a', greeting: true, html: greetingHtml() }); draw_(); setOrb(''); idleText(); $('#v-type').focus(); });
+  $('#v-form').addEventListener('submit', e => { e.preventDefault(); unlockAudio(); const v = $('#v-type').value.trim(); if (!v) return; $('#v-type').value = ''; ask(v); });
+  $('#v-speak').addEventListener('click', e => { unlockAudio(); const on = !speakOn(); setSpeakOn(on); e.currentTarget.classList.toggle('on', on); e.currentTarget.setAttribute('aria-pressed', on); });
+  $('#v-new').addEventListener('click', () => { pause(null); stopSpeaking(); talking = false; awaiting = null; thread.length = 0; thread.push({ role: 'a', greeting: true, html: greetingHtml() }); draw_(); setOrb(''); idleText(); $('#v-type').focus(); });
   const onDone = ev => {
+    if (ev.detail.id === awaiting) awaiting = null;
     if (!open() || !talking) return;
     if (recorder && !vad?.heard) pause(null); // don't record Assist's own "Done"
-    speak(ev.detail.confirmed ? `${t('Done.')} ${ev.detail.message || ''}` : t('Okay, I won’t do that.'), { tts: c.tts, onEnd: listenAgain });
+    speak(ev.detail.confirmed ? `${t('Done.')} ${ev.detail.message ? t(ev.detail.message) : ''}` : t('Okay, I won’t do that.'), { tts: c.tts, onEnd: listenAgain });
   };
   proposalEvents.addEventListener('done', onDone);
   const obs = new MutationObserver(() => { if (!open()) { obs.disconnect(); proposalEvents.removeEventListener('done', onDone); recorder?.cancel(); recorder = null; talking = false; listenOnce.stop?.(); stopSpeaking(); } });
   obs.observe(document.body, { childList: true });
+  m.addEventListener('pointerdown', unlockAudio, { once: true });
   setTimeout(() => $('#v-type')?.focus(), 60);
-  if (q) ask(q);
+  if (q) { unlockAudio(); ask(q); }
 }
 
 // ---------------------------------------------------------------- morning briefing
@@ -202,6 +211,7 @@ export async function openBriefing({ autoplay = false } = {}) {
   const mark = (i = -1) => body.querySelectorAll('#br-lines li').forEach(li => { const on = +li.dataset.i === i; li.classList.toggle('on', on); if (on) li.setAttribute('aria-current', 'true'); else li.removeAttribute('aria-current'); });
   function stop() { playing = false; stopSpeaking(); mark(); wave()?.classList.remove('on'); if (btn()) btn().innerHTML = `${icon('play')} Play briefing`; }
   async function toggle() {
+    unlockAudio();
     if (playing) { stop(); return; }
     playing = true; btn().innerHTML = `${icon('stop')} Stop`; wave()?.classList.add('on');
     if (!marked) { marked = true; api.post('/api/briefing/today/played').then(() => refreshBanner()).catch(() => {}); }

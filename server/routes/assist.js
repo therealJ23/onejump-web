@@ -10,8 +10,8 @@ export const router = Router();
 const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
 
 const turn = z.object({ role: z.enum(['user', 'assistant']), text: z.string().max(1500) });
-router.post('/ask', requireFeature('PRO', 'Ask Assist'), body(z.object({ question: z.string().trim().min(1, 'Ask a question.').max(600), voice: z.boolean().default(false), history: z.array(turn).max(12).default([]), lang: z.enum(['en', 'es']).default('en') })), async (req, res) => {
-  res.json(await ask(req.db, req.auth, req.body.question, { voice: req.body.voice, tz: await tzOf(req.db), history: req.body.history, lang: req.body.lang }));
+router.post('/ask', requireFeature('PRO', 'Ask Assist'), body(z.object({ question: z.string().trim().min(1, 'Ask a question.').max(600), voice: z.boolean().default(false), history: z.array(turn).max(12).default([]), lang: z.enum(['en', 'es']).default('en'), pendingProposalId: z.string().max(64).nullable().optional() })), async (req, res) => {
+  res.json(await ask(req.db, req.auth, req.body.question, { voice: req.body.voice, tz: await tzOf(req.db), history: req.body.history, lang: req.body.lang, pendingProposalId: req.body.pendingProposalId || null }));
 });
 
 router.post('/proposals/:id/confirm', body(z.object({ text: z.string().trim().min(1).max(5000).optional() })), async (req, res) => {

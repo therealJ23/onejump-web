@@ -6,11 +6,13 @@ import { sendMessage } from '../core/messaging.js';
 import { fillTemplate } from '../core/automationTemplates.js';
 import { missingCheckinClients } from '../core/checkinStatus.js';
 import { sendCheckinReminders } from '../core/reminders.js';
+import { businessCharts } from '../core/businessCharts.js';
 
 export const router = Router();
 const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
 
 router.get('/', async (req, res) => res.json(await buildToday(req.db, { tz: await tzOf(req.db) })));
+router.get('/business', async (req, res) => res.json(await businessCharts(req.db)));
 
 router.post('/remind-missing', body(z.object({ text: z.string().trim().max(1000).optional() })), async (req, res) => {
   const clients = await missingCheckinClients(req.db);

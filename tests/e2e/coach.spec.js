@@ -58,3 +58,40 @@ test('builder: add an exercise and it autosaves @phone', async ({ page }) => {
   await page.reload();
   await expect(page.getByText('Goblet squat').first()).toBeVisible();
 });
+
+test('Today and Payments show the business charts; hovering a month shows its value', async ({ page }) => {
+  const done = watchErrors(page);
+  await coachLogin(page);
+  const biz = page.locator('section[aria-labelledby="biz-h"]');
+  await expect(biz.getByRole('heading', { name: 'Your business' })).toBeVisible();
+  for (const h of ['Revenue by month', 'Workout adherence', 'Revenue by package', 'Active clients']) await expect(biz.getByText(h)).toBeVisible();
+  await biz.locator('.bar-g').last().hover();
+  await expect(biz.locator('.bar-g').last().locator('.bar-v')).toBeVisible();
+  if (process.env.SHOTS) await biz.screenshot({ path: `${process.env.SHOTS}/biz-today.png` });
+  await page.goto('/app/payments');
+  await expect(page.getByText('Revenue by month')).toBeVisible();
+  await expect(page.getByText('Revenue by package')).toBeVisible();
+  done();
+});
+
+test('Nutrition: Assist builds a plan from the client’s details; nothing is saved until “Use this plan”', async ({ page }) => {
+  const done = watchErrors(page);
+  await coachLogin(page);
+  const { clients } = await (await page.request.get('/api/clients')).json();
+  const grace = clients.find(c => c.name === 'Grace Owens');
+  await page.goto(`/app/clients/${grace.id}/nutrition`);
+  const box = page.locator('#nt-assist');
+  await expect(box.getByText('Build a plan with Assist')).toBeVisible();
+  await box.locator('#nt-ask').fill('simple meals, a meal plan please');
+  await box.getByRole('button', { name: 'Build plan' }).click();
+  const draft = page.locator('#nt-draft-card');
+  await expect(draft).toBeVisible({ timeout: 15000 });
+  await expect(draft).toContainText('Draft · only you see this');
+  if (process.env.SHOTS) await page.locator('#nt-assist').screenshot({ path: `${process.env.SHOTS}/nutrition-draft.png` });
+  const before = (await (await page.request.get(`/api/clients/${grace.id}/nutrition-plan`)).json()).plan;
+  await draft.getByRole('button', { name: 'Use this plan' }).click();
+  await expect(page.getByText(/nutrition plan is saved/)).toBeVisible();
+  const after = (await (await page.request.get(`/api/clients/${grace.id}/nutrition-plan`)).json()).plan;
+  expect(after.updatedAt).not.toBe(before.updatedAt);
+  done();
+});

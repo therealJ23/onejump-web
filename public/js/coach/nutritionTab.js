@@ -9,6 +9,8 @@ import { barChart } from '../shared/charts.js';
 import { openModal, closeModal, modalHead, toast, toastError, busy, showFieldErrors } from '../shared/ui.js';
 import { hasPlan } from './state.js';
 import { editDraft } from './modals.js';
+import { micButton } from '../shared/dictation.js';
+import { getLang } from '../shared/i18n.js';
 
 const APPROACHES = [['habits', 'Habits', 'Daily habit checkboxes only, no numbers. Best for beginners.'], ['targets', 'Targets', 'Calories and protein (plus carbs and fat) against your targets.'], ['meal_plan', 'Meal plan', 'Your meal plan template, plus logging.']];
 const MEAL = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
@@ -30,6 +32,7 @@ export function nutritionTab(d, td) {
   const days = w.days.map(x => dayLabel(x.day));
   return `<div class="split">
     <div class="stack s16">
+      ${assistCard(f)}
       <section class="card pad stack s16" id="nt-plan">
         <div class="row between wrap"><div class="h3">Approach</div>${p.saved ? `<span class="tiny faint">Updated ${fmtDate(p.updatedAt)}</span>` : '<span class="pill">Not set yet</span>'}</div>
         <div class="seg" role="radiogroup" aria-label="Nutrition approach">${APPROACHES.map(([k, l]) => `<button type="button" role="radio" aria-checked="${p.approach === k}" class="${p.approach === k ? 'on' : ''}" data-act="ntApproach" data-v="${k}">${l}</button>`).join('')}</div>
@@ -83,6 +86,53 @@ export function nutritionTab(d, td) {
       <section class="card pad stack s8"><div class="h3">How ${esc(f)} logs</div><p class="small muted">Photo with Assist${hasPlan('PRO') ? '' : ' (Pro)'}, search, barcode, voice${hasPlan('PRO') ? '' : ' (Pro)'}, quick add, favorites and “repeat yesterday”. Nothing is saved until they tap Add.</p><a class="btn sm" href="/app/nutrition" style="align-self:flex-start">Nutrition page</a></section>
     </div>
   </div>`;
+}
+
+// ---------------------------------------------------------------- Assist builds the plan
+function assistCard(f) {
+  const pro = hasPlan('PRO');
+  return `<section class="card pad stack s12" id="nt-assist">
+    <div class="row between wrap"><div class="h3">${arc()} Build a plan with Assist</div>${pro ? '<span class="pill">Draft first</span>' : lock('PRO')}</div>
+    <p class="small muted">Type or tap the mic and say what ${esc(f)} needs. Assist uses ${esc(f)}’s age, height, weight, goal, notes and recent check-ins. You review everything; ${esc(f)} sees nothing until you tap Use this plan.</p>
+    ${pro ? `<div class="row" style="gap:8px;align-items:flex-start"><label class="grow"><span class="sr">What should the plan focus on?</span><textarea class="textarea" id="nt-ask" rows="2" maxlength="1500" placeholder="e.g. Fat loss, vegetarian, quick meals, she cooks on Sundays"></textarea></label>${micButton('nt-ask', { label: 'Talk instead of typing' })}</div>
+    <div class="row wrap" style="gap:8px"><button class="btn primary" data-act="ntBuild">${arc()} Build plan</button><span class="tiny muted">Takes about 10 seconds.</span></div>` : `<p class="small muted">Assist-built nutrition plans are part of Pro.</p>`}
+    <div id="nt-draft" aria-live="polite"></div>
+  </section>`;
+}
+
+let draft = null, lastAsk = '';
+const MEALS_ORDER = ['breakfast', 'lunch', 'snack', 'dinner'];
+function draftHtml(r, f) {
+  const d = r.draft, nums = d.calories != null;
+  const label = { habits: 'Habits', targets: 'Targets', meal_plan: 'Meal plan' }[d.approach];
+  return `<div class="panel pad stack s12" id="nt-draft-card">
+    <div class="row between wrap"><span class="pill info">${arc()} Draft · only you see this</span><span class="tiny muted">Approach: ${esc(label)}</span></div>
+    <p class="small" data-no-translate>${esc(d.summary)}</p>
+    ${d.needsProfessional ? `<div class="target-warn small" role="alert">${icon('alert')} <span>${esc(d.professionalReason || 'This client may need a professional’s guidance.')}</span> <span>A registered dietitian or doctor should guide their nutrition.</span></div>` : ''}
+    ${r.notes.map(x => `<div class="tiny muted">• ${esc(x)}</div>`).join('')}
+    ${nums ? `<div class="grid g4" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr))">${[['calories', 'Calories', 'kcal'], ['proteinG', 'Protein', 'g'], ['carbsG', 'Carbs', 'g'], ['fatG', 'Fat', 'g']].map(([k, l, u]) => `<div class="field"><label for="nd-${k}">${l} <span class="faint">(${u})</span></label><input class="input" id="nd-${k}" type="number" inputmode="numeric" min="0" max="10000" value="${n(d[k])}"></div>`).join('')}</div>
+      ${r.estimate?.rmr ? `<div class="tiny faint">Resting needs about ${fmt(r.estimate.rmr)} kcal, about ${fmt(r.estimate.maintenance)} kcal to maintain. Assist never goes below resting needs.</div>` : ''}` : ''}
+    ${d.habits.length ? `<div class="stack s4"><span class="tiny strong muted">Daily habits</span>${d.habits.map((h, i) => `<label class="row small" style="gap:8px"><input type="checkbox" class="nd-habit" data-i="${i}" checked> <span data-no-translate>${esc(h)}</span></label>`).join('')}</div>` : ''}
+    ${d.mealPlan ? `<div class="stack s8"><label class="row small strong" style="gap:8px"><input type="checkbox" id="nd-mp" checked> Meal plan: ${esc(d.mealPlan.name)}</label>
+      <div class="grid g2" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">${d.mealPlan.days.map(day => `<div class="card pad-sm stack s4"><div class="small strong" data-no-translate>${esc(day.label)}</div>${[...day.meals].sort((a, b) => MEALS_ORDER.indexOf(a.meal) - MEALS_ORDER.indexOf(b.meal)).map(m => `<div class="tiny"><span class="muted">${MEAL[m.meal]}:</span> <span data-no-translate>${m.items.map(esc).join('; ')}</span></div>`).join('')}</div>`).join('')}</div>
+      ${r.scopeReminder ? `<div class="target-warn small">${icon('alert')} ${esc(r.scopeReminder)}</div>` : ''}
+      <div class="tiny faint">Saved as a meal plan template you can edit later on the Nutrition page.</div></div>` : ''}
+    <div class="field"><label for="nd-note">Note for ${esc(f)} <span class="faint">(shown in their app)</span></label><textarea class="textarea" id="nd-note" rows="2" maxlength="2000">${esc(d.coachNote || '')}</textarea></div>
+    <div id="nd-warn"></div>
+    <div class="row wrap" style="gap:8px"><button class="btn primary" data-act="ntUseDraft">${icon('check')} Use this plan</button><button class="btn" data-act="ntBuild" data-again="1">${icon('refresh')} Try again</button><button class="btn ghost" data-act="ntDiscard">Discard</button></div>
+  </div>`;
+}
+function readDraft() {
+  const d = draft.draft, num = id => { const el = document.getElementById(id); return el && el.value !== '' ? Math.round(Number(el.value)) : null; };
+  const nums = d.calories != null;
+  return {
+    approach: d.approach,
+    calories: nums ? num('nd-calories') : null, proteinG: nums ? num('nd-proteinG') : null, carbsG: nums ? num('nd-carbsG') : null, fatG: nums ? num('nd-fatG') : null,
+    habits: [...document.querySelectorAll('.nd-habit')].filter(x => x.checked).map(x => d.habits[Number(x.dataset.i)]),
+    mealPlan: d.mealPlan && document.getElementById('nd-mp')?.checked ? d.mealPlan : null,
+    coachNote: document.getElementById('nd-note')?.value.trim() || null,
+    confirmLowTarget: !!document.getElementById('nd-confirm')?.checked,
+  };
 }
 
 function warnHtml(td, calories, confirmedAt) {
@@ -142,6 +192,34 @@ export const nutritionActions = {
   },
   async ntSaveNote(el, _e, ctx) { try { await savePlan(ctx.data, { coachNote: document.getElementById('nt-note2').value.trim() || null }, el); } catch { /* shown */ } },
   ntCalc(_el, _e, ctx) { calculator(ctx); },
+  async ntBuild(el, _e, ctx) {
+    const box = document.getElementById('nt-ask'), out = document.getElementById('nt-draft');
+    const ask = el.dataset.again ? lastAsk : (box?.value.trim() || '');
+    lastAsk = ask;
+    busy(el, true, 'Building…');
+    out.innerHTML = `<div class="panel pad stack s8">${skeleton(4)}<span class="tiny muted">Assist is looking at ${esc(first(ctx.data.client.name))}’s details…</span></div>`;
+    try {
+      draft = await api.post(`/api/clients/${ctx.data.client.id}/nutrition-plan/assist`, { request: ask, lang: getLang() });
+      out.innerHTML = draftHtml(draft, first(ctx.data.client.name));
+      out.querySelector('#nt-draft-card')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (e) { out.innerHTML = `<p class="small" style="color:var(--crit)">${esc(e.message)}</p>`; }
+    finally { busy(el, false); }
+  },
+  ntDiscard() { draft = null; const out = document.getElementById('nt-draft'); if (out) out.innerHTML = ''; },
+  async ntUseDraft(el, _e, ctx) {
+    if (!draft) return;
+    const body = readDraft();
+    busy(el, true, 'Saving…');
+    try {
+      const r = await api.post(`/api/clients/${ctx.data.client.id}/nutrition-plan/apply-draft`, body);
+      draft = null;
+      toast(r.message || 'Plan saved');
+      ctx.refresh();
+    } catch (e) {
+      if (e.data?.code === 'low_target') document.getElementById('nd-warn').innerHTML = `<div class="target-warn" role="alert"><div class="small strong">${icon('alert')} ${esc(e.message)}</div><label class="row small" style="gap:8px"><input type="checkbox" id="nd-confirm"> I’ve reviewed this target</label></div>`;
+      toastError(e);
+    } finally { busy(el, false); }
+  },
   ntSummaryRefresh(_el, _e, ctx) { const el = document.getElementById('nt-summary'); el.innerHTML = skeleton(3); loadSummary(document, ctx.data.client.id, true); },
   async ntFlagDraft(el, _e, ctx) {
     const r = await api.post(`/api/nutrition/flags/${el.dataset.id}/draft`);

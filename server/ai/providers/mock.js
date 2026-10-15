@@ -307,7 +307,33 @@ function voice_summary(ctx) {
 }
 function briefing(ctx) { return { lines: ctx.facts.lines }; }
 
-const TASKS = { checkin, message, risk, workout, adjust, progress, lead, meal_photo, food_text, set_text, nutrition_summary, nutrition_nudge, voice_summary, briefing };
+function nutrition_plan(ctx) {
+  const req = String(ctx.request || '').toLowerCase(), es = ctx.lang === 'es', e = ctx.estimate?.ok ? ctx.estimate : null, f = ctx.client.first;
+  const veg = /vegetarian|vegan|no meat|plant|vegetarian/.test(req);
+  const P = veg ? (es ? ['tofu', 'lentejas', 'yogur griego', 'huevos'] : ['tofu', 'lentils', 'Greek yogurt', 'eggs']) : (es ? ['pollo', 'pescado', 'huevos', 'carne magra'] : ['chicken', 'fish', 'eggs', 'lean beef']);
+  const day = (label, a, b) => ({ label, meals: [
+    { meal: 'breakfast', items: [es ? `${a === 0 ? '2 huevos + 1 tostada integral' : 'Avena con fruta y yogur griego'}` : `${a === 0 ? '2 eggs + 1 slice whole-grain toast' : 'Oatmeal with fruit and Greek yogurt'}`] },
+    { meal: 'lunch', items: [es ? `Bowl de arroz con ${P[a]} y vegetales` : `Rice bowl with ${P[a]} and vegetables`] },
+    { meal: 'snack', items: [es ? 'Una fruta + un puñado de nueces' : 'A piece of fruit + a handful of nuts'] },
+    { meal: 'dinner', items: [es ? `${P[b]} con papas y ensalada` : `${P[b]} with potatoes and salad`] },
+  ] });
+  const wantsMeals = /meal|menu|comida|men[uú]|plan de comidas|what to eat/.test(req);
+  const noNumbers = /no numbers|without counting|habits|sin n[uú]meros|h[aá]bitos/.test(req);
+  const approach = noNumbers ? 'habits' : wantsMeals ? 'meal_plan' : 'targets';
+  const nums = e && approach !== 'habits';
+  return {
+    summary: e ? (es ? `Plan inicial para ${f}: unas ${e.calories} kcal y ${e.proteinG} g de proteína al día, según su peso, estatura, edad y actividad (necesidades en reposo ~${e.rmr} kcal). Revisa y ajusta lo que quieras.` : `Starting plan for ${f}: about ${e.calories} kcal and ${e.proteinG} g protein a day, from their weight, height, age and activity (resting needs about ${e.rmr} kcal). Review and adjust anything.`)
+      : (es ? `Plan inicial para ${f} sin números: faltan datos para calcular calorías (agrega sexo, estatura, peso y año de nacimiento).` : `Number-free starting plan for ${f}: there isn’t enough data for calorie targets yet (add sex, height, weight and birth year).`),
+    approach: nums ? approach : (approach === 'meal_plan' ? 'meal_plan' : 'habits'),
+    calories: nums ? e.calories : null, proteinG: nums ? e.proteinG : null, carbsG: nums ? e.carbsG : null, fatG: nums ? e.fatG : null,
+    habits: es ? ['Proteína en cada comida', 'Vegetales en almuerzo y cena', '8 vasos de agua al día'] : ['Protein at every meal', 'Vegetables at lunch and dinner', '8 glasses of water a day'],
+    mealPlan: { name: es ? `Plan de ${f}` : `${f}’s plan`, days: [day(es ? 'Día 1' : 'Day 1', 0, 1), day(es ? 'Día 2' : 'Day 2', 1, 2), day(es ? 'Día 3' : 'Day 3', 0, 3)] },
+    coachNote: es ? `¡${f}, aquí está tu plan para empezar! Lo importante es la constancia, no la perfección.` : `${f}, here’s your plan to get started! Consistency matters more than perfection.`,
+    needsProfessional: false, professionalReason: null,
+  };
+}
+
+const TASKS = { checkin, message, risk, workout, adjust, progress, lead, meal_photo, food_text, set_text, nutrition_summary, nutrition_nudge, voice_summary, briefing, nutrition_plan };
 
 export class MockProvider {
   constructor() { this.name = 'mock'; this.model = 'mock-assist-1'; }

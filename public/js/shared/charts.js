@@ -60,3 +60,42 @@ export function sparkline(vals, w = 120, h = 36) {
 export function silhouette() {
   return `<svg viewBox="0 0 120 160" fill="currentColor" aria-hidden="true"><circle cx="60" cy="40" r="17"/><path d="M28 160c0-36 10-88 32-88s32 52 32 88z"/></svg>`;
 }
+
+/**
+ * Column chart with a value on hover/focus (and always on the highlighted column, e.g. this month).
+ * One series, one hue: the highlighted column is full strength, the rest are lighter.
+ */
+export function columnChart({ labels, values, fmt = v => v, highlight = values.length - 1, height = 200, titles = [] }) {
+  const W = 640, H = height, pl = 12, pr = 12, pt = 26, pb = 28;
+  values = values.map(v => Number(v) || 0);
+  const hi = Math.max(1, ...values) * 1.08;
+  const y = v => pt + (1 - v / hi) * (H - pt - pb);
+  const bw = (W - pl - pr) / labels.length, w = Math.min(56, bw * .58);
+  let g = `<line class="grid-l" x1="${pl}" x2="${W - pr}" y1="${y(0)}" y2="${y(0)}"/>`;
+  labels.forEach((l, i) => {
+    const cx = pl + bw * i + bw / 2, top = y(values[i]), h = Math.max(0, y(0) - top), r = Math.min(4, h / 2);
+    const path = h > 0 ? `M${cx - w / 2} ${y(0)}V${top + r}Q${cx - w / 2} ${top} ${cx - w / 2 + r} ${top}H${cx + w / 2 - r}Q${cx + w / 2} ${top} ${cx + w / 2} ${top + r}V${y(0)}Z` : '';
+    g += `<g class="bar-g ${i === highlight ? 'sel' : ''}" tabindex="0" role="img" aria-label="${esc(`${titles[i] || l}: ${fmt(values[i])}`)}"><rect class="hit" x="${pl + bw * i}" y="${pt - 20}" width="${bw}" height="${H - pt - pb + 20}"/>${path ? `<path class="col" d="${path}"/>` : ''}<text class="bar-v" x="${cx}" y="${top - 8}" text-anchor="middle">${esc(fmt(values[i]))}</text><text x="${cx}" y="${H - 8}" text-anchor="middle">${esc(l)}</text></g>`;
+  });
+  return `<svg class="chart cols" viewBox="0 0 ${W} ${H}" role="group">${g}</svg>`;
+}
+
+/** Line with a dot and value on hover/focus for each point, and the last value labelled. */
+export function pointLine({ labels, values, fmt = v => v, min = 0, max = null, height = 180, titles = [] }) {
+  const pts = values.map((v, i) => ({ v: v == null ? null : Number(v), i })).filter(p => p.v != null);
+  if (pts.length < 2) return '<div class="empty small" style="padding:24px">Not enough data yet</div>';
+  const W = 640, H = height, pl = 40, pr = 52, pt = 16, pb = 28;
+  const hiRaw = max ?? Math.max(...pts.map(p => p.v));
+  const step = niceStep(Math.max(1, hiRaw - min) / 3), hi = Math.ceil(hiRaw / step) * step || 1;
+  const x = i => pl + i * (W - pl - pr) / (labels.length - 1);
+  const y = v => pt + (1 - (v - min) / (hi - min)) * (H - pt - pb);
+  let g = '';
+  for (let v = min; v <= hi + 1e-9; v += step) g += `<line class="grid-l" x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}"/><text x="${pl - 8}" y="${y(v) + 4}" text-anchor="end">${esc(fmt(Math.round(v)))}</text>`;
+  const every = Math.ceil(labels.length / 6);
+  labels.forEach((l, i) => { if (i % every === 0 || i === labels.length - 1) g += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${esc(l)}</text>`; });
+  const d = pts.map((p, k) => `${k ? 'L' : 'M'}${x(p.i).toFixed(1)} ${y(p.v).toFixed(1)}`).join('');
+  g += `<path class="area" d="${d}L${x(pts.at(-1).i)} ${y(min)}L${x(pts[0].i)} ${y(min)}Z"/><path class="line" d="${d}"/>`;
+  const last = pts.at(-1);
+  pts.forEach(p => { g += `<g class="pt-g ${p === last ? 'sel' : ''}" tabindex="0" role="img" aria-label="${esc(`${titles[p.i] || labels[p.i]}: ${fmt(p.v)}`)}"><rect class="hit" x="${x(p.i) - 22}" y="${pt}" width="44" height="${H - pt - pb}"/><circle class="pt" cx="${x(p.i)}" cy="${y(p.v)}" r="5"/><text class="bar-v" x="${x(p.i) + (p === last ? 10 : 0)}" y="${y(p.v) - 10}" text-anchor="${p === last ? 'start' : 'middle'}">${esc(fmt(p.v))}</text></g>`; });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="group">${g}</svg>`;
+}

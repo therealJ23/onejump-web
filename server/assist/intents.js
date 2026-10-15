@@ -37,6 +37,12 @@ export async function route(db, question) {
 
   // ----- commands that become proposals (checked first so "remind everyone" isn't refused)
   if (/\b(remind|nudge)\b.{0,30}\b(every(one|body)|all|them|clients)\b|\bsend\b.{0,20}\b(check-?in )?reminders?\b|\b(draft|write)\b.{0,20}\bmessage\b.{0,30}\bhaven.?t\b.{0,15}\bcheck/.test(s)) return { kind: 'propose', type: 'send_reminders', args: {} };
+  let n = q.match(/\b(?:build|make|create|draft|write|put together|do|set up)\b.{0,30}\b(?:nutrition|meal|diet|eating)\s*plan\b.{0,12}?\bfor\s+([a-z][a-z' -]{0,40}?)(?=[,.!?]|\s+(?:with|that|who|to|and|so|she|he|they)\b|$)/i);
+  if (n) return { kind: 'propose', type: 'nutrition_plan', args: { client_name: n[1], request: q } };
+  n = q.match(/^(?:please\s+)?(?:reply|respond|answer)\s+(?:to\s+)?([a-z][a-z' -]{0,40}?)['’]s\s+check-?in\b/i);
+  if (n) return { kind: 'propose', type: 'reply_checkin', args: { client_name: n[1] } };
+  n = q.match(/^(?:please\s+)?(?:start|put|assign|move)\s+([a-z][a-z' -]{0,40}?)\s+(?:on|onto|to|in)\s+(?:the\s+)?(.+?)(?:\s+program)?[.!]*$/i);
+  if (n && !/\b(calorie|protein|nutrition|plan|package|price)\b/i.test(n[2])) return { kind: 'propose', type: 'assign_program', args: { client_name: n[1], program_name: n[2] } };
   // ----- never by voice
   for (const [re, screen] of NEVER) if (re.test(q)) return { kind: 'refuse', screen };
 

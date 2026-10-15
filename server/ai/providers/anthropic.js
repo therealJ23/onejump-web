@@ -13,9 +13,25 @@ export class AnthropicProvider {
     if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set');
     this.name = 'anthropic'; this.model = model; this.apiKey = apiKey; this.fetch = fetchImpl;
   }
-  /** One raw Messages API call (used for tool-use conversations like Ask Assist). */
-  async chat({ system, messages, tools = [], maxTokens = 900, model = this.model }) {
-    const body = { model, max_tokens: maxTokens, system, messages, ...(tools.length ? { tools } : {}) };
+  /**
+   * One raw Messages API call (used for tool-use conversations like Ask Assist).
+   * cache: marks the tools, the system prompt and the conversation so far for prompt caching, so
+   * each follow-up step (and the next question within 5 minutes) skips re-reading them: faster
+   * and cheaper. Nothing is changed in the caller's arrays.
+   */
+  async chat({ system, messages, tools = [], maxTokens = 900, model = this.model, cache = false }) {
+    const mark = o => ({ ...o, cache_control: { type: 'ephemeral' } });
+    let sys = system, tl = tools, msgs = messages;
+    if (cache) {
+      sys = [mark({ type: 'text', text: String(system) })];
+      if (tools.length) tl = [...tools.slice(0, -1), mark(tools.at(-1))];
+      const last = messages.at(-1);
+      if (last) {
+        const content = typeof last.content === 'string' ? [{ type: 'text', text: last.content }] : last.content;
+        msgs = [...messages.slice(0, -1), { ...last, content: [...content.slice(0, -1), mark(content.at(-1))] }];
+      }
+    }
+    const body = { model, max_tokens: maxTokens, system: sys, messages: msgs, ...(tl.length ? { tools: tl } : {}) };
     return this.post(body);
   }
 
@@ -33,8 +49,12 @@ export class AnthropicProvider {
         if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
         const json = await res.json();
         const [pin, pout] = priceFor(body.model || this.model);
-        const inputTokens = json.usage?.input_tokens || 0, outputTokens = json.usage?.output_tokens || 0;
-        return { json, model: json.model || body.model, usage: { inputTokens, outputTokens, costMicros: Math.round(inputTokens * pin + outputTokens * pout) } };
+        const u = json.usage || {};
+        const written = u.cache_creation_input_tokens || 0, read = u.cache_read_input_tokens || 0;
+        const inputTokens = (u.input_tokens || 0) + written + read, outputTokens = u.output_tokens || 0;
+        // Cache writes cost 1.25× input, cache reads 0.1×.
+        const costMicros = Math.round((u.input_tokens || 0) * pin + written * pin * 1.25 + read * pin * 0.1 + outputTokens * pout);
+        return { json, model: json.model || body.model, usage: { inputTokens, outputTokens, costMicros, cachedTokens: read } };
       } catch (e) { lastErr = e; if (attempt === 1 || !/timeout|fetch failed|ECONN/i.test(String(e))) break; }
     }
     throw lastErr;

@@ -50,4 +50,5 @@ export const audioFields = z.object({
   kind: z.enum(['set_log', 'food_log']).optional(),
   lang: z.enum(['en', 'es']).optional(),
   history: z.string().max(30000).optional(), // JSON: earlier turns of an Ask Assist conversation
+  pendingProposalId: z.string().max(64).optional(), // the proposal Assist just read back (a spoken yes/no answers it)
 }).strip();

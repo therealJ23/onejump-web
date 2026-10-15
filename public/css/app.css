@@ -692,3 +692,16 @@ form.recording > :not(.vnote-rec) { display: none !important; }
 .lang-switch button { border: 0; background: none; font: inherit; font-size: .75rem; font-weight: 700; padding: 4px 9px; border-radius: 999px; cursor: pointer; color: var(--muted); }
 .lang-switch button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
 .answer-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+/* Business charts: one hue; the highlighted column/point is full strength, values show on hover or focus */
+.chart .hit { fill: transparent; }
+.chart .col { fill: var(--chart-1); opacity: .32; transition: opacity .15s; }
+.chart .bar-g.sel .col, .chart .bar-g:hover .col, .chart .bar-g:focus .col { opacity: 1; }
+.chart .bar-v { fill: var(--ink); font-weight: 700; font-size: 12px; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.chart .bar-g:hover .bar-v, .chart .bar-g:focus .bar-v, .chart .bar-g.sel .bar-v, .chart .pt-g:hover .bar-v, .chart .pt-g:focus .bar-v, .chart .pt-g.sel .bar-v { opacity: 1; }
+.chart .bar-g:focus, .chart .pt-g:focus { outline: none; }
+.chart .pt { fill: var(--chart-1); stroke: var(--surface); stroke-width: 3; opacity: 0; transition: opacity .15s; }
+.chart .pt-g.sel .pt, .chart .pt-g:hover .pt, .chart .pt-g:focus .pt { opacity: 1; }
+.chart:hover .pt-g.sel:not(:hover) .bar-v { opacity: .35; }
+.biz-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .biz-grid { grid-template-columns: 1fr; } }
+.pkg-row .bar { height: 10px; }
