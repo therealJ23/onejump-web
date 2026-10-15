@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import { config } from './config.js';
 import { MySqlSessionStore } from './auth/sessionStore.js';
 import { loadAuth, csrfProtect, requireCoach, requireOwner, requireClient, requirePlatformAdmin } from './auth/middleware.js';
@@ -119,8 +120,26 @@ export function createApp({ sessionStore } = {}) {
   // Private files (local storage) through short-lived signed links.
   app.get('/files/:key', (req, res) => StorageService.serveLocal(req, res));
 
-  // Pages
-  const page = file => (_req, res) => res.sendFile(path.join(publicDir, file));
+  // Pages. Every deploy gets its own address for scripts and styles (/v/<version>/js/…), so
+  // browsers and Cloudflare can keep them for a long time but always load the new ones right
+  // after a deploy. Pages themselves are never cached.
+  const VERSION = String(process.env.RAILWAY_GIT_COMMIT_SHA || process.env.APP_VERSION || Date.now().toString(36)).slice(0, 12);
+  const htmlCache = new Map();
+  const renderHtml = file => {
+    if (config.isProd && htmlCache.has(file)) return htmlCache.get(file);
+    const html = fs.readFileSync(path.join(publicDir, file), 'utf8').replace(/(src|href)="\/(js|css)\//g, `$1="/v/${VERSION}/$2/`);
+    if (config.isProd) htmlCache.set(file, html);
+    return html;
+  };
+  const sendHtml = (res, file, status = 200) => res.status(status).set('Cache-Control', 'no-cache').type('html').send(renderHtml(file));
+  const page = file => (_req, res) => sendHtml(res, file);
+  app.use('/v/:version', express.static(publicDir, { index: false, maxAge: config.isProd ? '365d' : 0, immutable: config.isProd }));
+  app.get(/^\/([a-z0-9-]*)(?:\.html)?$/, (req, res, next) => {
+    const name = req.params[0] || 'index';
+    const file = `${name}.html`;
+    if (!fs.existsSync(path.join(publicDir, file))) return next();
+    sendHtml(res, file);
+  });
   app.get(['/app', '/app/{*rest}'], page('app.html'));
   app.get(['/client', '/client/{*rest}'], page('client.html'));
   app.get(['/admin', '/admin/{*rest}'], page('admin.html'));
@@ -130,8 +149,9 @@ export function createApp({ sessionStore } = {}) {
   if (!config.isProd) app.get('/dev/outbox', page('outbox.html'));
   app.get('/vendor/zxing-browser.min.js', (_req, res) => { res.set('Cache-Control', 'public, max-age=86400'); res.sendFile(path.join(publicDir, '..', 'node_modules', '@zxing', 'browser', 'umd', 'zxing-browser.min.js')); });
   app.get('/client-sw.js', (_req, res) => { res.set('Service-Worker-Allowed', '/client'); res.sendFile(path.join(publicDir, 'js', 'client', 'sw.js')); });
-  app.use(express.static(publicDir, { extensions: ['html'], index: 'index.html', maxAge: config.isProd ? '1h' : 0 }));
-  app.use((_req, res) => res.status(404).sendFile(path.join(publicDir, '404.html')));
+  // Unversioned files (old links, the client app's offline cache): always checked for a newer copy.
+  app.use(express.static(publicDir, { extensions: ['html'], index: 'index.html', maxAge: 0, setHeaders: res => res.set('Cache-Control', 'no-cache') }));
+  app.use((_req, res) => sendHtml(res, '404.html', 404));
 
   // Errors
   // eslint-disable-next-line no-unused-vars
