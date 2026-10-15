@@ -681,3 +681,14 @@ form.recording > :not(.vnote-rec) { display: none !important; }
 .brief-lines { margin: 0; padding-left: 20px; }
 .brief-lines li { transition: font-weight .1s; }
 .brief-lines li.on { font-weight: 700; color: var(--ink); }
+
+/* Ask Assist window: smaller logo button and a scrolling conversation */
+.voice-orb.small { width: 104px; height: 104px; }
+.voice-orb.small .arc { width: 48px; height: 48px; }
+.talk-thread { width: 100%; max-height: min(44vh, 420px); overflow-y: auto; text-align: left; overscroll-behavior: contain; }
+.talk .voice-said { font-size: 1rem; }
+/* EN | ES switch on public pages */
+.lang-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; gap: 2px; }
+.lang-switch button { border: 0; background: none; font: inherit; font-size: .75rem; font-weight: 700; padding: 4px 9px; border-radius: 999px; cursor: pointer; color: var(--muted); }
+.lang-switch button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.answer-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; }

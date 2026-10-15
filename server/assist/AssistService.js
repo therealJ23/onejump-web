@@ -11,8 +11,12 @@ import { TOOLS, toolDefinitions } from './tools.js';
 import { RENDER, HELP_SUGGESTIONS, esc, speakable, clientLink } from './render.js';
 import { PROPOSE, proposalToolDefinitions, shapeProposal } from './proposals.js';
 import { route } from './intents.js';
+import { MORE_TOOLS, moreToolDefinitions } from './moreTools.js';
+import { config } from '../config.js';
 
-const MAX_STEPS = 4;
+const ALL_TOOLS = { ...TOOLS, ...MORE_TOOLS };
+
+const MAX_STEPS = 6;
 const firstOf = n => String(n || '').split(' ')[0];
 
 const SPOKEN_PROPOSAL = {
@@ -48,28 +52,57 @@ async function askMock(db, auth, question, c, source) {
   return { answerHtml: '<p>I can answer questions about your clients, check-ins, workouts, nutrition, payments and leads, and prepare messages, notes, leads and reminders for you to confirm. Try one of these:</p>', spokenText: 'I can answer questions about your clients, check-ins, payments and leads. Try one of the examples on screen.', proposals: [], trace: [], followups: HELP_SUGGESTIONS.slice(0, 4) };
 }
 
-function systemPrompt(coach, voice) {
+const SCREENS = 'Today (what needs the coach, Assist drafts to approve), Clients (each client’s profile: Overview, Program, Nutrition, Check-ins, Progress, Messages, Notes, Payments), Check-ins, Messages, Programs, Workout builder, Exercise library, Nutrition, Payments, Leads, Automations, Settings (profile, language, reminders) and Plan & billing.';
+
+function systemPrompt(coach, { voice, lang, now, tz }) {
+  const today = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(now);
   return [
-    `You are Assist, the copilot inside OneJump, coaching software. You are talking with ${coach.name}, a coach who runs ${coach.business}.`,
-    'Answer questions about their business using ONLY the provided tools. Never invent clients, numbers or events. If no tool covers it, say what you can help with.',
-    'The data from each tool is shown to the coach on screen as a card, so keep your own words short: 1–3 plain sentences that answer the question and point out what matters most.',
-    voice ? 'The coach is talking to you; your first two sentences are read aloud. Never say health details (pain, injuries, conditions, medications) aloud; say they are on screen instead.' : '',
-    'Actions: use a propose_* tool. It only creates a proposal the coach must confirm on screen; say so ("Tap confirm to send it").',
+    `You are Assist, the AI copilot inside OneJump, coaching software for personal trainers and online coaches. You are working with ${coach.name}, who runs ${coach.business}. Today is ${today} (${tz}).`,
+    lang === 'es' ? 'Always reply in Spanish (neutral Latin American Spanish, using "tú"), even if the data is in English. Client names stay as they are.' : 'Reply in English.',
+    'You are a sharp, warm business partner for a busy coach: answer directly, give the specific names and numbers, and say what you would do next. Have a real conversation: use earlier messages for follow-ups like "what about her?" or "send that to him".',
+    'Facts about the coach’s business (clients, workouts, check-ins, nutrition, messages, payments, leads, programs) must come from the tools. Call as many tools as you need, in parallel when you can; for anything about one client, start with client_details. Never invent clients, numbers, dates or events. If the data doesn’t say, say so.',
+    'You may also answer general coaching and business questions from your own expertise: program design, progressions, exercise technique and cues, client communication, retention, pricing strategy, marketing, and how to use OneJump. Screens in OneJump: ' + SCREENS,
+    'Some tools also show the coach a card with the data, so don’t repeat long lists the card already shows; add the insight.',
+    voice ? 'The coach is talking to you and your first two sentences are read aloud, so lead with the answer in plain speech. Never say health details (pain, injuries, conditions, medications) aloud; say they are on screen instead.' : 'Keep answers tight: a few short sentences or a short list. Plain text only.',
+    'Actions: use a propose_* tool. It only creates a proposal the coach must confirm on screen; say so ("Tap confirm to send it"). When asked to write a message for a client, look at client_details or client_messages first so it sounds personal, then propose it.',
     'Never do by voice or chat: charges, refunds, plan or price changes, deleting anything, changing nutrition targets, or messaging all clients without review. For those reply exactly: "I can’t do that by voice. Open [screen] to do it." naming the right screen (Payments, the client’s profile, the client’s Nutrition tab, or Messages).',
     'Never diagnose or assess pain, injuries or medical conditions; recommend a physical therapist, sports-medicine doctor or qualified professional. Never give diet prescriptions, supplement advice or medical nutrition advice; the coach sets targets. Use neutral words about food (no "good" or "bad" foods).',
-    'No markdown, no emojis.',
+    'No markdown symbols (no **, #, or tables) and no emojis. Use short lines starting with "- " for lists.',
   ].filter(Boolean).join('\n');
 }
 
+/** Earlier turns of this conversation, as Messages API turns (user first, roles alternating). */
+function historyMessages(history = []) {
+  const out = [];
+  for (const h of history.slice(-12)) {
+    const role = h.role === 'assistant' ? 'assistant' : 'user', text = String(h.text || '').trim().slice(0, 1500);
+    if (!text) continue;
+    if (!out.length && role !== 'user') continue;
+    if (out.length && out.at(-1).role === role) out.at(-1).content += `\n${text}`; else out.push({ role, content: text });
+  }
+  if (out.length && out.at(-1).role === 'user') out.pop(); // the new question is the next user turn
+  return out;
+}
+
+/** Plain text (paragraphs and "- " lists) to safe HTML. */
+function textToHtml(text) {
+  return String(text).replace(/\*\*/g, '').split(/\n{2,}/).map(block => {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length && lines.every(l => /^[-•*]\s+/.test(l))) return `<ul class="answer-list">${lines.map(l => `<li>${esc(l.replace(/^[-•*]\s+/, ''))}</li>`).join('')}</ul>`;
+    return lines.map(l => /^[-•*]\s+/.test(l) ? `<p>• ${esc(l.replace(/^[-•*]\s+/, ''))}</p>` : `<p>${esc(l)}</p>`).join('');
+  }).join('');
+}
+
 /** Claude path: tool use, at most MAX_STEPS rounds. */
-async function askClaude(db, auth, question, c, source, provider) {
+async function askClaude(db, auth, question, c, source, provider, history) {
   const coach = await coachContext(db);
-  const tools = [...toolDefinitions(), ...proposalToolDefinitions()];
-  const messages = [{ role: 'user', content: question }];
+  const tools = [...toolDefinitions(), ...moreToolDefinitions(), ...proposalToolDefinitions()];
+  const messages = [...historyMessages(history), { role: 'user', content: question }];
+  const assistModel = config.ai.assistModel || provider.model;
   const cards = [], trace = new Set(), proposals = [], used = [], followups = [];
   let text = '', usage = { inputTokens: 0, outputTokens: 0, costMicros: 0 }, model = provider.model, briefing = false;
   for (let step = 0; step < MAX_STEPS; step++) {
-    const r = await provider.chat({ system: systemPrompt(coach, c.voice), messages, tools, maxTokens: 700 });
+    const r = await provider.chat({ system: systemPrompt(coach, c), messages, tools, maxTokens: 1200, model: assistModel });
     model = r.model; for (const k of Object.keys(usage)) usage[k] += r.usage[k] || 0;
     const content = r.json.content || [];
     text = content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim() || text;
@@ -86,11 +119,11 @@ async function askClaude(db, auth, question, c, source, provider) {
           const p = PROPOSE[type] ? await PROPOSE[type](db, auth, call.input || {}, { source }) : { error: 'Unknown action.' };
           if (p.proposal) { proposals.push(shapeProposal(p.proposal)); out = { proposal_created: true, summary: p.proposal.summary, note: 'Waiting for the coach to confirm on screen. Nothing has been done yet.' }; }
           else out = { error: p.error };
-        } else if (TOOLS[call.name]) {
-          const data = await TOOLS[call.name].run(db, call.input || {}, c);
-          const card = RENDER[call.name](data, call.input || {});
-          cards.push(card.html); (card.followups || []).forEach(f => followups.push(f));
-          TOOLS[call.name].trace.forEach(t => trace.add(t));
+        } else if (ALL_TOOLS[call.name]) {
+          const data = await ALL_TOOLS[call.name].run(db, call.input || {}, c);
+          const card = RENDER[call.name]?.(data, call.input || {});
+          if (card) { cards.push(card.html); (card.followups || []).forEach(f => followups.push(f)); }
+          ALL_TOOLS[call.name].trace.forEach(t => trace.add(t));
           out = data;
         } else out = { error: 'Unknown tool.' };
       } catch (e) { out = { error: e.message }; }
@@ -100,7 +133,8 @@ async function askClaude(db, auth, question, c, source, provider) {
   }
   if (/briefing/i.test(question) && /\b(start|play|read)\b/i.test(question)) briefing = true;
   return {
-    answerHtml: `${text ? text.split(/\n{2,}/).map(p => `<p>${esc(p)}</p>`).join('') : ''}${cards.join('')}`,
+    answerHtml: `${text ? textToHtml(text) : ''}${cards.join('')}`,
+    answerText: text,
     spokenText: speakable(text || (proposals[0] ? SPOKEN_PROPOSAL[proposals[0].type](proposals[0]) : 'Here’s what I found.')),
     trace: [...trace], followups: [...new Set(followups)].slice(0, 3), proposals, tools: used, usage, model, ...(briefing ? { action: 'briefing' } : {}),
   };
@@ -112,20 +146,20 @@ async function askClaude(db, auth, question, c, source, provider) {
  * @param {string} question
  * @param {{ voice?: boolean, tz?: string, now?: Date }} opts
  */
-export async function ask(db, auth, question, { voice = false, tz = 'UTC', now = new Date() } = {}) {
+export async function ask(db, auth, question, { voice = false, tz = 'UTC', now = new Date(), history = [], lang = 'en' } = {}) {
   const q = String(question || '').trim().slice(0, 600);
-  const c = { tz, now, voice };
+  const c = { tz, now, voice, lang: lang === 'es' ? 'es' : 'en' };
   const source = voice ? 'voice' : 'typed';
   const provider = AI.active;
   let out, providerName = 'mock', fallback = null;
   if (provider.name === 'anthropic' && typeof provider.chat === 'function' && !(await AI.overBudget(db))) {
-    try { out = await askClaude(db, auth, q, c, source, provider); providerName = 'anthropic'; }
+    try { out = await askClaude(db, auth, q, c, source, provider, history); providerName = 'anthropic'; }
     catch (e) { console.error('[assist] Claude failed, using offline answers:', e.message); fallback = 'error'; }
   }
   if (!out) out = await askMock(db, auth, q, c, source);
   const safety = checkText(q);
   if (safety.flagged) out.spokenText = speakable(out.spokenText);
-  await db.aIUsage.create({ data: { kind: voice ? 'ask_voice' : 'ask', provider: fallback ? `mock-${fallback}` : providerName, model: out.model || (providerName === 'mock' ? 'mock-assist-1' : provider.model), inputTokens: out.usage?.inputTokens || 0, outputTokens: out.usage?.outputTokens || 0, costMicros: out.usage?.costMicros || 0 } }).catch(() => null);
+  await db.aIUsage.create({ data: { kind: voice ? 'ask_voice' : 'ask', provider: fallback ? `mock-${fallback}` : providerName, model: out.model || (providerName === 'mock' ? 'mock-assist-1' : config.ai.assistModel || provider.model), inputTokens: out.usage?.inputTokens || 0, outputTokens: out.usage?.outputTokens || 0, costMicros: out.usage?.costMicros || 0 } }).catch(() => null);
   const { usage, model, ...rest } = out;
   void usage; void model;
   return { question: q, ...rest, safety: { flagged: safety.flagged } };

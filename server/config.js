@@ -52,6 +52,8 @@ export const config = {
     provider: (env.AI_PROVIDER || 'mock').toLowerCase(),
     anthropicKey: env.ANTHROPIC_API_KEY || '',
     anthropicModel: env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
+    // Ask Assist (conversations) can use a smarter model than the drafts, e.g. ASSIST_MODEL=claude-sonnet-5-5.
+    assistModel: (env.ASSIST_MODEL || '').trim() || env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
     openaiKey: env.OPENAI_API_KEY || '',
     openaiModel: env.OPENAI_MODEL || 'gpt-4o-mini',
     monthlyBudgetUsd: Number(env.AI_MONTHLY_BUDGET_USD || 5),
@@ -84,6 +86,8 @@ export const config = {
     deepgramKey: (env.DEEPGRAM_API_KEY || '').trim(),
     deepgramModel: env.DEEPGRAM_MODEL || 'nova-3',
     deepgramVoice: deepgramVoiceName(env.DEEPGRAM_TTS_VOICE),
+    // Spanish answers use a Spanish voice (Selena: Latin American, also says English names well).
+    deepgramVoiceEs: (v => (/^[a-z]+$/.test(v) ? `aura-2-${v}-es` : v))(String(env.DEEPGRAM_TTS_VOICE_ES || 'aura-2-selena-es').trim().toLowerCase()),
     openaiTranscribeModel: env.OPENAI_TRANSCRIBE_MODEL || 'whisper-1',
     monthlyMinutes: Number(env.VOICE_MONTHLY_MINUTES || 300),
   },

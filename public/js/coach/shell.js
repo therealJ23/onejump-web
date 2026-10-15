@@ -56,7 +56,6 @@ export function renderShell() {
         <div class="search" style="flex:1;max-width:420px"><label class="sr" for="global-search">Search</label>${icon('search')}<input class="input" id="global-search" placeholder="Search clients, programs, exercises" data-input="globalSearch" autocomplete="off"><span class="kbd hide-sm">/</span></div>
         <div class="grow"></div>
         ${trial}
-        <button class="btn ghost icon" data-act="talk" aria-label="Talk to Assist" title="Talk to Assist">${icon('mic')}</button>
         <button class="btn assist sm" data-act="copilot">${arc()}<span class="hide-sm">Ask Assist</span></button>
         <button class="btn primary sm" data-act="newMenu">${icon('plus')}<span class="hide-sm">New</span></button>
         <button class="btn ghost icon bell" data-act="notifs" aria-label="Notifications">${icon('bell')}<span class="dot" id="bell-dot" ${state.counts.notifications ? '' : 'hidden'}></span></button>

@@ -40,8 +40,9 @@ class MockVoice {
 
 class DeepgramVoice {
   constructor({ apiKey, model, fetchImpl = fetch }) { if (!apiKey) throw new Error('DEEPGRAM_API_KEY is not set'); this.name = 'deepgram'; this.key = apiKey; this.model = model; this.fetch = fetchImpl; }
-  async transcribe(buf, { mimeType = 'audio/webm' } = {}) {
-    const res = await this.fetch(`https://api.deepgram.com/v1/listen?model=${encodeURIComponent(this.model)}&smart_format=true&punctuate=true`, {
+  async transcribe(buf, { mimeType = 'audio/webm', lang = 'en' } = {}) {
+    // Spanish speakers often mix in English (names, exercises), so Spanish uses multilingual mode.
+    const res = await this.fetch(`https://api.deepgram.com/v1/listen?model=${encodeURIComponent(this.model)}&smart_format=true&punctuate=true${lang === 'es' ? '&language=multi' : ''}`, {
       method: 'POST', headers: { Authorization: `Token ${this.key}`, 'Content-Type': mimeType.split(';')[0] }, body: buf, signal: AbortSignal.timeout(30000),
     });
     if (!res.ok) throw new Error(`Deepgram ${res.status}: ${(await res.text()).slice(0, 200)}`);
@@ -117,12 +118,12 @@ export const VoiceService = {
    * not stored here; callers that keep audio (voice notes) store it themselves.
    * @param {*} db tenant client for the business (coach-level)
    */
-  async transcribe(db, buf, { mimeType, durationMs = 0, hint = null, userId, clientId = null, kind = 'ask' }) {
+  async transcribe(db, buf, { mimeType, durationMs = 0, hint = null, userId, clientId = null, kind = 'ask', lang = 'en' }) {
     const p = active();
     const estimate = estimateDurationMs(buf, mimeType), max = (MAX_SECONDS[kind] || 60) * 1000;
     if (estimate > max * 1.5 + 2000) throw new HttpError(400, `That recording is too long. Keep it under ${Math.round(max / 1000)} seconds.`, { code: 'too_long' });
     let out;
-    try { out = await p.transcribe(buf, { mimeType, hint, kind }); }
+    try { out = await p.transcribe(buf, { mimeType, hint, kind, lang }); }
     catch (e) { console.error(`[voice] ${p.name} failed:`, e.message); throw new HttpError(502, 'I couldn’t hear that clearly. Try again, or type instead.', { code: 'voice_failed' }); }
     // Bill the longest of: what the provider measured, what the browser reported, and the size-based estimate.
     const ms = Math.round(Math.max(0, Number(out.durationMs) || 0, Math.min(max * 1.5 + 2000, Number(durationMs) || 0), estimate));
@@ -133,11 +134,12 @@ export const VoiceService = {
     return { transcript, durationMs: ms, provider: p.name };
   },
   /** Server text-to-speech (VOICE_TTS=deepgram). Returns MP3 bytes, or null for browser speech. */
-  async speak(db, text) {
+  async speak(db, text, lang = 'en') {
     if (config.voice.tts !== 'deepgram' || !config.voice.deepgramKey) return null;
+    const voice = lang === 'es' ? config.voice.deepgramVoiceEs : config.voice.deepgramVoice;
     const dg = active() instanceof DeepgramVoice ? active() : new DeepgramVoice({ apiKey: config.voice.deepgramKey, model: config.voice.deepgramModel });
-    const audio = await dg.speak(String(text).slice(0, 1000));
-    await db.aIUsage.create({ data: { kind: 'voice_tts', provider: 'deepgram', model: config.voice.deepgramVoice, costMicros: Math.round(text.length / 1000 * (config.voice.deepgramVoice.startsWith('flux-') ? FLUX_TTS_PRICE_PER_1K_CHARS : TTS_PRICE_PER_1K_CHARS) * 1e6) } }).catch(() => null);
+    const audio = await dg.speak(String(text).slice(0, 1000), voice);
+    await db.aIUsage.create({ data: { kind: 'voice_tts', provider: 'deepgram', model: voice, costMicros: Math.round(text.length / 1000 * (voice.startsWith('flux-') ? FLUX_TTS_PRICE_PER_1K_CHARS : TTS_PRICE_PER_1K_CHARS) * 1e6) } }).catch(() => null);
     return audio;
   },
 };

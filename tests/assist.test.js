@@ -112,3 +112,38 @@ describe('approval before anything reaches a client', () => {
     expect(text).not.toMatch(/riskScore|riskLevel|aiInsightId|Assist|private note/i);
   });
 });
+
+describe('Ask Assist with Claude: memory, full data tools, language', () => {
+  it('gives every extra tool only this business’s data, with no emails or phone numbers', async () => {
+    const { MORE_TOOLS } = await import('../server/assist/moreTools.js');
+    const c = { tz: 'UTC', now: new Date(), voice: false };
+    const outs = [];
+    for (const [name, tool] of Object.entries(MORE_TOOLS)) outs.push(await tool.run(f.dbA, tool.input.name ? { name: f.mike.name } : {}, c));
+    const json = JSON.stringify(outs);
+    expect(json).toContain(f.mike.name.split(' ')[0]);
+    expect(json).not.toContain(f.mike.email);
+    const other = await f.dbB.client.findFirst({ select: { name: true } });
+    if (other) expect((await MORE_TOOLS.client_details.run(f.dbA, { name: other.name }, c)).notFound).toBe(true);
+  });
+
+  it('sends earlier turns and the coach’s language, runs tools, and returns the answer text', async () => {
+    const { ask } = await import('../server/assist/AssistService.js');
+    const { AI } = await import('../server/ai/AIService.js');
+    const calls = [];
+    const fake = { name: 'anthropic', model: 'fake-claude', async chat(req) {
+      calls.push({ ...req, roles: req.messages.map(m => m.role), last: JSON.stringify(req.messages.at(-1)) });
+      if (calls.length === 1) return { model: 'fake-claude', usage: {}, json: { stop_reason: 'tool_use', content: [{ type: 'tool_use', id: 't1', name: 'client_details', input: { name: f.mike.name } }] } };
+      return { model: 'fake-claude', usage: {}, json: { stop_reason: 'end_turn', content: [{ type: 'text', text: 'Mike va bien.\n\n- Entrena 3 días\n- Sigue el plan' }] } };
+    } };
+    const before = AI.provider; AI.provider = fake;
+    try {
+      const r = await ask(f.dbA, { userId: f.dani.id, businessId: f.A.id }, '¿y él?', { history: [{ role: 'user', text: 'How is Mike doing?' }, { role: 'assistant', text: 'Mike is on track.' }], lang: 'es' });
+      expect(calls[0].roles).toEqual(['user', 'assistant', 'user']);
+      expect(calls[0].system).toMatch(/Spanish/);
+      expect(calls[1].last).toContain(f.mike.name.split(' ')[0]);
+      expect(r.answerText).toMatch(/Mike va bien/);
+      expect(r.answerHtml).toContain('<ul class="answer-list">');
+      expect(r.answerHtml).not.toContain('**');
+    } finally { AI.provider = before; }
+  });
+});

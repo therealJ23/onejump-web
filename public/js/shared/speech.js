@@ -2,6 +2,7 @@
 // up for Deepgram voices (VOICE_TTS=deepgram), in which case it plays the server's audio.
 // "Speak answers out loud" is remembered per device.
 import { api } from './api.js';
+import { getLang } from './i18n.js';
 
 const KEY = 'oj.voice.speak';
 export const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance === 'function';
@@ -21,7 +22,7 @@ export async function speak(text, { onEnd, tts = 'browser', force = false } = {}
   stopSpeaking();
   if (tts === 'deepgram') {
     try {
-      const res = await fetch('/api/voice/speak', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': api.csrf?.() || '' }, body: JSON.stringify({ text }) });
+      const res = await fetch('/api/voice/speak', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': api.csrf?.() || '' }, body: JSON.stringify({ text, lang: getLang() }) });
       if (res.status === 200) { audio = new Audio(URL.createObjectURL(await res.blob())); audio.onended = done; audio.onerror = done; await audio.play(); return; }
     } catch { /* fall back to the browser voice */ }
   }
@@ -29,7 +30,11 @@ export async function speak(text, { onEnd, tts = 'browser', force = false } = {}
   try {
     const u = new SpeechSynthesisUtterance(text);
     const voices = speechSynthesis.getVoices();
-    const v = voices.find(x => /en[-_]US/i.test(x.lang) && /samantha|aria|jenny|google us|female/i.test(x.name)) || voices.find(x => /^en/i.test(x.lang));
+    const es = getLang() === 'es';
+    const v = es
+      ? voices.find(x => /^es[-_](US|MX|419)/i.test(x.lang) && /paulina|m[oó]nica|helena|sabina|google/i.test(x.name)) || voices.find(x => /^es/i.test(x.lang))
+      : voices.find(x => /en[-_]US/i.test(x.lang) && /samantha|aria|jenny|google us|female/i.test(x.name)) || voices.find(x => /^en/i.test(x.lang));
+    u.lang = es ? (v?.lang || 'es-US') : (v?.lang || 'en-US');
     if (v) u.voice = v;
     u.rate = 1.03;
     let finished = false; const fin = () => { if (!finished) { finished = true; done(); } };

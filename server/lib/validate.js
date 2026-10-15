@@ -48,4 +48,6 @@ export const audioFields = z.object({
   durationMs: z.coerce.number().int().min(0).max(200000).optional(),
   hint: z.string().trim().max(2000).optional(),
   kind: z.enum(['set_log', 'food_log']).optional(),
+  lang: z.enum(['en', 'es']).optional(),
+  history: z.string().max(30000).optional(), // JSON: earlier turns of an Ask Assist conversation
 }).strip();

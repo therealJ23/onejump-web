@@ -56,3 +56,9 @@ html { scroll-behavior: smooth; }
 .pub.light .hero-shot .q-item { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
 .pub.light .hero-shot .q-item .btn { align-self: center; }
 @media (max-width: 480px) { .pub.light .hero-shot .q-item { grid-template-columns: auto minmax(0, 1fr); } .pub.light .hero-shot .q-item .btn { display: none; } }
+/* Phones: the language switch, Log in and the hero's own Start button fit; the nav's trial button hides. */
+@media (max-width: 600px) {
+  .pub-nav .row { gap: 6px; flex-shrink: 0; }
+  .pub-nav .row .btn.assist { display: none; }
+  .pub-nav .lang-switch button { padding: 4px 7px; }
+}

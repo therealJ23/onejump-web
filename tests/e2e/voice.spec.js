@@ -76,20 +76,26 @@ const fakeMic = `(() => { navigator.mediaDevices.getUserMedia = async () => { co
 const talkOnceMic = `(() => { let n = 0; navigator.mediaDevices.getUserMedia = async () => { const ctx = new AudioContext(); await ctx.resume(); const o = ctx.createOscillator(); const g = ctx.createGain(); g.gain.value = n++ === 0 ? 0.3 : 0; g.gain.setValueAtTime(0, ctx.currentTime + 0.8); const d = ctx.createMediaStreamDestination(); o.connect(g).connect(d); o.start(); return d.stream; }; })()`;
 const deniedMic = `(() => { navigator.mediaDevices.getUserMedia = async () => { throw new DOMException('Permission denied', 'NotAllowedError'); }; })()`;
 
-test('Talk to Assist is hands-free: it listens on open, sends when you stop talking, and nothing is sent until Confirm', async ({ page }) => {
+test('Ask Assist: the green button greets the coach by name; tapping the logo talks; nothing is sent until Confirm', async ({ page }) => {
   const done = watchErrors(page);
   await page.addInitScript(fakeSpeech('Send Marcus the drafted message'));
   await page.addInitScript(talkOnceMic);
   await page.addInitScript(fastSpeech);
   await coachLogin(page);
+  await expect(page.locator('header [data-act="talk"]')).toHaveCount(0); // no separate microphone in the top bar
   const { clients } = await (await page.request.get('/api/clients')).json();
   const marcus = clients.find(c => c.name === 'Marcus Johnson').id;
   const count = async () => (await (await page.request.get(`/api/threads/${marcus}`)).json()).messages.length;
   const before = await count();
-  await page.locator('header [data-act="talk"]').click(); // the only tap
-  await expect.poll(() => page.evaluate(() => (window.__spoken || [])[0])).toBe('Hi Dani, how can I help you today?'); // first time today: a spoken greeting
-  await expect(page.locator('#v-orb.listening')).toBeVisible(); // then it glows while listening (no timer, no label)
-  await expect(page.locator('.rec-dot')).toHaveCount(0);
+  await page.locator('header [data-act="copilot"]').click();
+  const thread = page.locator('#v-thread');
+  await expect(thread).toContainText('Hi Dani! I’m Assist.');
+  await expect(thread).toContainText('tap the OneJump logo above to talk to me');
+  await expect(page.getByText('Try saying')).toHaveCount(0);
+  await expect(page.locator('#v-orb.listening')).toHaveCount(0); // it doesn't listen until the logo is tapped
+  await expect(page.locator('#v-type')).toBeVisible();
+  await page.locator('#v-orb').click();
+  await expect(page.locator('#v-orb.listening')).toBeVisible();
   const card = page.locator('.proposal');
   await expect(card).toContainText('Marcus Johnson', { timeout: 10000 }); // sent on its own after the pause
   expect(await count()).toBe(before);
@@ -99,15 +105,30 @@ test('Talk to Assist is hands-free: it listens on open, sends when you stop talk
   done();
 });
 
-test('Talk to Assist with the microphone off: clear message, and typing still works', async ({ page }) => {
+test('Ask Assist with the microphone off: clear message, and typing still works', async ({ page }) => {
   await page.addInitScript(deniedMic);
   await coachLogin(page);
-  await page.locator('header [data-act="talk"]').click();
+  await page.locator('header [data-act="copilot"]').click();
+  await page.locator('#v-orb').click();
   await expect(page.locator('#v-said')).toHaveText('Microphone access is off. Turn it on in your browser settings to use voice.');
   await page.locator('#v-type').fill('Which clients haven’t paid?');
   await page.locator('#v-form button[type="submit"]').click();
-  await expect(page.locator('#v-answer')).not.toBeEmpty();
-  await expect(page.locator('#v-answer .thinking')).toHaveCount(0);
+  await expect(page.locator('#v-thread .q').last()).toHaveText('Which clients haven’t paid?');
+  await expect(page.locator('#v-thread .thinking')).toHaveCount(0);
+  await expect(page.locator('#v-thread .a').last()).not.toBeEmpty();
+});
+
+test('Ask Assist remembers the conversation and starts a new one on request', async ({ page }) => {
+  await coachLogin(page);
+  await page.locator('header [data-act="copilot"]').click();
+  await page.locator('#v-type').fill('Who hasn’t checked in this week?');
+  await page.locator('#v-form button[type="submit"]').click();
+  await expect(page.locator('#v-thread .thinking')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.locator('header [data-act="copilot"]').click();
+  await expect(page.locator('#v-thread .q')).toHaveText(['Who hasn’t checked in this week?']);
+  await page.locator('#v-new').click();
+  await expect(page.locator('#v-thread .q')).toHaveCount(0);
 });
 
 test('client: “10 reps at 55” fills the next set; Undo restores it @phone', async ({ page }) => {
@@ -196,10 +217,10 @@ test('morning briefing: Today → Play reads it line by line', async ({ page }) 
   done();
 });
 
-test('“Start my morning briefing” in Talk to Assist opens and plays it', async ({ page }) => {
+test('“Start my morning briefing” in Ask Assist opens and plays it', async ({ page }) => {
   await page.addInitScript(fastSpeech);
   await coachLogin(page);
-  await page.locator('header [data-act="talk"]').click();
+  await page.locator('header [data-act="copilot"]').click();
   await page.locator('#v-type').fill('Start my morning briefing');
   await page.locator('#v-form button[type="submit"]').click();
   await expect(page.locator('#br-lines li').first()).toContainText('Good morning');

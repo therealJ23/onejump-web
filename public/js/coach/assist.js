@@ -8,6 +8,7 @@ import { toast, toastError, busy, openDrawer } from '../shared/ui.js';
 import { ui } from './state.js';
 import { refreshCounts } from './shell.js';
 import { micButton } from '../shared/dictation.js';
+import { getLang } from '../shared/i18n.js';
 
 export const SUGGESTED = ['Who hasn’t checked in this week?', 'Which clients are at risk of leaving?', 'Who has missed the most workouts?', 'Who’s struggling with nutrition this week?', 'What was my revenue last month?', 'Which clients haven’t paid?', 'Remind everyone who hasn’t checked in', 'Give me a summary of my business this month.'];
 const SOURCES = { instagram_dm: 'Instagram DM', booking_page: 'Booking page', referral: 'Referral', walk_in: 'Walk-in', google: 'Google', other: 'Other' };
@@ -101,7 +102,8 @@ export async function chatAsk(key, q) {
   msgs.push({ role: 'q', text: q });
   const a = { role: 'a', pending: true }; msgs.push(a);
   refreshChat(key);
-  try { a.r = await api.post('/api/assist/ask', { question: q }); if (a.r.action === 'briefing') import('./voice.js').then(m => m.openBriefing()); }
+  const history = msgs.slice(0, -2).filter(m => m.role === 'q' ? m.text : m.r).slice(-12).map(m => ({ role: m.role === 'q' ? 'user' : 'assistant', text: m.role === 'q' ? m.text : (m.r.answerText || m.r.spokenText || '') })).filter(m => m.text);
+  try { a.r = await api.post('/api/assist/ask', { question: q, history, lang: getLang() }); if (a.r.action === 'briefing') import('./voice.js').then(m => m.openBriefing()); }
   catch (e) { a.error = e.message; }
   a.pending = false;
   refreshChat(key);
@@ -118,7 +120,7 @@ export const chatActions = {
     chatAsk(key, el.dataset.q);
   },
   chatClear(el, _e, ctx) { ui(`chat-${el.dataset.key}`, []).length = 0; ctx?.rerender?.(); },
-  copilot(el) { openCopilot(el?.dataset?.q); },
+  copilot(el) { return import('./voice.js').then(m => m.openTalk(el?.dataset?.q)); }, // the green Ask Assist button
 };
 export function submitChat(form) {
   const key = form.dataset.key, input = form.q, v = input.value.trim();

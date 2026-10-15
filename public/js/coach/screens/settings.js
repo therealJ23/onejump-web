@@ -8,6 +8,7 @@ import { openModal, closeModal, modalHead, toast, toastError, busy, showFieldErr
 import { state, hasPlan } from '../state.js';
 import { migration, importCsv } from '../modals.js';
 import { renderShell } from '../shell.js';
+import { LANGS, getLang, setLang } from '../../shared/i18n.js';
 
 const TABS = [['profile', 'Profile'], ['business', 'Business & branding'], ['assist', 'Assist'], ['notifications', 'Notifications'], ['switch', 'Switch from another app'], ['team', 'Team'], ['integrations', 'Integrations'], ['security', 'Security & privacy']];
 const COLORS = ['#D6FF3D', '#7FD1C1', '#F4B942', '#F28C6B', '#A7B8FF'];
@@ -22,7 +23,10 @@ const T = {
     return `<form class="card pad stack s16" data-form="profile" novalidate><div class="row">${avatar({ name: p.name }, 'lg')}<div class="stack s4"><div class="strong">${esc(p.name)}</div><div class="small muted">${esc(p.email)}</div></div></div>
       <div class="grid g2"><div class="field"><label for="sp-n">Name</label><input class="input" id="sp-n" name="name" value="${esc(p.name)}" maxlength="120" required></div><div class="field"><label for="sp-t">Title</label><input class="input" id="sp-t" name="title" value="${esc(p.title)}" maxlength="80" placeholder="e.g. Strength coach, NASM-CPT"></div></div>
       <div class="field"><label for="sp-b">Bio (shown on your booking page)</label><textarea class="textarea" id="sp-b" name="bio" rows="4" maxlength="1000">${esc(p.bio)}</textarea></div>
-      <div><button class="btn primary" type="submit">Save</button></div></form>`;
+      <div><button class="btn primary" type="submit">Save</button></div></form>
+    <section class="card pad stack s8" data-no-translate><div class="h3">${getLang() === 'es' ? 'Idioma' : 'Language'}</div>
+      <div class="row wrap"><label class="sr" for="sp-lang">${getLang() === 'es' ? 'Idioma' : 'Language'}</label><select class="select" id="sp-lang" style="width:auto;min-width:200px" data-change="language">${LANGS.map(([k, l]) => `<option value="${k}" ${getLang() === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      <p class="tiny muted">${getLang() === 'es' ? 'Elige el idioma de OneJump en este dispositivo. Assist también te responde en este idioma.' : 'Choose the language for OneJump on this device. Assist also answers you in this language.'}</p></section>`;
   },
   business(d) {
     const b = d.business, col = b.brandColor || COLORS[0], ow = owner();
@@ -109,6 +113,7 @@ export default {
     async brandColor(el, _e, ctx) {
       try { await api.put('/api/settings/business', { brandColor: el.dataset.c }); ctx.data.business.brandColor = el.dataset.c; ctx.rerender(); toast('Accent saved'); } catch (e) { toastError(e); }
     },
+    language(el) { if (el.value !== getLang()) setLang(el.value); },
     async writingStyle(el, _e, ctx) { try { await api.put('/api/settings/business', { writingStyle: el.value }); ctx.data.business.writingStyle = el.value; toast('Saved. New drafts use this style.'); } catch (e) { toastError(e); } },
     async assistPref(el, _e, ctx) {
       const on = !el.classList.contains('on');

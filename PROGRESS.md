@@ -1,6 +1,6 @@
 # Progress
 
-_Last updated: October 10, 2026_
+_Last updated: October 15, 2026_
 
 ## Now building: Voice + Nutrition (approved Oct 8)
 
@@ -16,6 +16,9 @@ Spec: `03-voice-and-nutrition-spec.md`. Everything runs on mock voice, AI and fo
 - [x] **Hands-free Talk to Assist (Oct 12):** no button and no timer; it listens as soon as the window opens, sends when you stop talking, and listens again after each answer. Opening it plays a chime (and once a day: “Hi Dani, how can I help you today?”); the orb glows with your voice whenever the mic is on.
 - [x] **Landing + pricing refresh (Oct 12):** lighter look, simpler words, built around time saved (about 9 hours a week), Assist and nutrition on the page and in every plan.
 - [x] **Independent review** of voice + nutrition (tenant isolation held; fixed 11 smaller issues: server-measured voice minutes, no made-up meal when Assist is down, nothing about food behaviour read aloud, failed proposals never repeat, Hide numbers in text and the export, the mic stops when you leave a screen, double-tap races, transcripts deleted with the client, EXIF trailing data, upload field limits).
+
+- [x] **Ask Assist upgrade (Oct 15):** one Ask Assist window (green button), greeting by name, tap the OneJump logo to talk, conversation memory, full read-only view of the business for Claude, optional smarter model (`ASSIST_MODEL`).
+- [x] **English / Spanish (Oct 15):** coach workspace (Settings → Profile → Language) and public pages (EN | ES switch, phone language by default); Assist answers, listens and speaks in Spanish. Public pages always light.
 
 **Tests:** `npm test` → lint passes, **155 API tests pass** (27 nutrition + 21 voice + 9 briefing tests from the spec’s acceptance criteria, plus 13 from an independent review). `npm run test:e2e` → **30 browser tests pass** (desktop + phone), including dictation, denied mic, Talk to Assist, set by voice + Undo, voice notes, voice food logging without speech recognition and the briefing.
 

@@ -11,8 +11,10 @@ import { renderShell, refreshCounts } from './shell.js';
 import { navigate, render, ctx } from './router.js';
 import { chatActions, proposalActions, submitChat } from './assist.js';
 import { toggleDictation } from '../shared/dictation.js';
+import { startTranslation } from '../shared/i18n.js';
 
 applyTheme();
+startTranslation(); // English or Spanish (Settings → Profile → Language, or the device's language)
 
 // ---------------------------------------------------------------- global actions
 const NOTIF_ICON = { risk: 'alert', checkin: 'clipboard', message: 'message', payment: 'card', lead: 'funnel', missed: 'clock', assist: 'zap', client: 'user', automation: 'zap' };
