@@ -58,6 +58,12 @@ struct CoachClient: Identifiable {
     var noLogs = false
     var lowProtein = false
     var filters: Set<ClientFilter> = []
+    /// Live data: the program's name, unread messages, the check-in waiting for review,
+    /// and where the button under Assist's insight goes ("queue", "checkin", "payments", "thread").
+    var programName: Loc? = nil
+    var unread = 0
+    var checkInID: String? = nil
+    var suggestTarget: String? = nil
 
     var avatarColor: Color { Color(hex: avatar) }
 }
@@ -119,11 +125,25 @@ struct RadarEntry: Identifiable {
 
 /// A message Assist drafted that is waiting for the coach.
 struct QueueItem: Identifiable {
-    let id: String // the client's id
+    let id: String // the client's id in the sample; the draft's id when live
     let reason: Loc
     let tag: Loc
     let tone: Tone
     let draft: Loc
+    /// Whose draft it is.
+    var clientID: String
+    /// The server's id for the draft (approve it with POST /api/insights/:id/approve).
+    var insightID: String?
+
+    init(id: String, reason: Loc, tag: Loc, tone: Tone, draft: Loc, clientID: String? = nil, insightID: String? = nil) {
+        self.id = id
+        self.reason = reason
+        self.tag = tag
+        self.tone = tone
+        self.draft = draft
+        self.clientID = clientID ?? id
+        self.insightID = insightID
+    }
 }
 
 enum QueueState {
@@ -138,6 +158,7 @@ struct Session: Identifiable {
     let name: String
     let type: Loc
     let systemImage: String
+    var clientID: String?
 }
 
 // MARK: - Messages
@@ -190,6 +211,7 @@ struct CheckInAction: Identifiable {
     let title: Loc
     let detail: Loc
     let button: Loc
+    var done = false
 }
 
 struct CheckInReport {
@@ -198,16 +220,24 @@ struct CheckInReport {
     var flag: Loc?
     let answers: [CheckInAnswer]
     let note: Loc
-    let summary: Loc
-    let draft: Loc
-    let food: Loc
-    let actions: [CheckInAction]
+    var summary: Loc
+    var draft: Loc
+    var food: Loc
+    var actions: [CheckInAction]
+    /// The check-in's id (the client's id in the sample).
+    var id = ""
+    var clientID = ""
+    /// Assist's summary on the server (needed to send the reply).
+    var insightID: String?
+    /// False until Assist's summary and draft have loaded (live).
+    var hasAssist = true
 }
 
 enum CheckInState { case open, sent }
 
 struct ReviewedCheckIn: Identifiable {
     let id = UUID()
+    var clientID: String?
     let name: String
     let initials: String
     let avatar: UInt32
@@ -231,6 +261,7 @@ struct Lead: Identifiable {
     let when: Loc
     let interest: Loc
     let draft: Loc
+    var stage: LeadStage = .new
 }
 
 enum LeadStage { case new, replied, booked }
@@ -245,6 +276,7 @@ struct ProgramSummary: Identifiable {
     let tag: Loc
     let tone: Tone
     let kind: ProgramKind
+    var name: Loc = ""
 }
 
 struct BuilderExercise: Identifiable {
@@ -280,6 +312,9 @@ struct LibraryExercise: Identifiable {
     let name: Loc
     let group: MuscleGroup
     let equipment: Loc
+    /// How-to cues and swap-ready alternatives (live data; the sample uses its group's).
+    var howTo: [Loc]?
+    var alternatives: [Loc]?
 }
 
 // MARK: - Nutrition, automations, settings
@@ -298,7 +333,7 @@ struct ShareRow: Identifiable {
 }
 
 struct MealPlanTemplate: Identifiable {
-    let id = UUID()
+    var id = UUID().uuidString
     let name: Loc
     let shortName: Loc
     let meta: Loc
@@ -324,6 +359,7 @@ struct Package: Identifiable {
 
 struct Payment: Identifiable {
     let id = UUID()
+    var clientID: String?
     let name: String
     let initials: String
     let avatar: UInt32
@@ -351,6 +387,129 @@ struct ClientNote: Identifiable {
     let text: Loc
 }
 
+// MARK: - Live data that has no sample-only shape
+
+/// A number tile: "$1,972 · Monthly revenue · +$154 this month".
+struct KPI: Identifiable {
+    let id = UUID()
+    let value: String
+    let label: Loc
+    let note: Loc
+    /// Where tapping it goes: "payments", "clients", "checkins" or nil.
+    var target: String?
+    var noteMuted = false
+}
+
+/// One week on the adherence chart (nil = nothing was scheduled that week).
+struct AdherencePoint: Identifiable {
+    let id: Int
+    let label: Loc
+    let pct: Int?
+}
+
+/// Active clients at the end of each month.
+struct CountPoint: Identifiable {
+    let id: Int
+    let label: Loc
+    let count: Int
+}
+
+/// Someone on the Payments screen who owes money.
+struct PaymentAttention: Identifiable {
+    let id: String
+    let clientID: String
+    let name: String
+    let initials: String
+    let avatar: UInt32
+    let sub: Loc
+    var reminded: Bool
+}
+
+/// The Payments screen's numbers.
+struct PaymentSummary {
+    var mrr: String
+    var mrrNote: Loc
+    var collected: String
+    var outstanding: String
+    var avg: String
+    var failedCount: Int
+    var onTime: String
+    var attention: [PaymentAttention]
+    var reminderDraft: Loc
+}
+
+/// The signed-in coach.
+struct CoachMe {
+    var name: String
+    var first: String
+    var initials: String
+    var email: String
+    var business: String
+    var bookingURL: String
+    var planLabel: Loc
+    var trialDaysLeft: Int?
+    var pro: Bool
+    var totpEnabled: Bool
+}
+
+/// One row of a client's week on the Program tab.
+struct WeekRow: Identifiable {
+    let id = UUID()
+    let day: Loc
+    let name: Loc
+    let meta: Loc
+    let label: Loc
+    let tone: Tone
+}
+
+/// One macro on the Food tab.
+struct MacroLine: Identifiable {
+    let id = UUID()
+    let label: Loc
+    let now: Int
+    let target: Int
+    let unit: String
+    var warn = false
+}
+
+/// The client's current nutrition plan (what Assist's plan builder replaces).
+struct NutritionPlanInfo {
+    var approach: String?
+    var calories: Int?
+    var proteinG: Int?
+    var carbsG: Int?
+    var fatG: Int?
+    var coachNote: String?
+    var saved: Bool
+}
+
+/// Everything on one client's page beyond the list row.
+struct ClientDetailData {
+    var riskScore: Int?
+    var riskWhy: Loc?
+    var stats: [KPI]
+    var weightTotal: Loc
+    var spark: [Double]
+    var habits: [HabitStat]
+    var activity: [DatedLine]
+    var next: Loc
+    var billing: Loc
+    var lifetimeValue: String
+    var programName: Loc?
+    var weekRows: [WeekRow]
+    var foodLogged: Loc
+    var macros: [MacroLine]
+    var foodNote: Loc
+    var nutritionPlan: NutritionPlanInfo?
+    var bests: [PersonalBest]
+    var measures: [BodyMeasure]
+    var photos: [Loc]
+    var checkInHistory: [CheckInHistoryRow]
+    var notes: [ClientNote]
+    /// False while a live client's page is still loading.
+    var loaded = true
+}
+
 // MARK: - Assist conversation
 
 struct AssistPoint: Identifiable {
@@ -366,7 +525,7 @@ struct AssistTableRow: Identifiable {
     let intensity: Loc
 }
 
-enum ActionKind { case queue, lead, post, program, client, queueItem }
+enum ActionKind { case queue, lead, post, program, client, queueItem, proposal }
 
 struct ActionCardTemplate {
     let kind: ActionKind
@@ -402,6 +561,12 @@ struct ActionCard {
     var noSay: String
     var done = false
     var dismissed = false
+    /// A live Assist proposal: the server's id, and whether a spoken "yes" may approve it
+    /// (never for anything with health details).
+    var proposalID: String?
+    var voiceOK = true
+    /// Extra lines to show on the card (a nutrition plan's numbers, a program's details…).
+    var details: [String] = []
 
     var isOpen: Bool { !done && !dismissed }
 }

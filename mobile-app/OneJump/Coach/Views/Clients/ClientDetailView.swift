@@ -9,12 +9,12 @@ struct ClientDetailView: View {
     var body: some View {
         @Bindable var store = store
         let client = store.client(clientID)
-        let extras = CoachData.extras[clientID]
+        let detail = store.detail(clientID)
 
         ScreenScroll {
             profile(client)
-            if client.kind == .risk, let extras {
-                riskCard(score: extras.riskScore ?? 0, why: extras.riskWhy.map { $0(lang) } ?? "")
+            if client.kind == .risk, let score = detail.riskScore {
+                riskCard(score: score, why: detail.riskWhy.map { $0(lang) } ?? "")
             }
             actions(client)
             SegmentedBar(options: tabOptions, selection: $store.clientDetailTab, compact: true)
@@ -27,6 +27,7 @@ struct ClientDetailView: View {
             case .notes: ClientNotesTab(client: client)
             }
         }
+        .refreshable { await store.loadDetail(clientID) }
         .ojNavigationTitle(CT.client(lang))
     }
 

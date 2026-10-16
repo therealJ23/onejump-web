@@ -11,25 +11,22 @@ struct ClientOverviewTab: View {
     @Environment(\.lang) private var lang
 
     var body: some View {
-        let extras = CoachData.extras[client.id]
-        let isNew = client.kind.isNew
-        let habits = extras?.habits ?? CoachData.defaultHabits
-        let activity = isNew ? CoachData.newClientActivity : (extras?.activity ?? CoachData.defaultActivity)
+        let detail = store.detail(client.id)
 
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
-                StatTile(value: client.adherence.map { "\($0)%" } ?? "—", label: CT.adherence(lang), note: CT.last2Weeks(lang), noteColor: Palette.muted, labelFirst: true)
-                StatTile(value: client.weight, label: CT.weight(lang), note: client.weightChange(lang), noteColor: Palette.muted, labelFirst: true)
-                StatTile(value: client.streak, label: CT.streak(lang), note: CT.days(lang), noteColor: Palette.muted, labelFirst: true)
+                ForEach(detail.stats) { stat in
+                    StatTile(value: stat.value, label: stat.label(lang), note: stat.note(lang), noteColor: Palette.muted, labelFirst: true)
+                }
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(CT.weight8(lang)).font(OJFont.title)
                     Spacer()
-                    SubText(client.weightTotal(lang))
+                    SubText(detail.weightTotal(lang))
                 }
-                Sparkline(values: client.spark)
+                Sparkline(values: detail.spark)
                     .frame(height: 70)
             }
             .card()
@@ -46,45 +43,49 @@ struct ClientOverviewTab: View {
                     Spacer()
                     SubText(CT.thisWeek(lang))
                 }
-                ForEach(habits) { habit in
-                    let on = habit.on && !isNew
+                if detail.habits.isEmpty {
+                    SubText(detail.loaded ? CL.noPlanYet(lang) : CL.loadingPage(lang))
+                }
+                ForEach(detail.habits) { habit in
                     HStack(spacing: 10) {
-                        Image(systemName: on ? "checkmark" : "minus")
+                        Image(systemName: habit.on ? "checkmark" : "minus")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(on ? Color.white : Palette.muted)
+                            .foregroundStyle(habit.on ? Color.white : Palette.muted)
                             .frame(width: 24, height: 24)
-                            .background(on ? Palette.good : Palette.surface3, in: Circle())
+                            .background(habit.on ? Palette.good : Palette.surface3, in: Circle())
                         Text(habit.title(lang)).font(OJFont.body)
                         Spacer()
-                        SubText(isNew ? CoachData.startsTomorrow(lang) : habit.value(lang))
+                        SubText(habit.value(lang))
                     }
                     .padding(.vertical, 6)
                 }
             }
             .card()
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(CT.recentActivity(lang)).font(OJFont.title)
-                ForEach(activity) { line in
-                    HStack(alignment: .top, spacing: 10) {
-                        Text(line.date(lang))
-                            .font(.archivo(12, .bold))
-                            .foregroundStyle(Palette.muted)
-                            .frame(width: 52, alignment: .leading)
-                        Text(line.text(lang)).font(.archivo(14))
-                        Spacer(minLength: 0)
+            if !detail.activity.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(CT.recentActivity(lang)).font(OJFont.title)
+                    ForEach(detail.activity) { line in
+                        HStack(alignment: .top, spacing: 10) {
+                            Text(line.date(lang))
+                                .font(.archivo(12, .bold))
+                                .foregroundStyle(Palette.muted)
+                                .frame(width: 52, alignment: .leading)
+                            Text(line.text(lang)).font(.archivo(14))
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 6)
                     }
-                    .padding(.vertical, 6)
                 }
+                .card()
             }
-            .card()
 
             ListCard {
-                infoRow("calendar", CT.nextSession(lang), client.next(lang))
+                infoRow("calendar", CT.nextSession(lang), detail.next(lang))
                 RowDivider()
-                infoRow("creditcard", CT.billing(lang), client.billing(lang))
+                infoRow("creditcard", CT.billing(lang), detail.billing(lang))
                 RowDivider()
-                infoRow("dollarsign.circle", CT.lifetimeValue(lang), CT.paidSoFar(CoachData.lifetimeValue[client.id] ?? "$0")(lang))
+                infoRow("dollarsign.circle", CT.lifetimeValue(lang), CT.paidSoFar(detail.lifetimeValue)(lang))
             }
         }
     }
@@ -99,9 +100,19 @@ struct ClientOverviewTab: View {
 
     /// The button under Assist's insight does the next sensible thing.
     private func suggestedAction() {
+        if store.live {
+            switch client.suggestTarget {
+            case "checkin":
+                if let id = client.checkInID { store.push(.checkIn(id)) } else { store.openInbox(.checkIns) }
+            case "queue": store.go(.today)
+            case "payments": store.push(.payments)
+            default: store.openThread(client.id)
+            }
+            return
+        }
         if client.id == "maya" {
             store.push(.checkIn("maya"))
-        } else if CoachData.queue.contains(where: { $0.id == client.id }) {
+        } else if store.data.queue.contains(where: { $0.clientID == client.id }) {
             store.go(.today)
         } else {
             store.toast.show(CT.draftAdded(lang))
@@ -140,19 +151,41 @@ struct ClientProgramTab: View {
     @Environment(\.lang) private var lang
 
     var body: some View {
+        let detail = store.detail(client.id)
+        let name = detail.programName ?? client.programName ?? (store.live ? CL.noProgramYet : store.data.programName(client.programID))
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
                 Eyebrow(CT.currentProgram(lang))
-                Text(CoachData.programName(client.programID)(lang)).font(.archivo(18, .bold))
+                Text(name(lang)).font(.archivo(18, .bold))
                 SubText(client.week > 0 ? CT.weekOf(client.week, client.weeks)(lang) : CT.startsSoon(lang))
                 ProgressBar(value: client.weeks > 0 ? Double(client.week) / Double(client.weeks) : 0)
                     .padding(.top, 6)
             }
             .card()
 
-            ListCard {
-                DividedRows(Array(0..<3)) { i in
-                    weekRow(i)
+            if store.live {
+                if detail.weekRows.isEmpty {
+                    EmptyStateCard(systemImage: "calendar", title: detail.loaded ? CL.noWorkoutsThisWeek(lang) : CL.loadingPage(lang))
+                } else {
+                    ListCard {
+                        DividedRows(detail.weekRows) { row in
+                            HStack(spacing: 12) {
+                                Text(row.day(lang))
+                                    .font(.archivo(13, .bold))
+                                    .foregroundStyle(Palette.muted)
+                                    .frame(width: 40, alignment: .leading)
+                                TitleSub(row.name(lang), sub: row.meta(lang))
+                                Pill(row.label(lang), tone: row.tone)
+                            }
+                            .rowPadding()
+                        }
+                    }
+                }
+            } else {
+                ListCard {
+                    DividedRows(Array(0..<3)) { i in
+                        weekRow(i)
+                    }
                 }
             }
 
@@ -200,67 +233,74 @@ struct ClientProgramTab: View {
 
 struct ClientFoodTab: View {
     let client: CoachClient
+    @Environment(CoachStore.self) private var store
     @Environment(\.lang) private var lang
 
-    private struct Macro: Identifiable {
-        let id = UUID()
-        let label: String
-        let now: Int
-        let target: Int
-        let unit: String
-        var warn = false
-    }
-
     var body: some View {
+        let detail = store.detail(client.id)
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     Text(CT.todayShort(lang)).font(OJFont.title)
                     Spacer()
-                    SubText(client.noLogs ? CT.nothingLogged(lang) : CT.logged3(lang))
+                    SubText(detail.foodLogged(lang))
                 }
-                ForEach(macros) { m in
+                if detail.macros.isEmpty {
+                    SubText(detail.loaded ? CL.noPlanYet(lang) : CL.loadingPage(lang))
+                }
+                ForEach(detail.macros) { m in
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Text(m.label).font(.archivo(14, .semibold))
+                            Text(m.label(lang)).font(.archivo(14, .semibold))
                             Spacer()
                             SubText("\(Fmt.grouped(m.now)) / \(Fmt.grouped(m.target)) \(m.unit)")
                         }
-                        ProgressBar(value: Double(m.now) / Double(m.target), tint: m.warn ? Palette.warn : Palette.chart)
+                        ProgressBar(value: m.target > 0 ? Double(m.now) / Double(m.target) : 0, tint: m.warn ? Palette.warn : Palette.chart)
                     }
                 }
             }
             .card()
 
             AssistCard(label: CT.nutritionWeek(lang)) {
-                DraftText(client.nutritionNote(lang))
+                DraftText(detail.foodNote(lang))
             }
+
+            if let plan = detail.nutritionPlan, plan.saved {
+                currentPlan(plan)
+            }
+
+            NutritionPlanBuilder(client: client)
         }
     }
 
-    private var macros: [Macro] {
-        if client.noLogs {
-            return [
-                Macro(label: CT.calories(lang), now: 0, target: 2400, unit: "kcal"),
-                Macro(label: CT.protein(lang), now: 0, target: 180, unit: "g"),
-                Macro(label: CT.carbs(lang), now: 0, target: 260, unit: "g"),
-                Macro(label: CT.fat(lang), now: 0, target: 75, unit: "g")
-            ]
+    private func currentPlan(_ plan: NutritionPlanInfo) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(CL.currentPlan(lang)).font(OJFont.title)
+                Spacer()
+                Pill(CL.approach(plan.approach ?? "targets")(lang), tone: .info)
+            }
+            if plan.calories != nil || plan.proteinG != nil {
+                HStack(spacing: 8) {
+                    planStat(CL.caloriesShort(lang), plan.calories.map { Fmt.grouped($0) })
+                    planStat(CL.proteinShort(lang), plan.proteinG.map { "\($0) g" })
+                    planStat(CL.carbsShort(lang), plan.carbsG.map { "\($0) g" })
+                    planStat(CL.fatShort(lang), plan.fatG.map { "\($0) g" })
+                }
+            }
+            if let note = plan.coachNote, !note.isEmpty {
+                SubText("“\(note)”")
+            }
         }
-        if client.lowProtein {
-            return [
-                Macro(label: CT.calories(lang), now: 1540, target: 1750, unit: "kcal"),
-                Macro(label: CT.protein(lang), now: 92, target: 135, unit: "g", warn: true),
-                Macro(label: CT.carbs(lang), now: 190, target: 190, unit: "g"),
-                Macro(label: CT.fat(lang), now: 54, target: 60, unit: "g")
-            ]
+        .card()
+    }
+
+    private func planStat(_ label: String, _ value: String?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.archivo(11, .semibold)).foregroundStyle(Palette.muted)
+            Text(value ?? "—").font(.archivo(16, .heavy)).foregroundStyle(Palette.ink).lineLimit(1).minimumScaleFactor(0.7)
         }
-        return [
-            Macro(label: CT.calories(lang), now: 1620, target: 2000, unit: "kcal"),
-            Macro(label: CT.protein(lang), now: 118, target: 140, unit: "g"),
-            Macro(label: CT.carbs(lang), now: 160, target: 200, unit: "g"),
-            Macro(label: CT.fat(lang), now: 52, target: 65, unit: "g")
-        ]
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -270,12 +310,13 @@ struct ClientProgressTab: View {
     let client: CoachClient
     @Environment(\.lang) private var lang
 
+    @Environment(CoachStore.self) private var store
+
     var body: some View {
-        let extras = CoachData.extras[client.id]
-        let isNew = client.kind.isNew
-        let bests = isNew ? [] : (extras?.bests ?? CoachData.defaultBests)
-        let measures = extras?.measures ?? CoachData.defaultMeasures
-        let history = isNew ? CoachData.newClientCheckInHistory : (extras?.checkInHistory ?? CoachData.defaultCheckInHistory)
+        let detail = store.detail(client.id)
+        let bests = detail.bests
+        let measures = detail.measures
+        let history = detail.checkInHistory
 
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
@@ -302,6 +343,7 @@ struct ClientProgressTab: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 Text(CT.measurements(lang)).font(OJFont.title)
+                if measures.isEmpty { SubText(CL.noMeasures(lang)) }
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                     ForEach(measures) { m in
                         StatTile(value: m.value, label: m.name(lang), note: m.change(lang), noteColor: Palette.muted, labelFirst: true, valueSize: 18)
@@ -316,11 +358,11 @@ struct ClientProgressTab: View {
                     Spacer()
                     Pill(CT.privateLabel(lang), tone: .muted)
                 }
-                if isNew {
+                if detail.photos.isEmpty {
                     SubText(CT.noPhotos(lang))
                 } else {
                     HStack(spacing: 8) {
-                        ForEach(CoachData.photoDates, id: \.self) { date in
+                        ForEach(detail.photos, id: \.self) { date in
                             PhotoPlaceholder(label: date(lang), locked: true)
                         }
                     }
@@ -328,13 +370,17 @@ struct ClientProgressTab: View {
             }
             .card()
 
-            ListCard {
-                DividedRows(history) { row in
-                    HStack {
-                        TitleSub(CT.checkInRow(row.week)(lang), sub: row.date(lang))
-                        Pill(row.label(lang), tone: row.tone)
+            if history.isEmpty {
+                EmptyStateCard(systemImage: "list.clipboard", title: CL.noCheckInHistory(lang))
+            } else {
+                ListCard {
+                    DividedRows(history) { row in
+                        HStack {
+                            TitleSub(store.live ? row.week(lang) : CT.checkInRow(row.week)(lang), sub: row.date(lang))
+                            Pill(row.label(lang), tone: row.tone)
+                        }
+                        .rowPadding()
                     }
-                    .rowPadding()
                 }
             }
         }
@@ -415,7 +461,7 @@ struct ClientNotesTab: View {
                     .buttonStyle(.oj(.primary))
             }
             ListCard {
-                DividedRows((store.notes[client.id] ?? []) + CoachData.defaultNotes) { note in
+                DividedRows((store.notes[client.id] ?? []) + store.detail(client.id).notes) { note in
                     HStack(alignment: .top, spacing: 10) {
                         Text(note.date(lang))
                             .font(.archivo(12, .bold))

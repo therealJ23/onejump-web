@@ -25,12 +25,14 @@ struct MorningBriefingCard: View {
 
                 if store.briefingPlaying {
                     VoiceWave()
+                } else if store.briefingLoading {
+                    ProgressView()
                 }
             }
 
             if store.briefingLine >= 0 {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(Array(CoachData.briefing.enumerated()), id: \.offset) { pair in
+                    ForEach(Array(store.data.briefing.enumerated()), id: \.offset) { pair in
                         line(pair.element(lang), index: pair.offset)
                     }
                 }
@@ -42,11 +44,13 @@ struct MorningBriefingCard: View {
     }
 
     private var subtitle: String {
-        let total = CoachData.briefing.count
+        let total = store.data.briefing.count
+        if store.briefingLoading { return CL.briefLoading(lang) }
         if store.briefingPlaying {
             return CT.briefPlaying(min(store.briefingLine + 1, total), total)(lang)
         }
-        return store.briefingLine >= total ? CT.briefDone(lang) : CT.briefIdle(lang)
+        if total > 0 && store.briefingLine >= total { return CT.briefDone(lang) }
+        return store.live ? CL.briefIdle(store.pendingQueue.count + store.openCheckInCount)(lang) : CT.briefIdle(lang)
     }
 
     private func line(_ text: String, index: Int) -> some View {

@@ -7,7 +7,7 @@ struct ThreadView: View {
     @Environment(\.lang) private var lang
     @FocusState private var focused: Bool
 
-    private var thread: CoachThread? { CoachData.threads[threadID] }
+    private var thread: CoachThread? { store.data.threads[threadID] }
     private var languageName: String { thread?.languageName.map { $0(lang) } ?? "" }
 
     var body: some View {
@@ -129,8 +129,18 @@ struct ThreadView: View {
         let placeholder = (thread?.isForeign == true && store.autoTranslate)
             ? CT.messagePlaceholderTranslated(languageName)(lang)
             : CT.messagePlaceholder(lang)
+        let dictating = store.live && store.listenMode == .dictation && store.voice.isListening
         return ComposerBar {
-            if store.recordingVoiceNote {
+            if dictating {
+                HStack(spacing: 8) {
+                    ListeningDot()
+                    Text(store.voice.heard.isEmpty ? CT.listening(lang) : store.voice.heard)
+                        .font(.archivo(14, .semibold))
+                        .foregroundStyle(Palette.ink)
+                        .lineLimit(2)
+                }
+                .padding(.horizontal, 10)
+            } else if store.recordingVoiceNote {
                 HStack(spacing: 8) {
                     ListeningDot()
                     Text(CT.recordingVoiceNote(lang))
@@ -149,10 +159,11 @@ struct ThreadView: View {
             }
         } buttons: {
             ComposerButton(
-                systemName: store.recordingVoiceNote ? "stop.fill" : "mic",
-                label: store.recordingVoiceNote ? CT.stopVoiceNote(lang) : CT.recordVoiceNote(lang),
-                style: store.recordingVoiceNote ? .recording : .plain
+                systemName: store.recordingVoiceNote || dictating ? "stop.fill" : "mic",
+                label: store.live ? CL.talk(lang) : (store.recordingVoiceNote ? CT.stopVoiceNote(lang) : CT.recordVoiceNote(lang)),
+                style: store.recordingVoiceNote || dictating ? .recording : .plain
             ) {
+                focused = false
                 store.toggleVoiceNote(in: threadID)
             }
             ComposerButton(systemName: "arrow.up", label: CT.send(lang), style: .send) {

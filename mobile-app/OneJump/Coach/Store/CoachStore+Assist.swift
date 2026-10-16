@@ -2,8 +2,12 @@ import SwiftUI
 import UIKit
 
 /// Assist: the AI copilot. It answers out loud, drafts work, and asks for a spoken
-/// "yes" before anything is sent. In the preview the answers are canned; in production
-/// `reply(to:)` calls the OneJump server, which calls Claude with the coach's data.
+/// "yes" before anything is sent.
+///  - Demo: canned answers (below), nothing leaves the phone.
+///  - Live: every question goes to the OneJump server, which asks Claude with the coach's own
+///    data. When Assist prepares something (a message, a check-in reply, a nutrition plan…) it
+///    reads it back and waits for a yes or no; the server decides what the answer was, and
+///    anything with health details is never read aloud and needs a tap.
 extension CoachStore {
 
     // MARK: - Talking to Assist
@@ -14,7 +18,9 @@ extension CoachStore {
         guard !question.isEmpty, !thinking else { return }
         stopBriefing()
 
-        if let pending = pendingIndex, let answer = YesNo.parse(question) {
+        let pendingCard = pendingIndex.flatMap { assistMessages[safe: $0]?.card }
+        // Demo cards (and the Needs-you review) answer yes/no right here; live proposals ask the server.
+        if let pending = pendingIndex, pendingCard?.kind != .proposal, let answer = YesNo.parse(question) {
             voice.stopSpeaking()
             voice.stopListening()
             listenMode = nil
@@ -27,6 +33,8 @@ extension CoachStore {
         voice.stopSpeaking()
         voice.stopListening()
         listenMode = nil
+        let history = assistHistory()
+        let proposalID = pendingCard?.isOpen == true ? pendingCard?.proposalID : nil
         withAnimation(.snappy) {
             assistMessages.append(AssistMessage(fromMe: true, text: question))
             thinking = true
@@ -35,6 +43,11 @@ extension CoachStore {
         pendingIndex = nil
         hint = ""
         if tab != .assist { go(.assist) }
+
+        if live {
+            Task { @MainActor [weak self] in await self?.askServer(question, history: history, proposalID: proposalID) }
+            return
+        }
         after(1.1) { [weak self] in
             guard let self else { return }
             let answer = self.reply(to: question)
@@ -52,9 +65,9 @@ extension CoachStore {
     /// Reads the answer aloud. If it has an action, asks for a yes/no and listens.
     private func afterReply(_ index: Int) {
         guard let message = assistMessages[safe: index], voiceOn else { return }
-        if let card = message.card, card.isOpen {
+        if let card = message.card, card.isOpen, card.kind != .proposal || card.voiceOK {
             pendingIndex = index
-            let spoken = [message.say, card.ask].compactMap { $0 }.joined(separator: " ")
+            let spoken = [message.say, card.ask.isEmpty ? nil : card.ask].compactMap { $0 }.joined(separator: " ")
             voice.speak(spoken) { [weak self] in self?.askListen(index) }
         } else {
             voice.speak(message.say ?? message.text)
@@ -66,13 +79,19 @@ extension CoachStore {
         guard (force || pendingIndex == index), voiceOn else { return }
         pendingIndex = index
         listenMode = .confirm
-        voice.listen(fallback: CoachData.sampleConfirm(lang)) { [weak self] heard in
+        let isProposal = assistMessages[safe: index]?.card?.kind == .proposal
+        voice.listen(fallback: live ? "" : CoachData.sampleConfirm(lang)) { [weak self] heard in
             guard let self else { return }
             self.listenMode = nil
             guard self.pendingIndex == index else { return }
             if heard.isEmpty {
-                self.pendingIndex = nil
                 self.hint = CT.noCatchConfirm(self.lang)
+                if !isProposal { self.pendingIndex = nil }
+                return
+            }
+            if isProposal {
+                // The server decides: a clear yes or no approves or cancels; anything else is a new question.
+                self.send(heard)
                 return
             }
             withAnimation(.snappy) { self.assistMessages.append(AssistMessage(fromMe: true, text: heard)) }
@@ -87,14 +106,14 @@ extension CoachStore {
 
     /// Goes through the Needs-you drafts one by one, out loud.
     func reviewNext() {
-        let next = CoachData.queue.first { item in
+        let next = data.queue.first { item in
             (queueState[item.id] ?? .pending).isWaiting && !reviewSkip.contains(item.id)
         }
         guard let item = next else {
             pushAssistant(AssistMessage(fromMe: false, text: CT.allDoneSay(lang)))
             return
         }
-        let c = client(item.id)
+        let c = client(item.clientID)
         let draftText = draft(for: item.id)
         let card = ActionCard(
             kind: .queueItem, queueID: item.id,
@@ -115,20 +134,27 @@ extension CoachStore {
         guard let message = assistMessages[safe: index], let card = message.card, !card.done else { return }
         voice.stopListening()
         listenMode = nil
-        withAnimation(.snappy) { assistMessages[index].card?.done = true }
         pendingIndex = nil
         hint = ""
 
+        if card.kind == .proposal, let id = card.proposalID {
+            withAnimation(.snappy) {
+                assistMessages[index].card?.done = true
+                assistMessages[index].card?.doneText = CL.working(lang)
+            }
+            Task { @MainActor [weak self] in await self?.confirmProposal(at: index, id: id) }
+            return
+        }
+
+        withAnimation(.snappy) { assistMessages[index].card?.done = true }
         switch card.kind {
         case .lead:
             leadStage["jenna"] = .replied
         case .post:
             UIPasteboard.general.string = message.quote
         case .queueItem:
-            if let id = card.queueID {
-                withAnimation(.snappy) { queueState[id] = .sent }
-            }
-        case .queue, .program, .client:
+            if let id = card.queueID { queueAction(id, to: .sent) }
+        case .queue, .program, .client, .proposal:
             break
         }
 
@@ -144,12 +170,12 @@ extension CoachStore {
                 }
             }
             if card.kind == .queueItem && voiceOn {
-                after(0.25) { [weak self] in self?.reviewNext() }
+                after(0.6) { [weak self] in self?.reviewNext() }
             }
         }
 
         if !voiceOn {
-            if card.kind != .queue { toast.show(card.doneText) }
+            if card.kind != .queue && card.kind != .queueItem { toast.show(card.doneText) }
             then()
             return
         }
@@ -164,6 +190,11 @@ extension CoachStore {
         withAnimation(.snappy) { assistMessages[index].card?.dismissed = true }
         pendingIndex = nil
         hint = ""
+        if card.kind == .proposal, let id = card.proposalID {
+            Task { @MainActor [weak self] in await self?.cancelProposal(id) }
+            if voiceOn { voice.speak(CL.wontDoIt(lang)) }
+            return
+        }
         if card.kind == .queueItem, let id = card.queueID { reviewSkip.insert(id) }
         let then: () -> Void = { [weak self] in
             guard let self else { return }
@@ -193,9 +224,12 @@ extension CoachStore {
         }
         hint = ""
         listenMode = .question
-        let samples = CoachData.sampleVoiceQuestions
-        let sample = samples[sampleIndex % samples.count](lang)
-        sampleIndex += 1
+        var sample = ""
+        if !live {
+            let samples = CoachData.sampleVoiceQuestions
+            sample = samples[sampleIndex % samples.count](lang)
+            sampleIndex += 1
+        }
         voice.listen(fallback: sample) { [weak self] text in
             guard let self else { return }
             self.listenMode = nil
@@ -230,9 +264,145 @@ extension CoachStore {
         }
     }
 
-    // MARK: - Answers
+    /// The last turns, so follow-ups like "what about her?" work.
+    func assistHistory() -> [[String: String]] {
+        let turns = assistMessages.filter { !$0.text.isEmpty }.suffix(12)
+        return turns.map { ["role": $0.fromMe ? "user" : "assistant", "text": String($0.text.prefix(1500))] }
+    }
 
-    /// Picks an answer for the question. (Production: ask the server.)
+    // MARK: - Live answers
+
+    @MainActor
+    func askServer(_ question: String, history: [[String: String]], proposalID: String?) async {
+        var body: [String: Any] = ["question": question, "voice": voiceOn, "history": history, "lang": lang == .spanish ? "es" : "en"]
+        if let proposalID { body["pendingProposalId"] = proposalID }
+        do {
+            let r: AskResponse = try await APIClient.shared.post("/api/assist/ask", body, timeout: 90)
+            withAnimation(.snappy) { thinking = false }
+            if let d = r.decided { markProposal(d.id, confirmed: d.confirmed, message: d.message) }
+            if r.action == "briefing" {
+                pushAssistant(AssistMessage(fromMe: false, text: CL.startingBriefing(lang), say: ""))
+                go(.today)
+                after(0.4) { [weak self] in self?.toggleBriefing() }
+                return
+            }
+            pushAssistant(message(from: r))
+            if r.decided?.confirmed == true { Task { @MainActor [weak self] in await self?.refresh() } }
+        } catch {
+            withAnimation(.snappy) { thinking = false }
+            let text = (error as? LocalizedError)?.errorDescription ?? CL.somethingWrong(lang)
+            pushAssistant(AssistMessage(fromMe: false, text: text, say: voiceOn ? text : nil))
+        }
+    }
+
+    /// Assist's answer as a chat line, with a card for anything it prepared.
+    private func message(from r: AskResponse) -> AssistMessage {
+        let text = (r.answerText ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        var m = AssistMessage(fromMe: false, text: text.isEmpty ? (r.proposals?.isEmpty == false ? CL.hereItIs(lang) : (r.spokenText ?? "")) : text)
+        m.say = r.spokenText
+        if let p = r.proposals?.last {
+            m.card = proposalCard(p, awaiting: r.awaiting == p.id)
+            m.quote = quote(for: p)
+        }
+        return m
+    }
+
+    private func quote(for p: ProposalDTO) -> String? {
+        switch p.type {
+        case "send_message", "reply_checkin", "add_note": return p.payload.text
+        case "send_reminders": return p.payload.template
+        default: return nil
+        }
+    }
+
+    private func proposalCard(_ p: ProposalDTO, awaiting: Bool) -> ActionCard {
+        let d = p.payload
+        let person = d.clientName ?? d.name ?? ""
+        let first = person.components(separatedBy: " ").first ?? person
+        let label: String, button: String
+        var details: [String] = []
+        switch p.type {
+        case "send_message":
+            label = CL.messageTo(person)(lang); button = CL.confirmSend(lang)
+        case "reply_checkin":
+            label = CL.replyToCheckIn(first)(lang); button = CL.confirmSend(lang)
+        case "add_note":
+            label = CL.noteFor(first)(lang); button = CL.saveNote(lang)
+        case "create_lead":
+            label = CL.newLead(d.name ?? "")(lang); button = CL.addLead(lang)
+            if let goal = d.goal, !goal.isEmpty { details.append(goal) }
+        case "send_reminders":
+            let n = d.recipients?.count ?? 0
+            label = CL.reminderTo(n)(lang); button = CL.sendAll(n)(lang)
+            if let names = d.recipients, !names.isEmpty { details.append(names.joined(separator: ", ")) }
+        case "assign_program":
+            label = CL.startOn(first, d.programName ?? "")(lang); button = CL.startProgram(lang)
+            if let w = d.weeks, let days = d.daysPerWeek { details.append(CL.programMeta(w, days)(lang)) }
+        case "nutrition_plan":
+            label = CL.planFor(first)(lang); button = CL.usePlan(lang)
+            if let draft = d.draft {
+                if !draft.summary.isEmpty { details.append(draft.summary) }
+                if let cal = draft.calories, let protein = draft.proteinG {
+                    details.append(CL.macroLine(cal, protein, draft.carbsG ?? 0, draft.fatG ?? 0)(lang))
+                }
+                if !draft.habits.isEmpty { details.append("• " + draft.habits.joined(separator: "\n• ")) }
+                if let plan = draft.mealPlan { details.append(CL.mealPlanDays(plan.name, plan.days.count)(lang)) }
+                if draft.needsProfessional { details.append(CL.seeDietitian(lang)) }
+            }
+            details.append(contentsOf: d.notes ?? [])
+            if let reminder = d.scopeReminder { details.append(reminder) }
+        default:
+            label = p.summary; button = CL.confirm(lang)
+        }
+        let voiceOK = awaiting && d.voiceOk != false
+        return ActionCard(
+            kind: .proposal, queueID: nil,
+            label: label, sub: voiceOK ? CL.sayYesOrTap(lang) : CL.tapToConfirm(lang), button: button,
+            doneText: "", ask: "", doneSay: "", noSay: "",
+            proposalID: p.id, voiceOK: voiceOK, details: details
+        )
+    }
+
+    /// The server says a proposal was approved or cancelled (by a spoken or typed yes/no).
+    private func markProposal(_ id: String, confirmed: Bool, message: String?) {
+        guard let index = assistMessages.lastIndex(where: { $0.card?.proposalID == id }) else { return }
+        withAnimation(.snappy) {
+            if confirmed {
+                assistMessages[index].card?.done = true
+                assistMessages[index].card?.doneText = message ?? CT.done(lang)
+            } else {
+                assistMessages[index].card?.dismissed = true
+            }
+        }
+        if pendingIndex == index { pendingIndex = nil }
+    }
+
+    @MainActor
+    func confirmProposal(at index: Int, id: String) async {
+        do {
+            let r: APIClient.OK = try await APIClient.shared.post("/api/assist/proposals/\(id)/confirm", timeout: 60)
+            let done = r.message ?? CT.done(lang)
+            withAnimation(.snappy) { assistMessages[index].card?.doneText = done }
+            if voiceOn { voice.speak(CL.doneSay(done)(lang)) } else { toast.show(done) }
+            await refresh()
+        } catch {
+            withAnimation(.snappy) {
+                assistMessages[index].card?.done = false
+                assistMessages[index].card?.dismissed = true
+            }
+            let text = (error as? LocalizedError)?.errorDescription ?? CL.somethingWrong(lang)
+            pushAssistant(AssistMessage(fromMe: false, text: text, say: voiceOn ? text : nil))
+        }
+    }
+
+    @MainActor
+    func cancelProposal(_ id: String) async {
+        let _: APIClient.Empty? = try? await APIClient.shared.post("/api/assist/proposals/\(id)/cancel")
+    }
+
+    // MARK: - Answers (demo)
+
+    /// Picks an answer for the question.
     func reply(to question: String) -> AssistMessage {
         var message = rawReply(question)
         if message.say == nil { message.say = message.text }

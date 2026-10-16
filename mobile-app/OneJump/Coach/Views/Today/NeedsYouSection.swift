@@ -74,12 +74,12 @@ struct NeedsYouSection: View {
             SubText(CT.upNext(lang))
             HStack(spacing: -8) {
                 ForEach(items) { item in
-                    let c = store.client(item.id)
+                    let c = store.client(item.clientID)
                     Avatar(initials: c.initials, color: c.avatarColor, size: 26)
                         .overlay(Circle().stroke(Palette.bg, lineWidth: 2))
                 }
             }
-            SubText(items.map { store.client($0.id).first }.joined(separator: ", "))
+            SubText(items.map { store.client($0.clientID).first }.joined(separator: ", "))
             Spacer()
         }
         .padding(.horizontal, 4)
@@ -106,7 +106,7 @@ private struct QueueCard: View {
     @Environment(\.lang) private var lang
 
     var body: some View {
-        let c = store.client(item.id)
+        let c = store.client(item.clientID)
         let state = store.queueState[item.id] ?? .pending
         let position = store.sentCount + store.skippedCount + 1
 
@@ -114,14 +114,14 @@ private struct QueueCard: View {
             HStack {
                 AssistLabel(CT.assistDraft(lang))
                 Spacer()
-                Text(CT.position(position, CoachData.queue.count)(lang))
+                Text(CT.position(position, store.data.queue.count)(lang))
                     .font(.archivo(12, .bold))
                     .foregroundStyle(Palette.muted)
             }
             progressDots
 
             Button {
-                store.push(.client(item.id))
+                store.push(.client(item.clientID))
             } label: {
                 HStack(spacing: 12) {
                     Avatar(initials: c.initials, color: c.avatarColor)
@@ -172,7 +172,7 @@ private struct QueueCard: View {
 
     private var progressDots: some View {
         HStack(spacing: 4) {
-            ForEach(CoachData.queue) { q in
+            ForEach(store.data.queue) { q in
                 Capsule()
                     .fill(dotColor(q))
                     .frame(height: 4)

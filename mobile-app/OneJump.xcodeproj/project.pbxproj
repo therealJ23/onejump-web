@@ -30,9 +30,14 @@
 		F3741AF109E6A13E8E89BB6F /* CoachBusinessData.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D777B614D554C5379EE4F5 /* CoachBusinessData.swift */; };
 		D4701BF98DA29B764F9EBC04 /* CoachClientsData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D4CBEFBA05C42975D4D3098 /* CoachClientsData.swift */; };
 		B5D66E56D43D9325EEAECB14 /* CoachInboxData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926D6BBCB5652F37C465814A /* CoachInboxData.swift */; };
+		2E0C91624CC39F7DAA771BFD /* CoachSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F6CF1FC322E81EB21DF58C /* CoachSnapshot.swift */; };
+		24DDF0156FDC54F9EA19C677 /* LiveAssistData.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7034291A9BE28D236D3C62D /* LiveAssistData.swift */; };
+		D7CAEA14F8D1E9AEAD2BAB5F /* LiveCoachData.swift in Sources */ = {isa = PBXBuildFile; fileRef = E29AD74E7B8C3EE918E9FDE3 /* LiveCoachData.swift */; };
 		82C56AC200F4CF7DD7C46F19 /* CoachModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED03DD979FB06EBAC9ABBBD3 /* CoachModels.swift */; };
 		B38652C3A31F14D22012A054 /* CoachStore+Assist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10952EE91AC17512C00E1330 /* CoachStore+Assist.swift */; };
+		992187FE463C4682CC132EB3 /* CoachStore+Live.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A1ED3984352C09786FB7ECF /* CoachStore+Live.swift */; };
 		2A0693D81F0482032DBB87D2 /* CoachStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC6BEB4C82EE574E6B2E162E /* CoachStore.swift */; };
+		715BFB984BFFE93FA3F0CA84 /* CoachLiveText.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4468FE7B87ACBBABAE423BC /* CoachLiveText.swift */; };
 		F7D1A8BAA7FB8F9E1CB62C00 /* CoachText.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2C920BFC2B09CF8F5E43C2 /* CoachText.swift */; };
 		40783ECDB8E4F933FE4D251A /* CoachSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E282C99C8A1E48F543A58AE4 /* CoachSettingsView.swift */; };
 		54B906C1E38F0093EA35764D /* AssistMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E11892BC1F47419026ED1EF /* AssistMessageView.swift */; };
@@ -43,6 +48,7 @@
 		1D12A213DC4F9DADD16AD17F /* ClientDetailTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC76F9F9A43F61A7EA7DFC65 /* ClientDetailTabs.swift */; };
 		038BC3055019E62FBE1667CE /* ClientDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B507CCA9031F6DAC54A0FA11 /* ClientDetailView.swift */; };
 		F7A123632617EDC91D9EB326 /* ClientsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22B24F39FCCA7A2F45355A15 /* ClientsView.swift */; };
+		D3BC4C6C32AC299ADF9A3674 /* NutritionPlanBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3270849039023134B8137A12 /* NutritionPlanBuilder.swift */; };
 		1D4C346B78DBD7DBD740AC03 /* ExerciseLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D7342C32069F5F41EC87D7 /* ExerciseLibraryView.swift */; };
 		9C13853AC997658AD4B3DA6E /* NutritionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB922EBB659839BADB5A80AA /* NutritionView.swift */; };
 		0ED956AC814318214DF47E36 /* ProgramsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DE0B9D50E101FF8ED75FC33 /* ProgramsView.swift */; };
@@ -83,6 +89,7 @@
 		004C60B9F6CCAC181D7444B6 /* Archivo-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 043DBEFCB9D185045A924FCF /* Archivo-Regular.ttf */; };
 		4D36C6C2AFB110F9CAC9D9D8 /* Archivo-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3F7EB6DB846506433EC77F07 /* Archivo-SemiBold.ttf */; };
 		5DDBF56ADE2A3FA417AF0D28 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0DB7571B8334F5E7680A9B20 /* Assets.xcassets */; };
+		5F1E99A52A8A46D7F225CE0C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B9E5847DAA7318B9D0B61665 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -110,9 +117,14 @@
 		F6D777B614D554C5379EE4F5 /* CoachBusinessData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachBusinessData.swift; sourceTree = "<group>"; };
 		2D4CBEFBA05C42975D4D3098 /* CoachClientsData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachClientsData.swift; sourceTree = "<group>"; };
 		926D6BBCB5652F37C465814A /* CoachInboxData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachInboxData.swift; sourceTree = "<group>"; };
+		A1F6CF1FC322E81EB21DF58C /* CoachSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSnapshot.swift; sourceTree = "<group>"; };
+		D7034291A9BE28D236D3C62D /* LiveAssistData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAssistData.swift; sourceTree = "<group>"; };
+		E29AD74E7B8C3EE918E9FDE3 /* LiveCoachData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCoachData.swift; sourceTree = "<group>"; };
 		ED03DD979FB06EBAC9ABBBD3 /* CoachModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachModels.swift; sourceTree = "<group>"; };
 		10952EE91AC17512C00E1330 /* CoachStore+Assist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoachStore+Assist.swift"; sourceTree = "<group>"; };
+		3A1ED3984352C09786FB7ECF /* CoachStore+Live.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoachStore+Live.swift"; sourceTree = "<group>"; };
 		BC6BEB4C82EE574E6B2E162E /* CoachStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachStore.swift; sourceTree = "<group>"; };
+		F4468FE7B87ACBBABAE423BC /* CoachLiveText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachLiveText.swift; sourceTree = "<group>"; };
 		FE2C920BFC2B09CF8F5E43C2 /* CoachText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachText.swift; sourceTree = "<group>"; };
 		E282C99C8A1E48F543A58AE4 /* CoachSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSettingsView.swift; sourceTree = "<group>"; };
 		8E11892BC1F47419026ED1EF /* AssistMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistMessageView.swift; sourceTree = "<group>"; };
@@ -123,6 +135,7 @@
 		CC76F9F9A43F61A7EA7DFC65 /* ClientDetailTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientDetailTabs.swift; sourceTree = "<group>"; };
 		B507CCA9031F6DAC54A0FA11 /* ClientDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientDetailView.swift; sourceTree = "<group>"; };
 		22B24F39FCCA7A2F45355A15 /* ClientsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientsView.swift; sourceTree = "<group>"; };
+		3270849039023134B8137A12 /* NutritionPlanBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionPlanBuilder.swift; sourceTree = "<group>"; };
 		C6D7342C32069F5F41EC87D7 /* ExerciseLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibraryView.swift; sourceTree = "<group>"; };
 		CB922EBB659839BADB5A80AA /* NutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionView.swift; sourceTree = "<group>"; };
 		2DE0B9D50E101FF8ED75FC33 /* ProgramsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramsView.swift; sourceTree = "<group>"; };
@@ -163,6 +176,7 @@
 		043DBEFCB9D185045A924FCF /* Archivo-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Archivo-Regular.ttf"; sourceTree = "<group>"; };
 		3F7EB6DB846506433EC77F07 /* Archivo-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Archivo-SemiBold.ttf"; sourceTree = "<group>"; };
 		0DB7571B8334F5E7680A9B20 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B9E5847DAA7318B9D0B61665 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -368,6 +382,9 @@
 				F6D777B614D554C5379EE4F5 /* CoachBusinessData.swift */,
 				2D4CBEFBA05C42975D4D3098 /* CoachClientsData.swift */,
 				926D6BBCB5652F37C465814A /* CoachInboxData.swift */,
+				A1F6CF1FC322E81EB21DF58C /* CoachSnapshot.swift */,
+				D7034291A9BE28D236D3C62D /* LiveAssistData.swift */,
+				E29AD74E7B8C3EE918E9FDE3 /* LiveCoachData.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -384,6 +401,7 @@
 			isa = PBXGroup;
 			children = (
 				10952EE91AC17512C00E1330 /* CoachStore+Assist.swift */,
+				3A1ED3984352C09786FB7ECF /* CoachStore+Live.swift */,
 				BC6BEB4C82EE574E6B2E162E /* CoachStore.swift */,
 			);
 			path = Store;
@@ -392,6 +410,7 @@
 		F7C9C31D7CB066290140481B /* Text */ = {
 			isa = PBXGroup;
 			children = (
+				F4468FE7B87ACBBABAE423BC /* CoachLiveText.swift */,
 				FE2C920BFC2B09CF8F5E43C2 /* CoachText.swift */,
 			);
 			path = Text;
@@ -446,6 +465,7 @@
 				CC76F9F9A43F61A7EA7DFC65 /* ClientDetailTabs.swift */,
 				B507CCA9031F6DAC54A0FA11 /* ClientDetailView.swift */,
 				22B24F39FCCA7A2F45355A15 /* ClientsView.swift */,
+				3270849039023134B8137A12 /* NutritionPlanBuilder.swift */,
 			);
 			path = Clients;
 			sourceTree = "<group>";
@@ -570,6 +590,7 @@
 			children = (
 				F161F1EFA7FA3A79D3BF8305 /* Fonts */,
 				0DB7571B8334F5E7680A9B20 /* Assets.xcassets */,
+				B9E5847DAA7318B9D0B61665 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -653,6 +674,7 @@
 				004C60B9F6CCAC181D7444B6 /* Archivo-Regular.ttf in Resources */,
 				4D36C6C2AFB110F9CAC9D9D8 /* Archivo-SemiBold.ttf in Resources */,
 				5DDBF56ADE2A3FA417AF0D28 /* Assets.xcassets in Resources */,
+				5F1E99A52A8A46D7F225CE0C /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -686,9 +708,14 @@
 				F3741AF109E6A13E8E89BB6F /* CoachBusinessData.swift in Sources */,
 				D4701BF98DA29B764F9EBC04 /* CoachClientsData.swift in Sources */,
 				B5D66E56D43D9325EEAECB14 /* CoachInboxData.swift in Sources */,
+				2E0C91624CC39F7DAA771BFD /* CoachSnapshot.swift in Sources */,
+				24DDF0156FDC54F9EA19C677 /* LiveAssistData.swift in Sources */,
+				D7CAEA14F8D1E9AEAD2BAB5F /* LiveCoachData.swift in Sources */,
 				82C56AC200F4CF7DD7C46F19 /* CoachModels.swift in Sources */,
 				B38652C3A31F14D22012A054 /* CoachStore+Assist.swift in Sources */,
+				992187FE463C4682CC132EB3 /* CoachStore+Live.swift in Sources */,
 				2A0693D81F0482032DBB87D2 /* CoachStore.swift in Sources */,
+				715BFB984BFFE93FA3F0CA84 /* CoachLiveText.swift in Sources */,
 				F7D1A8BAA7FB8F9E1CB62C00 /* CoachText.swift in Sources */,
 				40783ECDB8E4F933FE4D251A /* CoachSettingsView.swift in Sources */,
 				54B906C1E38F0093EA35764D /* AssistMessageView.swift in Sources */,
@@ -699,6 +726,7 @@
 				1D12A213DC4F9DADD16AD17F /* ClientDetailTabs.swift in Sources */,
 				038BC3055019E62FBE1667CE /* ClientDetailView.swift in Sources */,
 				F7A123632617EDC91D9EB326 /* ClientsView.swift in Sources */,
+				D3BC4C6C32AC299ADF9A3674 /* NutritionPlanBuilder.swift in Sources */,
 				1D4C346B78DBD7DBD740AC03 /* ExerciseLibraryView.swift in Sources */,
 				9C13853AC997658AD4B3DA6E /* NutritionView.swift in Sources */,
 				0ED956AC814318214DF47E36 /* ProgramsView.swift in Sources */,
@@ -868,6 +896,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = OneJump;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "OneJump uses the microphone so you can talk to Assist, log sets and meals by voice, and record voice notes.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "OneJump turns what you say into text so Assist can understand you and you can log by voice.";
@@ -885,7 +914,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -900,6 +929,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = OneJump;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "OneJump uses the microphone so you can talk to Assist, log sets and meals by voice, and record voice notes.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "OneJump turns what you say into text so Assist can understand you and you can log by voice.";
@@ -917,7 +947,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

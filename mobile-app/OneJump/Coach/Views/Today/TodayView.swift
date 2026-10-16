@@ -7,16 +7,18 @@ struct TodayView: View {
 
     var body: some View {
         ScreenScroll {
-            ScreenHeader(eyebrow: CT.date(lang), title: CT.greeting(lang)) {
+            ScreenHeader(eyebrow: store.live ? CL.todayDate()(lang) : CT.date(lang),
+                         title: store.live ? CL.greeting(store.me.first, hour: Calendar.current.component(.hour, from: Date()))(lang) : CT.greeting(lang)) {
                 ThemeToggleButton()
             }
-            TimeSavedCard()
+            TimeSavedCard(label: store.data.minutesSavedLabel, sub: store.data.savedSub(lang))
             MorningBriefingCard()
             tiles
             NeedsYouSection()
             sessions
             BusinessSection()
         }
+        .refreshable { await store.refresh() }
         .toolbar(.hidden, for: .navigationBar)
     }
 
@@ -52,9 +54,12 @@ struct TodayView: View {
 
     private var sessions: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(CT.sessionsToday(lang), note: CT.booked3(lang))
+            SectionHeader(CT.sessionsToday(lang), note: store.data.sessionsNote(lang))
+            if store.data.sessions.isEmpty {
+                EmptyStateCard(systemImage: "calendar", title: CL.noSessions(lang))
+            } else {
             ListCard {
-                DividedRows(CoachData.sessions) { session in
+                DividedRows(store.data.sessions) { session in
                     HStack(spacing: 12) {
                         Text(session.time(lang))
                             .font(.archivo(13, .bold))
@@ -64,7 +69,12 @@ struct TodayView: View {
                         IconTile(systemName: session.systemImage, size: 36)
                     }
                     .rowPadding()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if let id = session.clientID { store.push(.client(id)) }
+                    }
                 }
+            }
             }
         }
     }
@@ -72,6 +82,8 @@ struct TodayView: View {
 
 /// Deep green card: hours Assist saved this week.
 struct TimeSavedCard: View {
+    var label = "6h 40m"
+    var sub = ""
     @Environment(\.lang) private var lang
     private let bars: [CGFloat] = [0.38, 0.52, 0.44, 0.70, 0.61, 0.82, 1]
 
@@ -79,10 +91,10 @@ struct TimeSavedCard: View {
         HStack(alignment: .bottom, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
                 AssistLabel(CT.savedYou(lang), color: Palette.volt)
-                Text("6h 40m")
+                Text(label)
                     .font(OJFont.display)
                     .tracking(-1.4)
-                SubText(CT.savedSub(lang), color: Palette.bone.opacity(0.75))
+                SubText(sub.isEmpty ? CT.savedSub(lang) : sub, color: Palette.bone.opacity(0.75))
             }
             Spacer(minLength: 0)
             HStack(alignment: .bottom, spacing: 4) {

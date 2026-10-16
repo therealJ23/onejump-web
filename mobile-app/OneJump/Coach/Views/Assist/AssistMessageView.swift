@@ -88,11 +88,18 @@ struct AssistMessageView: View {
     /// The action Assist offers. With voice on it asks out loud and waits for "yes".
     private func actionCard(_ card: ActionCard) -> some View {
         let isAsking = store.voiceOn && store.pendingIndex == index
+        let canSpeak = store.voiceOn && (card.kind != .proposal || card.voiceOK)
         return VStack(alignment: .leading, spacing: 10) {
             Text(card.label).font(OJFont.title).foregroundStyle(Palette.ink)
             SubText(card.sub)
+            ForEach(Array(card.details.enumerated()), id: \.offset) { pair in
+                Text(pair.element)
+                    .font(.archivo(13))
+                    .foregroundStyle(Palette.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-            if store.voiceOn {
+            if canSpeak {
                 if isAsking {
                     ListenBar(text: listenText)
                     tapAlternative(prefix: CT.cantTalk(lang), yes: CT.yes(lang), no: CT.no(lang))

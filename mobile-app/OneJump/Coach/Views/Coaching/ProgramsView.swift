@@ -8,7 +8,7 @@ struct ProgramsView: View {
     var body: some View {
         ScreenScroll {
             Button {
-                store.send(CoachData.suggestions[2](lang))
+                store.send(store.live ? CL.buildProgramAsk(lang) : CoachData.suggestions[2](lang))
             } label: {
                 Label {
                     Text(CT.buildWithAssist(lang))
@@ -18,7 +18,10 @@ struct ProgramsView: View {
             }
             .buttonStyle(.oj(.volt, fullWidth: true))
 
-            ForEach(CoachData.programs) { program in
+            if store.live {
+                SubText(CL.editOnWeb(lang))
+            }
+            ForEach(store.data.programs) { program in
                 Button {
                     store.push(.program(program.id))
                 } label: {
@@ -28,7 +31,7 @@ struct ProgramsView: View {
                         case .active: IconTile(systemName: "square.stack.3d.up")
                         case .template: IconTile(systemName: "dumbbell")
                         }
-                        TitleSub(CoachData.programName(program.id)(lang), sub: program.meta(lang))
+                        TitleSub(store.data.programName(program.id)(lang), sub: program.meta(lang))
                         Pill(program.tag(lang), tone: program.tone)
                     }
                     .card()
@@ -47,18 +50,19 @@ struct ProgramDetailView: View {
     @Environment(\.lang) private var lang
 
     var body: some View {
-        let program = CoachData.programs.first { $0.id == programID } ?? CoachData.programs[1]
-        let clients = CoachData.clients.filter { $0.programID == program.id }
+        let program = store.data.programs.first { $0.id == programID } ?? store.data.programs.first ?? CoachData.programs[1]
+        let clients = store.allClients.filter { $0.programID == program.id }
 
         ScreenScroll {
             VStack(alignment: .leading, spacing: 6) {
-                Text(CoachData.programName(program.id)(lang)).font(OJFont.h3).foregroundStyle(Palette.ink)
+                Text(store.data.programName(program.id)(lang)).font(OJFont.h3).foregroundStyle(Palette.ink)
                 HStack(spacing: 8) {
                     SubText(program.meta(lang))
                     Pill(program.tag(lang), tone: program.tone)
                 }
             }
 
+            if !store.live {
             SectionHeader(CT.workoutsWeek1(lang), link: CT.addWorkout(lang)) {
                 store.toast.show(CT.toastPickExercise(lang))
             }
@@ -76,6 +80,10 @@ struct ProgramDetailView: View {
                     }
                     .buttonStyle(.row)
                 }
+            }
+
+            } else {
+                SubText(CL.editOnWeb(lang))
             }
 
             SectionHeader(CT.onProgram(lang))
@@ -98,6 +106,7 @@ struct ProgramDetailView: View {
                 }
             }
 
+            if !store.live {
             SectionHeader(CT.recentWorkouts(lang))
             ListCard {
                 DividedRows(CoachData.programLogs) { log in
@@ -115,6 +124,18 @@ struct ProgramDetailView: View {
                     .buttonStyle(.oj(.primary, fullWidth: true))
                 Button(CT.archive(lang)) { store.toast.show(CT.toastArchived(lang)) }
                     .buttonStyle(.oj(.ghost))
+            }
+            } else {
+                Button {
+                    store.send(CL.assignProgramAsk(store.data.programName(program.id)(lang))(lang))
+                } label: {
+                    Label {
+                        Text(CL.assignWithAssist(lang))
+                    } icon: {
+                        AssistMark(size: 18, color: Palette.deep)
+                    }
+                }
+                .buttonStyle(.oj(.volt, fullWidth: true))
             }
         }
         .ojNavigationTitle(CT.program(lang))

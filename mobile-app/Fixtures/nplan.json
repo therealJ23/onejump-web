@@ -1,0 +1,119 @@
+{
+ "draft": {
+  "summary": "Starting plan for Mike: about 2470 kcal and 165 g protein a day, from their weight, height, age and activity (resting needs about 1874 kcal). Review and adjust anything.",
+  "approach": "meal_plan",
+  "calories": 2470,
+  "proteinG": 165,
+  "carbsG": 275,
+  "fatG": 80,
+  "habits": [
+   "Protein at every meal",
+   "Vegetables at lunch and dinner",
+   "8 glasses of water a day"
+  ],
+  "mealPlan": {
+   "name": "Mike’s plan",
+   "days": [
+    {
+     "label": "Day 1",
+     "meals": [
+      {
+       "meal": "breakfast",
+       "items": [
+        "2 eggs + 1 slice whole-grain toast"
+       ]
+      },
+      {
+       "meal": "lunch",
+       "items": [
+        "Rice bowl with chicken and vegetables"
+       ]
+      },
+      {
+       "meal": "snack",
+       "items": [
+        "A piece of fruit + a handful of nuts"
+       ]
+      },
+      {
+       "meal": "dinner",
+       "items": [
+        "fish with potatoes and salad"
+       ]
+      }
+     ]
+    },
+    {
+     "label": "Day 2",
+     "meals": [
+      {
+       "meal": "breakfast",
+       "items": [
+        "Oatmeal with fruit and Greek yogurt"
+       ]
+      },
+      {
+       "meal": "lunch",
+       "items": [
+        "Rice bowl with fish and vegetables"
+       ]
+      },
+      {
+       "meal": "snack",
+       "items": [
+        "A piece of fruit + a handful of nuts"
+       ]
+      },
+      {
+       "meal": "dinner",
+       "items": [
+        "eggs with potatoes and salad"
+       ]
+      }
+     ]
+    },
+    {
+     "label": "Day 3",
+     "meals": [
+      {
+       "meal": "breakfast",
+       "items": [
+        "2 eggs + 1 slice whole-grain toast"
+       ]
+      },
+      {
+       "meal": "lunch",
+       "items": [
+        "Rice bowl with chicken and vegetables"
+       ]
+      },
+      {
+       "meal": "snack",
+       "items": [
+        "A piece of fruit + a handful of nuts"
+       ]
+      },
+      {
+       "meal": "dinner",
+       "items": [
+        "lean beef with potatoes and salad"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "coachNote": "Mike, here’s your plan to get started! Consistency matters more than perfection.",
+  "needsProfessional": false,
+  "professionalReason": null
+ },
+ "notes": [],
+ "scopeReminder": "In some states, individualized meal plans require a dietitian license. Check your state’s rules, or refer to a registered dietitian.",
+ "estimate": {
+  "rmr": 1874,
+  "maintenance": 2905,
+  "calories": 2470,
+  "proteinG": 165
+ },
+ "model": "mock-assist-1"
+}

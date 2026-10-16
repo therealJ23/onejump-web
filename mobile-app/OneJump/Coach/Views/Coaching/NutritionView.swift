@@ -8,17 +8,20 @@ struct NutritionView: View {
     var body: some View {
         ScreenScroll {
             HStack(spacing: 10) {
-                StatTile(value: "7", label: CT.onPlan(lang))
-                StatTile(value: "84%", label: CT.avgProtein(lang))
-                StatTile(value: "5", label: CT.loggedToday(lang))
+                ForEach(store.data.nutritionStats) { stat in
+                    StatTile(value: stat.value, label: stat.label(lang))
+                }
             }
             AssistCard(label: CT.nutritionThisWeek(lang)) {
-                DraftText(CT.nutritionBody(lang))
+                DraftText(store.data.nutritionSummary(lang))
             }
 
             SectionHeader(CT.proteinGoal7(lang))
+            if store.data.nutrition.isEmpty {
+                EmptyStateCard(systemImage: "fork.knife", title: CL.noPlanYet(lang), message: CL.planHint(lang))
+            } else {
             ListCard {
-                DividedRows(CoachData.nutrition) { row in
+                DividedRows(store.data.nutrition) { row in
                     let c = store.client(row.clientID)
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 10) {
@@ -32,10 +35,12 @@ struct NutritionView: View {
                     .rowPadding()
                 }
             }
+            }
 
+            if !store.data.howClientsLog.isEmpty {
             SectionHeader(CT.howClientsLog(lang), note: CT.photosThisWeek(lang))
             ListCard {
-                DividedRows(CoachData.howClientsLog) { share in
+                DividedRows(store.data.howClientsLog) { share in
                     HStack(spacing: 10) {
                         Text(share.title(lang)).font(.archivo(14, .semibold)).frame(width: 78, alignment: .leading)
                         ProgressBar(value: Double(share.percent) / 100)
@@ -45,9 +50,12 @@ struct NutritionView: View {
                 }
             }
 
+            }
+
+            if !store.data.habitShares.isEmpty {
             SectionHeader(CT.habitCheckins(lang), note: CT.allClients(lang))
             ListCard {
-                DividedRows(CoachData.habitShares) { share in
+                DividedRows(store.data.habitShares) { share in
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text(share.title(lang)).font(OJFont.title)
@@ -60,18 +68,24 @@ struct NutritionView: View {
                 }
             }
 
-            SectionHeader(CT.mealPlans(lang), link: CT.newItem(lang)) {
-                store.toast.show(CT.newMealPlanToast(lang))
             }
-            ListCard {
-                DividedRows(CoachData.mealPlans) { plan in
-                    HStack(spacing: 12) {
-                        IconTile(systemName: "fork.knife")
-                        TitleSub(plan.name(lang), sub: plan.meta(lang))
-                        Button(CT.assign(lang)) { store.toast.show(CT.pickClientFor(plan.shortName(lang))(lang)) }
-                            .buttonStyle(.oj(.ghost, size: .small))
+
+            SectionHeader(CT.mealPlans(lang))
+            if store.data.mealPlans.isEmpty {
+                SubText(CL.mealPlansHint(lang))
+            } else {
+                ListCard {
+                    DividedRows(store.data.mealPlans) { plan in
+                        HStack(spacing: 12) {
+                            IconTile(systemName: "fork.knife")
+                            TitleSub(plan.name(lang), sub: plan.meta(lang))
+                            if !store.live {
+                                Button(CT.assign(lang)) { store.toast.show(CT.pickClientFor(plan.shortName(lang))(lang)) }
+                                    .buttonStyle(.oj(.ghost, size: .small))
+                            }
+                        }
+                        .rowPadding()
                     }
-                    .rowPadding()
                 }
             }
             SubText(CT.foodSources(lang))
@@ -100,21 +114,24 @@ struct AutomationsView: View {
                 DraftText(CT.inControlBody(lang))
             }
             ListCard {
-                DividedRows(CoachData.automations) { item in
+                DividedRows(store.data.automations) { item in
                     OJToggle(title: item.name(lang), subtitle: item.detail(lang), isOn: binding(item.id))
                         .rowPadding()
                 }
             }
-            Button {
-                store.toast.show(CT.newAutomationToast(lang))
-            } label: {
-                Label(CT.newAutomation(lang), systemImage: "plus")
+            if !store.live {
+                Button {
+                    store.toast.show(CT.newAutomationToast(lang))
+                } label: {
+                    Label(CT.newAutomation(lang), systemImage: "plus")
+                }
+                .buttonStyle(.oj(.ghost, fullWidth: true))
             }
-            .buttonStyle(.oj(.ghost, fullWidth: true))
 
             SectionHeader(CT.recentRuns(lang))
+            if store.data.automationRuns.isEmpty { SubText(CL.noRuns(lang)) }
             ListCard {
-                DividedRows(CoachData.automationRuns) { run in
+                DividedRows(store.data.automationRuns) { run in
                     HStack(alignment: .top, spacing: 10) {
                         Text(run.date(lang)).font(.archivo(12, .bold)).foregroundStyle(Palette.muted).frame(width: 40, alignment: .leading)
                         Text(run.text(lang)).font(.archivo(14)).fixedSize(horizontal: false, vertical: true)
@@ -130,7 +147,7 @@ struct AutomationsView: View {
     private func binding(_ id: String) -> Binding<Bool> {
         Binding(
             get: { store.automations[id] ?? false },
-            set: { store.automations[id] = $0 }
+            set: { store.setAutomation(id, on: $0) }
         )
     }
 }

@@ -8,24 +8,29 @@ struct LeadsView: View {
     var body: some View {
         ScreenScroll {
             HStack(spacing: 10) {
-                StatTile(value: "\(CoachData.leads.count)", label: CT.openLeads(lang))
-                StatTile(value: "$845", label: CT.pipeline(lang))
-                StatTile(value: "\(store.newLeadCount)", label: CT.followUps(lang))
+                StatTile(value: store.data.leadStats.open, label: CT.openLeads(lang))
+                StatTile(value: store.data.leadStats.pipeline, label: CT.pipeline(lang))
+                StatTile(value: store.live ? store.data.leadStats.followUps : "\(store.newLeadCount)", label: CT.followUps(lang))
             }
-            HStack(spacing: 12) {
-                IconTile(systemName: "trophy")
-                TitleSub(CT.wonTitle(lang), sub: CT.wonSub(lang))
+            if !store.live {
+                HStack(spacing: 12) {
+                    IconTile(systemName: "trophy")
+                    TitleSub(CT.wonTitle(lang), sub: CT.wonSub(lang))
+                }
+                .card()
             }
-            .card()
             AssistCard(label: CT.fastReplies(lang)) {
                 DraftText(CT.fastBody(lang))
             }
-            ForEach(CoachData.leads) { lead in
+            if store.data.leads.isEmpty {
+                EmptyStateCard(systemImage: "person.badge.plus", title: CL.noLeads(lang))
+            }
+            ForEach(store.data.leads) { lead in
                 LeadCard(lead: lead)
             }
             HStack(spacing: 12) {
                 IconTile(systemName: "calendar", tone: .assist)
-                TitleSub(CT.bookingPage(lang), sub: "onejumpfit.com/alex")
+                TitleSub(CT.bookingPage(lang), sub: store.bookingLink.replacingOccurrences(of: "https://", with: ""))
                 Button(CT.copy(lang)) { store.copyBookingLink() }
                     .buttonStyle(.oj(.ghost, size: .small))
             }
@@ -63,7 +68,7 @@ private struct LeadCard: View {
                         .buttonStyle(.oj(.ghost, size: .small))
                 }
             } else {
-                DoneChip(stage == .booked ? CT.callThursday(lang) : CT.replySent(lang))
+                DoneChip(stage == .booked ? (store.live ? CL.callBooked(lang) : CT.callThursday(lang)) : CT.replySent(lang))
             }
         }
         .card()

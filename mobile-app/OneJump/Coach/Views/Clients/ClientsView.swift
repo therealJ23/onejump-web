@@ -36,6 +36,7 @@ struct ClientsView: View {
                 }
             }
         }
+        .refreshable { await store.refresh() }
         .toolbar(.hidden, for: .navigationBar)
     }
 

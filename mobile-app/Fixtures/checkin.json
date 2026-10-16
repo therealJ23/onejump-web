@@ -1,0 +1,164 @@
+{
+ "id": "ed2d99de-1b35-4074-b94f-7bc97b1b2c2a",
+ "clientId": "14da9e79-b795-49a2-b468-cbd71d4893c7",
+ "name": "Chris Nguyen",
+ "week": {
+  "en": "Week 7",
+  "es": "Semana 7"
+ },
+ "when": {
+  "en": "Today",
+  "es": "Hoy"
+ },
+ "flag": {
+  "en": "Reports pain in this check-in",
+  "es": "Reporta dolor en este check-in"
+ },
+ "answers": [
+  {
+   "question": {
+    "en": "Weight",
+    "es": "Peso"
+   },
+   "answer": {
+    "en": "184.5 lb",
+    "es": "184.5 lb"
+   }
+  },
+  {
+   "question": {
+    "en": "Workouts",
+    "es": "Entrenamientos"
+   },
+   "answer": {
+    "en": "4 of 4",
+    "es": "4 de 4"
+   }
+  },
+  {
+   "question": {
+    "en": "Energy",
+    "es": "Energía"
+   },
+   "answer": {
+    "en": "7 / 10",
+    "es": "7 / 10"
+   }
+  },
+  {
+   "question": {
+    "en": "Sleep",
+    "es": "Sueño"
+   },
+   "answer": {
+    "en": "7.5 h",
+    "es": "7.5 h"
+   }
+  },
+  {
+   "question": {
+    "en": "Stress",
+    "es": "Estrés"
+   },
+   "answer": {
+    "en": "4 / 10",
+    "es": "4 / 10"
+   }
+  },
+  {
+   "question": {
+    "en": "Soreness",
+    "es": "Dolor muscular"
+   },
+   "answer": {
+    "en": "5 / 10",
+    "es": "5 / 10"
+   }
+  },
+  {
+   "question": {
+    "en": "Nutrition",
+    "es": "Nutrición"
+   },
+   "answer": {
+    "en": "8 / 10",
+    "es": "8 / 10"
+   }
+  },
+  {
+   "question": {
+    "en": "Mood",
+    "es": "Ánimo"
+   },
+   "answer": {
+    "en": "7 / 10",
+    "es": "7 / 10"
+   }
+  }
+ ],
+ "note": {
+  "en": "Hit 285 for a clean triple. Left knee has been hurting on the way down in squats since Thursday, sharp-ish pain on the inside. Didn’t want to skip so I pushed through.",
+  "es": "Hit 285 for a clean triple. Left knee has been hurting on the way down in squats since Thursday, sharp-ish pain on the inside. Didn’t want to skip so I pushed through."
+ },
+ "summary": {
+  "en": "Chris completed 4 of 4 workouts. They report pain in this check-in (“Left knee has been hurting on the way down in squats since Thursday, sharp-ish pain on the inside”). That’s outside coaching scope: recommend they see a physical therapist or sports-medicine doctor before loading it again.",
+  "es": "Chris completed 4 of 4 workouts. They report pain in this check-in (“Left knee has been hurting on the way down in squats since Thursday, sharp-ish pain on the inside”). That’s outside coaching scope: recommend they see a physical therapist or sports-medicine doctor before loading it again."
+ },
+ "draft": "All 4 workouts done, nice work. About what you mentioned: I don’t want you training through it. Because this involves pain, I’d like you to get it checked by a physical therapist or sports-medicine doctor before we load it again. Until then we’ll keep training everything that feels fine. Let me know what they say.",
+ "insightId": "b872e696-7846-42f1-b53b-b59d860a0233",
+ "food": {
+  "en": "No nutrition plan yet.",
+  "es": "Aún sin plan de nutrición."
+ },
+ "actions": [
+  {
+   "id": "0",
+   "title": {
+    "en": "Pause the movements that bother it until they’ve been assessed",
+    "es": "Pausa los movimientos que le molestan hasta que lo evalúen"
+   },
+   "detail": {
+    "en": "Your call: train around it with exercises that feel fine. Assist won’t suggest loading through pain.",
+    "es": "Tú decides: entrena alrededor con ejercicios que se sientan bien. Assist no sugerirá cargar con dolor."
+   },
+   "button": {
+    "en": "Apply",
+    "es": "Aplicar"
+   },
+   "done": false
+  },
+  {
+   "id": "1",
+   "title": {
+    "en": "Send the drafted reply (includes referral)",
+    "es": "Send the drafted reply (includes referral)"
+   },
+   "detail": {
+    "en": "",
+    "es": ""
+   },
+   "button": {
+    "en": "Done",
+    "es": "Hecho"
+   },
+   "done": false
+  },
+  {
+   "id": "2",
+   "title": {
+    "en": "Add a note to Chris’s profile: hurting reported",
+    "es": "Agregar una nota al perfil de Chris: hurting reported"
+   },
+   "detail": {
+    "en": "",
+    "es": ""
+   },
+   "button": {
+    "en": "Apply",
+    "es": "Aplicar"
+   },
+   "done": false
+  }
+ ],
+ "status": "submitted"
+}

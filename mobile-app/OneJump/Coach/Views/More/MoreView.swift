@@ -31,8 +31,8 @@ struct MoreView: View {
                 store.push(.settings)
             } label: {
                 HStack(spacing: 12) {
-                    Avatar(initials: "AR", color: Palette.volt)
-                    TitleSub("Alex Rivera", sub: CT.profileSub(lang))
+                    Avatar(initials: store.me.initials, color: Palette.volt)
+                    TitleSub(store.me.name, sub: store.live ? store.me.business : CT.profileSub(lang))
                     Image(systemName: "chevron.right").foregroundStyle(Palette.muted)
                 }
                 .card()
@@ -64,14 +64,14 @@ struct MoreView: View {
                 store.push(.leads)
             },
             Item(title: CT.automations(lang), sub: CT.automationsSub(lang), systemImage: nil, assist: true) { store.push(.automations) },
-            Item(title: CT.bookingPageRow(lang), sub: "onejumpfit.com/alex", systemImage: "link") { store.copyBookingLink() }
+            Item(title: CT.bookingPageRow(lang), sub: store.bookingLink.replacingOccurrences(of: "https://", with: ""), systemImage: "link") { store.copyBookingLink() }
         ]
     }
 
     private var accountItems: [Item] {
         [
             Item(title: CT.settings(lang), sub: CT.settingsSub(lang), systemImage: "slider.horizontal.3") { store.push(.settings) },
-            Item(title: CT.planBilling(lang), sub: CT.trial11(lang), systemImage: "doc.text") { store.push(.billing) },
+            Item(title: CT.planBilling(lang), sub: store.live ? CL.planLine(store.me.planLabel, store.me.trialDaysLeft)(lang) : CT.trial11(lang), systemImage: "doc.text") { store.push(.billing) },
             Item(title: CT.help(lang), sub: CT.helpSub(lang), systemImage: "questionmark.circle") { store.toast.show(CT.helpToast(lang)) }
         ]
     }

@@ -78,7 +78,7 @@ struct AssistView: View {
             if !store.hint.isEmpty { hintText }
 
             VStack(spacing: 8) {
-                ForEach(CoachData.suggestions, id: \.self) { suggestion in
+                ForEach(store.data.suggestions, id: \.self) { suggestion in
                     Button {
                         store.send(suggestion(lang))
                     } label: {
@@ -114,7 +114,8 @@ struct AssistView: View {
         if store.voice.isListening {
             return store.voice.heard.isEmpty ? CT.listening(lang) : store.voice.heard
         }
-        return store.voice.isSpeaking ? CT.speaking(lang) : CT.orbHello(lang)
+        if store.voice.isSpeaking { return CT.speaking(lang) }
+        return store.live ? CL.helloName(store.me.first)(lang) : CT.orbHello(lang)
     }
 
     private var hintText: some View {

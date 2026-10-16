@@ -1,9 +1,12 @@
 #!/bin/bash
 # Installs the built app on an iPhone simulator and takes screenshots of key screens.
-# Usage: screens.sh path/to/OneJump.app output-folder
+# Usage: screens.sh path/to/OneJump.app output-folder [fixtures-folder]
+# Live screens (a signed-in coach) use the server's real response shapes from mobile-app/Fixtures,
+# copied into the app's Documents folder, so no server or password is needed.
 set -u
 APP="$1"
 OUT="$2"
+FIX="${3:-}"
 mkdir -p "$OUT"
 
 UDID=$(xcrun simctl list devices available -j | python3 -c '
@@ -19,12 +22,21 @@ xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --
 xcrun simctl install "$UDID" "$APP"
 BUNDLE=com.onejumpfit.OneJump
 xcrun simctl privacy "$UDID" grant microphone "$BUNDLE" || true
+if [ -n "$FIX" ]; then
+  DATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data)
+  mkdir -p "$DATA/Documents/Fixtures" && cp "$FIX"/*.json "$DATA/Documents/Fixtures/" && echo "Fixtures copied to $DATA/Documents/Fixtures"
+fi
 
 # shot NAME ROLE LANG APPEARANCE LINK [WAIT] [SCROLL: center|bottom]
 shot() {
   xcrun simctl terminate "$UDID" "$BUNDLE" >/dev/null 2>&1
   local args=(-oj.language "$3" -oj.appearance "$4")
-  if [ -n "$2" ]; then args+=(-oj.role "$2"); fi
+  case "$2" in
+    live) args+=(-oj.signedIn YES -oj.coachName "Dani Reyes" -ojFixture Fixtures) ;;
+    demo) args+=(-oj.demo YES) ;;
+    "") ;;
+    *) args+=(-oj.role "$2") ;;
+  esac
   if [ -n "$5" ]; then args+=(-ojOpen "$5"); fi
   if [ -n "${7:-}" ]; then args+=(-ojScroll "$7"); fi
   xcrun simctl launch "$UDID" "$BUNDLE" "${args[@]}" >/dev/null
@@ -35,7 +47,9 @@ shot() {
   echo "shot $1"
 }
 
-shot 00-picker "" en light ""
+shot 00-login "" en light ""
+shot 00b-login-es-dark "" es dark ""
+shot 00c-demo-picker demo en light ""
 shot 01-coach-today coach en light today
 shot 01b-coach-today-middle coach en light today 4 center
 shot 01c-coach-today-bottom coach en dark today 4 bottom
@@ -75,8 +89,29 @@ shot 39-client-checkin client en light checkIn
 shot 39b-client-checkin-bottom client es light checkIn 4 bottom
 shot 40-client-book client en light book
 shot 41-client-quick client en light quick 5
+# The signed-in coach's real business (shapes from the server's own tests)
+if [ -n "$FIX" ]; then
+  shot 60-live-today live en light today 6
+  shot 60b-live-today-middle live en light today 6 center
+  shot 60c-live-today-bottom live en light today 6 bottom
+  shot 61-live-today-es-dark live es dark today 6
+  shot 62-live-clients live en light clients 6
+  shot 63-live-client live en light client:first 7
+  shot 64-live-food-plan live en light plan:first 9
+  shot 64b-live-food-plan-bottom live en light plan:first 9 bottom
+  shot 65-live-inbox live en light inbox 6
+  shot 66-live-thread live en light thread:first 7
+  shot 67-live-checkin live en light checkIn:first 7
+  shot 68-live-payments live en light payments 6
+  shot 69-live-settings live es light settings 6
+  shot 70-live-assist live en light assist 6
+fi
+
 # Last, because talking to Assist triggers the speech-recognition permission prompt.
 shot 50-coach-ask coach en light "ask:Who needs me today?" 6
+if [ -n "$FIX" ]; then
+  shot 71-live-ask-proposal live en light "ask:Message Mike: see you Monday at 6" 10
+fi
 
 # Crash reports, if any
 cp ~/Library/Logs/DiagnosticReports/OneJump* "$OUT/" 2>/dev/null || true

@@ -21,14 +21,19 @@ struct InboxView: View {
             case .checkIns: checkIns
             }
         }
+        .refreshable { await store.refresh() }
         .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: Messages
 
+    @ViewBuilder
     private var messages: some View {
+        if store.data.threadOrder.isEmpty {
+            EmptyStateCard(systemImage: "bubble.left.and.bubble.right", title: CL.noThreads(lang))
+        } else {
         ListCard {
-            DividedRows(CoachData.threadOrder) { id in
+            DividedRows(store.data.threadOrder) { id in
                 Button {
                     store.openThread(id)
                 } label: {
@@ -37,10 +42,11 @@ struct InboxView: View {
                 .buttonStyle(.row)
             }
         }
+        }
     }
 
     private func threadRow(_ id: String) -> some View {
-        let thread = CoachData.threads[id]
+        let thread = store.data.threads[id]
         let person = store.person(id)
         let all = store.threadMessages(id)
         let last = all.last
@@ -81,20 +87,25 @@ struct InboxView: View {
             }
 
             Eyebrow(CT.toReview(lang))
-            ListCard {
-                DividedRows(CoachData.checkInOrder) { id in
-                    Button {
-                        store.push(.checkIn(id))
-                    } label: {
-                        checkInRow(id)
+            if store.data.checkInOrder.isEmpty {
+                EmptyStateCard(title: CL.noCheckIns(lang))
+            } else {
+                ListCard {
+                    DividedRows(store.data.checkInOrder) { id in
+                        Button {
+                            store.push(.checkIn(id))
+                        } label: {
+                            checkInRow(id)
+                        }
+                        .buttonStyle(.row)
                     }
-                    .buttonStyle(.row)
                 }
             }
 
+            if !store.data.reviewedCheckIns.isEmpty {
             Eyebrow(CT.reviewed(lang))
             ListCard {
-                DividedRows(CoachData.reviewedCheckIns) { r in
+                DividedRows(store.data.reviewedCheckIns) { r in
                     HStack(spacing: 12) {
                         Avatar(initials: r.initials, color: Color(hex: r.avatar), size: 36)
                         TitleSub(r.name, sub: r.when(lang))
@@ -103,10 +114,14 @@ struct InboxView: View {
                     .rowPadding()
                 }
             }
+            }
 
             Eyebrow(CT.missing(lang))
             ListCard {
-                DividedRows(CoachData.missingCheckIns) { m in
+                if store.data.missingCheckIns.isEmpty {
+                    SubText(CL.nobodyMissing(lang)).rowPadding()
+                }
+                DividedRows(store.data.missingCheckIns) { m in
                     let c = store.client(m.clientID)
                     HStack(spacing: 12) {
                         Avatar(initials: c.initials, color: c.avatarColor, size: 36)
@@ -114,23 +129,25 @@ struct InboxView: View {
                     }
                     .rowPadding()
                 }
+                if !store.data.missingCheckIns.isEmpty {
                 RowDivider()
                 Group {
                     if store.nudgedMissing {
-                        DoneChip(CT.nudgeDone(lang))
+                        DoneChip(store.live ? CL.remindersSent(store.data.missingCheckIns.count)(lang) : CT.nudgeDone(lang))
                     } else {
-                        Button(CT.nudgeBoth(lang)) { store.nudgeMissingCheckIns() }
+                        Button(store.live ? CL.remindAll(store.data.missingCheckIns.count)(lang) : CT.nudgeBoth(lang)) { store.nudgeMissingCheckIns() }
                             .buttonStyle(.oj(.ghost, size: .small, fullWidth: true))
                     }
                 }
                 .rowPadding()
+                }
             }
         }
     }
 
     private func checkInRow(_ id: String) -> some View {
-        let c = store.client(id)
-        let report = CoachData.checkIns[id]
+        let report = store.data.checkIns[id]
+        let c = store.client(report.map { $0.clientID.isEmpty ? id : $0.clientID } ?? id)
         let sent = store.checkInState[id] == .sent
         let tag: String
         let tone: Tone

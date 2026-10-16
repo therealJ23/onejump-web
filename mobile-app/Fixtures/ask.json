@@ -1,0 +1,31 @@
+{
+ "question": "Message Mike: see you Monday at 6",
+ "answerHtml": "",
+ "spokenText": "Here’s what I’d send Mike: see you Monday at 6 Should I send it?",
+ "proposals": [
+  {
+   "id": "8775a6e9-6da5-41e0-9753-a19f013be2d0",
+   "type": "send_message",
+   "summary": "Message to Mike Torres",
+   "payload": {
+    "text": "see you Monday at 6",
+    "voiceOk": true,
+    "clientId": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+    "fromDraft": false,
+    "insightId": null,
+    "clientName": "Mike Torres"
+   },
+   "status": "pending",
+   "expiresAt": "2026-10-16T00:47:38.872Z"
+  }
+ ],
+ "trace": [],
+ "followups": [],
+ "tools": [
+  "propose_send_message"
+ ],
+ "awaiting": "8775a6e9-6da5-41e0-9753-a19f013be2d0",
+ "safety": {
+  "flagged": false
+ }
+}

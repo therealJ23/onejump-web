@@ -1,0 +1,488 @@
+{
+ "id": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+ "riskScore": 7,
+ "riskWhy": {
+  "en": "Missed 1 workout in the last 14 days",
+  "es": "Faltó a 1 entrenamiento en los últimos 14 días"
+ },
+ "stats": [
+  {
+   "value": "75%",
+   "label": {
+    "en": "Adherence",
+    "es": "Cumplimiento"
+   },
+   "note": {
+    "en": "last 2 weeks",
+    "es": "últimas 2 semanas"
+   }
+  },
+  {
+   "value": "205.4",
+   "label": {
+    "en": "Weight",
+    "es": "Peso"
+   },
+   "note": {
+    "en": "−1.4 lb last",
+    "es": "−1.4 lb último"
+   }
+  },
+  {
+   "value": "34",
+   "label": {
+    "en": "Workouts",
+    "es": "Entrenamientos"
+   },
+   "note": {
+    "en": "done so far",
+    "es": "hechos hasta hoy"
+   }
+  }
+ ],
+ "weightTotal": {
+  "en": "−8.6 lb total",
+  "es": "−8.6 lb en total"
+ },
+ "spark": [
+  2,
+  6.6,
+  9.2,
+  13.7,
+  15.3,
+  20.9,
+  25.4,
+  30
+ ],
+ "habits": [
+  {
+   "title": {
+    "en": "Protein at every meal",
+    "es": "Protein at every meal"
+   },
+   "value": {
+    "en": "6 of 7 days",
+    "es": "6 de 7 días"
+   },
+   "on": true
+  },
+  {
+   "title": {
+    "en": "Sleep 7+ hours",
+    "es": "Sleep 7+ hours"
+   },
+   "value": {
+    "en": "3 of 7 days",
+    "es": "3 de 7 días"
+   },
+   "on": false
+  },
+  {
+   "title": {
+    "en": "8,000 steps",
+    "es": "8,000 steps"
+   },
+   "value": {
+    "en": "5 of 7 days",
+    "es": "5 de 7 días"
+   },
+   "on": true
+  }
+ ],
+ "activity": [
+  {
+   "date": {
+    "en": "Oct 15",
+    "es": "15 oct"
+   },
+   "text": {
+    "en": "Sent weekly check-in",
+    "es": "Envió su check-in semanal"
+   }
+  },
+  {
+   "date": {
+    "en": "Oct 15",
+    "es": "15 oct"
+   },
+   "text": {
+    "en": "Opened the app",
+    "es": "Abrió la app"
+   }
+  },
+  {
+   "date": {
+    "en": "Oct 12",
+    "es": "12 oct"
+   },
+   "text": {
+    "en": "Completed a workout",
+    "es": "Completó un entrenamiento"
+   }
+  },
+  {
+   "date": {
+    "en": "Oct 10",
+    "es": "10 oct"
+   },
+   "text": {
+    "en": "Paid Coached Plus",
+    "es": "Paid Coached Plus"
+   }
+  }
+ ],
+ "next": {
+  "en": "Thu · Lower Body B",
+  "es": "Jue · Lower Body B"
+ },
+ "billing": {
+  "en": "Paid · $180/mo",
+  "es": "Pagado · $180/mes"
+ },
+ "lifetimeValue": "$540",
+ "program": {
+  "name": "Fat Loss Foundations",
+  "rows": [
+   {
+    "day": {
+     "en": "Mon",
+     "es": "Lun"
+    },
+    "name": {
+     "en": "Lower Body A",
+     "es": "Tren inferior A"
+    },
+    "meta": {
+     "en": "7 exercises · 50 min",
+     "es": "7 ejercicios · 50 min"
+    },
+    "label": {
+     "en": "Done",
+     "es": "Hecho"
+    },
+    "tone": "good"
+   },
+   {
+    "day": {
+     "en": "Tue",
+     "es": "Mar"
+    },
+    "name": {
+     "en": "Upper Body A",
+     "es": "Upper Body A"
+    },
+    "meta": {
+     "en": "5 exercises · 45 min",
+     "es": "5 ejercicios · 45 min"
+    },
+    "label": {
+     "en": "Missed",
+     "es": "Perdido"
+    },
+    "tone": "crit"
+   },
+   {
+    "day": {
+     "en": "Thu",
+     "es": "Jue"
+    },
+    "name": {
+     "en": "Lower Body B",
+     "es": "Lower Body B"
+    },
+    "meta": {
+     "en": "4 exercises · 50 min",
+     "es": "4 ejercicios · 50 min"
+    },
+    "label": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "tone": "info"
+   },
+   {
+    "day": {
+     "en": "Fri",
+     "es": "Vie"
+    },
+    "name": {
+     "en": "Upper Body B",
+     "es": "Upper Body B"
+    },
+    "meta": {
+     "en": "4 exercises · 45 min",
+     "es": "4 ejercicios · 45 min"
+    },
+    "label": {
+     "en": "Upcoming",
+     "es": "Próximo"
+    },
+    "tone": "muted"
+   }
+  ]
+ },
+ "food": {
+  "logged": {
+   "en": "Logged today",
+   "es": "Registró hoy"
+  },
+  "macros": [
+   {
+    "label": {
+     "en": "Calories",
+     "es": "Calorías"
+    },
+    "now": 1049,
+    "target": 2200,
+    "unit": "kcal",
+    "warn": false
+   },
+   {
+    "label": {
+     "en": "Protein",
+     "es": "Proteína"
+    },
+    "now": 61,
+    "target": 180,
+    "unit": "g",
+    "warn": false
+   },
+   {
+    "label": {
+     "en": "Carbs",
+     "es": "Carbohidratos"
+    },
+    "now": 162,
+    "target": 220,
+    "unit": "g",
+    "warn": false
+   },
+   {
+    "label": {
+     "en": "Fat",
+     "es": "Grasa"
+    },
+    "now": 18,
+    "target": 70,
+    "unit": "g",
+    "warn": false
+   }
+  ],
+  "note": {
+   "en": "Logged food on 7 of 7 days, protein target reached on 5.",
+   "es": "Registró comida 7 de 7 días, objetivo de proteína en 5."
+  },
+  "plan": {
+   "approach": "targets",
+   "calories": 2200,
+   "proteinG": 180,
+   "carbsG": 220,
+   "fatG": 70,
+   "coachNote": "Protein at every meal, weekends included. Log what you can; it doesn’t need to be perfect.",
+   "saved": true
+  },
+  "lowProtein": false
+ },
+ "bests": [
+  {
+   "name": {
+    "en": "Trap bar deadlift",
+    "es": "Trap bar deadlift"
+   },
+   "value": "185 lb × 6",
+   "date": {
+    "en": "",
+    "es": ""
+   }
+  },
+  {
+   "name": {
+    "en": "Hip thrust",
+    "es": "Hip thrust"
+   },
+   "value": "135 lb × 12",
+   "date": {
+    "en": "",
+    "es": ""
+   }
+  },
+  {
+   "name": {
+    "en": "Romanian deadlift",
+    "es": "Romanian deadlift"
+   },
+   "value": "95 lb × 8",
+   "date": {
+    "en": "",
+    "es": ""
+   }
+  },
+  {
+   "name": {
+    "en": "Leg curl",
+    "es": "Leg curl"
+   },
+   "value": "70 lb × 12",
+   "date": {
+    "en": "",
+    "es": ""
+   }
+  },
+  {
+   "name": {
+    "en": "Goblet squat",
+    "es": "Goblet squat"
+   },
+   "value": "55 lb × 10",
+   "date": {
+    "en": "",
+    "es": ""
+   }
+  }
+ ],
+ "measures": [
+  {
+   "name": {
+    "en": "Waist",
+    "es": "Cintura"
+   },
+   "value": "37.8 in",
+   "change": {
+    "en": "−1.7 in",
+    "es": "−1.7 in"
+   }
+  },
+  {
+   "name": {
+    "en": "Hips",
+    "es": "Cadera"
+   },
+   "value": "40.7 in",
+   "change": {
+    "en": "−2.3 in",
+    "es": "−2.3 in"
+   }
+  }
+ ],
+ "photos": [],
+ "checkInHistory": [
+  {
+   "week": {
+    "en": "Check-in 6",
+    "es": "Check-in 6"
+   },
+   "date": {
+    "en": "Oct 15",
+    "es": "15 oct"
+   },
+   "label": {
+    "en": "To review",
+    "es": "Por revisar"
+   },
+   "tone": "info",
+   "id": "80dac11c-d1cc-4242-9b16-2461ad8d5886"
+  },
+  {
+   "week": {
+    "en": "Check-in 5",
+    "es": "Check-in 5"
+   },
+   "date": {
+    "en": "Oct 9",
+    "es": "9 oct"
+   },
+   "label": {
+    "en": "Replied",
+    "es": "Respondido"
+   },
+   "tone": "good",
+   "id": "eb7ef77e-69bc-4844-a518-02d5df77782f"
+  },
+  {
+   "week": {
+    "en": "Check-in 4",
+    "es": "Check-in 4"
+   },
+   "date": {
+    "en": "Oct 2",
+    "es": "2 oct"
+   },
+   "label": {
+    "en": "Replied",
+    "es": "Respondido"
+   },
+   "tone": "good",
+   "id": "9525e236-8383-4509-942c-a88cec36fc70"
+  },
+  {
+   "week": {
+    "en": "Check-in 3",
+    "es": "Check-in 3"
+   },
+   "date": {
+    "en": "Sep 25",
+    "es": "25 sept"
+   },
+   "label": {
+    "en": "Replied",
+    "es": "Respondido"
+   },
+   "tone": "good",
+   "id": "e4fd1981-34ef-4671-8bb7-59afabd230a6"
+  },
+  {
+   "week": {
+    "en": "Check-in 2",
+    "es": "Check-in 2"
+   },
+   "date": {
+    "en": "Sep 18",
+    "es": "18 sept"
+   },
+   "label": {
+    "en": "Replied",
+    "es": "Respondido"
+   },
+   "tone": "good",
+   "id": "4a8bac94-2b04-487b-84ad-a7ca0cff4a45"
+  },
+  {
+   "week": {
+    "en": "Check-in 1",
+    "es": "Check-in 1"
+   },
+   "date": {
+    "en": "Sep 11",
+    "es": "11 sept"
+   },
+   "label": {
+    "en": "Replied",
+    "es": "Respondido"
+   },
+   "tone": "good",
+   "id": "9b7eca04-d6e3-40f1-a199-2fddf1fbebff"
+  }
+ ],
+ "notes": [
+  {
+   "date": {
+    "en": "Sep 21",
+    "es": "21 sept"
+   },
+   "text": {
+    "en": "Prefers 6 AM sessions. Kids’ soccer on Saturdays, so Sunday sessions only if needed.",
+    "es": "Prefers 6 AM sessions. Kids’ soccer on Saturdays, so Sunday sessions only if needed."
+   }
+  },
+  {
+   "date": {
+    "en": "Jul 24",
+    "es": "24 jul"
+   },
+   "text": {
+    "en": "Onboarding call: no injuries reported. Has a home rack and dumbbells to 50 lb.",
+    "es": "Onboarding call: no injuries reported. Has a home rack and dumbbells to 50 lb."
+   }
+  }
+ ]
+}

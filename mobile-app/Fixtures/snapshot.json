@@ -1,0 +1,8325 @@
+{
+ "version": 1,
+ "me": {
+  "name": "Dani Reyes",
+  "first": "Dani",
+  "initials": "DR",
+  "email": "dani@reyesstrength.com",
+  "business": "Reyes Strength",
+  "slug": "dani",
+  "bookingUrl": "localhost:3000/coach/dani",
+  "plan": "TRIAL",
+  "planLabel": {
+   "en": "Pro trial",
+   "es": "Prueba de Pro"
+  },
+  "trialDaysLeft": 9,
+  "pro": true,
+  "totpEnabled": false,
+  "writingStyle": "Supportive"
+ },
+ "today": {
+  "minutesSaved": 8,
+  "savedLabel": "0h 08m",
+  "counts": {
+   "checkIns": 3,
+   "unread": 3,
+   "newLeads": 2
+  },
+  "queue": [
+   {
+    "id": "189e15de-e4fe-4a2a-8e75-55af0b849c34",
+    "clientId": "cf1d63a5-1261-4ada-aae8-f5bbf223205b",
+    "kind": "risk",
+    "reason": {
+     "en": "Missed 5 workouts in the last 14 days · No check-in for 2 weeks · Said “honestly not sure this is working for me”",
+     "es": "Faltó a 5 entrenamientos en los últimos 14 días · Sin check-in hace 2 semanas · Dijo “honestly not sure this is working for me”"
+    },
+    "tag": {
+     "en": "High risk",
+     "es": "Riesgo alto"
+    },
+    "tone": "crit",
+    "draft": "Hey Marcus, I’ve been thinking about what you said, and you’re right that the plan has to fit your life, not the other way round. Can we do 15 minutes this week? I’ll bring a lighter version built around your schedule. Your goal is very doable from here."
+   },
+   {
+    "id": "bc8e23b2-c1b3-4fb5-81f5-a2615034d36c",
+    "clientId": "d02e54d0-facf-4869-868b-8fbb48db255b",
+    "kind": "risk",
+    "reason": {
+     "en": "Latest payment failed · Missed 2 workouts in the last 14 days · Didn’t send last week’s check-in",
+     "es": "Falló el último pago · Faltó a 2 entrenamientos en los últimos 14 días · No envió el check-in de la semana pasada"
+    },
+    "tag": {
+     "en": "Medium risk",
+     "es": "Riesgo medio"
+    },
+    "tone": "warn",
+    "draft": "Hey Kevin, I noticed the last couple of weeks have been tough to fit training in, which is completely normal. Would 3 shorter sessions a week work better for now? Tell me what your schedule looks like and I’ll rebuild the plan around it."
+   },
+   {
+    "id": "3ab88361-d495-48bc-84c9-35669930f28e",
+    "clientId": "9a588aa5-88f8-4a78-a38f-873d6836b717",
+    "kind": "risk",
+    "reason": {
+     "en": "Missed 2 workouts in the last 14 days · Didn’t send last week’s check-in · Weight flat for 5 weeks",
+     "es": "Faltó a 2 entrenamientos en los últimos 14 días · No envió el check-in de la semana pasada · Peso estancado por 5 semanas"
+    },
+    "tag": {
+     "en": "Medium risk",
+     "es": "Riesgo medio"
+    },
+    "tone": "warn",
+    "draft": "Hey Grace, I can tell the plateau is getting to you, and that’s fair. Let’s do a 15-minute call this week and make a simple plan for the next few weeks. You’re doing the hard part already."
+   },
+   {
+    "id": "b38291e4-af9f-42a5-a178-17a92c1574b0",
+    "clientId": "9652fb57-fbf2-47b9-a7bb-fda6fa6d23cd",
+    "kind": "risk",
+    "reason": {
+     "en": "Missed 3 workouts in the last 14 days · Didn’t send last week’s check-in · Messaging 50% less than usual",
+     "es": "Faltó a 3 entrenamientos en los últimos 14 días · No envió el check-in de la semana pasada · Escribe 50% menos de lo normal"
+    },
+    "tag": {
+     "en": "Medium risk",
+     "es": "Riesgo medio"
+    },
+    "tone": "warn",
+    "draft": "Hey Sarah, I noticed the last couple of weeks have been tough to fit training in, which is completely normal. Would 3 shorter sessions a week work better for now? Tell me what your schedule looks like and I’ll rebuild the plan around it."
+   },
+   {
+    "id": "6dbe76e5-0af0-43b5-8ae0-42604fd4eb0b",
+    "clientId": "4295495c-1ba2-4ea3-82aa-90d4aa27504e",
+    "kind": "risk",
+    "reason": {
+     "en": "Said “Starting to get annoyed honestly” · Missed 2 workouts in the last 14 days · Weight flat for 3 weeks",
+     "es": "Dijo “Starting to get annoyed honestly” · Faltó a 2 entrenamientos en los últimos 14 días · Peso estancado por 3 semanas"
+    },
+    "tag": {
+     "en": "Medium risk",
+     "es": "Riesgo medio"
+    },
+    "tone": "warn",
+    "draft": "Hey Tom, I’ve been thinking about what you said, and you’re right that the plan has to fit your life, not the other way round. Can we do 15 minutes this week? I’ll bring a lighter version built around your schedule. Your goal is very doable from here."
+   },
+   {
+    "id": "ea8648ff-b229-4641-a064-775d6d0d8def",
+    "clientId": "9a588aa5-88f8-4a78-a38f-873d6836b717",
+    "kind": "nutrition",
+    "reason": {
+     "en": "Missed protein most days: hit 1 of 4 logged days",
+     "es": "No llegó a su proteína casi ningún día: llegó 1 de 4 días registrados"
+    },
+    "tag": {
+     "en": "Nutrition",
+     "es": "Nutrición"
+    },
+    "tone": "warn",
+    "draft": "Hey Grace! Quick nutrition note: protein has been on the lighter side most days this week. An easy win is adding a palm-sized portion to breakfast and lunch, like eggs, Greek yogurt, chicken or tofu. Want me to send a few quick ideas that fit your week?"
+   },
+   {
+    "id": "61e6d3fc-4198-4979-b571-b47f933f88aa",
+    "clientId": "d02e54d0-facf-4869-868b-8fbb48db255b",
+    "kind": "nutrition",
+    "reason": {
+     "en": "Missed protein most days: hit 0 of 4 logged days",
+     "es": "No llegó a su proteína casi ningún día: llegó 0 de 4 días registrados"
+    },
+    "tag": {
+     "en": "Nutrition",
+     "es": "Nutrición"
+    },
+    "tone": "warn",
+    "draft": "Hey Kevin! Quick nutrition note: protein has been on the lighter side most days this week. An easy win is adding a palm-sized portion to breakfast and lunch, like eggs, Greek yogurt, chicken or tofu. Want me to send a few quick ideas that fit your week?"
+   },
+   {
+    "id": "0ef7f1a8-4462-4900-9fb9-8b3d254c3147",
+    "clientId": "4295495c-1ba2-4ea3-82aa-90d4aa27504e",
+    "kind": "nutrition",
+    "reason": {
+     "en": "Missed protein most days: hit 1 of 5 logged days",
+     "es": "No llegó a su proteína casi ningún día: llegó 1 de 5 días registrados"
+    },
+    "tag": {
+     "en": "Nutrition",
+     "es": "Nutrición"
+    },
+    "tone": "warn",
+    "draft": "Hey Tom! Quick nutrition note: protein has been on the lighter side most days this week. An easy win is adding a palm-sized portion to breakfast and lunch, like eggs, Greek yogurt, chicken or tofu. Want me to send a few quick ideas that fit your week?"
+   },
+   {
+    "id": "4a28e69a-0d31-48b3-a8c4-3fa06df0021c",
+    "clientId": "4bd3caf9-2f0a-461b-baba-1c17e2ed2688",
+    "kind": "automation",
+    "reason": {
+     "en": "Elena hit workout #50",
+     "es": "Elena llegó al entrenamiento #50"
+    },
+    "tag": {
+     "en": "Milestone",
+     "es": "Logro"
+    },
+    "tone": "good",
+    "draft": "Elena! That was workout #50 with me. That’s 50 times you showed up. Huge."
+   }
+  ],
+  "sessions": [
+   {
+    "clientId": "4bd3caf9-2f0a-461b-baba-1c17e2ed2688",
+    "name": "Elena García",
+    "time": {
+     "en": "Done",
+     "es": "Hecho"
+    },
+    "type": {
+     "en": "Upper strength · 45 min",
+     "es": "Upper strength · 45 min"
+    },
+    "icon": "checkmark.circle"
+   },
+   {
+    "clientId": "e0d8ffb0-6d16-496c-b142-a55f8b141e36",
+    "name": "Aisha Bello",
+    "time": {
+     "en": "Done",
+     "es": "Hecho"
+    },
+    "type": {
+     "en": "Upper B · 50 min",
+     "es": "Upper B · 50 min"
+    },
+    "icon": "checkmark.circle"
+   },
+   {
+    "clientId": "14da9e79-b795-49a2-b468-cbd71d4893c7",
+    "name": "Chris Nguyen",
+    "time": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "type": {
+     "en": "Deadlift day · 55 min",
+     "es": "Deadlift day · 55 min"
+    },
+    "icon": "dumbbell"
+   },
+   {
+    "clientId": "9652fb57-fbf2-47b9-a7bb-fda6fa6d23cd",
+    "name": "Sarah Kim",
+    "time": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "type": {
+     "en": "Deadlift day · 55 min",
+     "es": "Deadlift day · 55 min"
+    },
+    "icon": "dumbbell"
+   },
+   {
+    "clientId": "a8dc6169-f6aa-49bc-829f-faa2dad8ba7f",
+    "name": "Hannah Lee",
+    "time": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "type": {
+     "en": "Lower Body B · 50 min",
+     "es": "Lower Body B · 50 min"
+    },
+    "icon": "dumbbell"
+   },
+   {
+    "clientId": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+    "name": "Mike Torres",
+    "time": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "type": {
+     "en": "Lower Body B · 50 min",
+     "es": "Lower Body B · 50 min"
+    },
+    "icon": "dumbbell"
+   },
+   {
+    "clientId": "bb78606e-0b65-43e9-a172-f5f91717910a",
+    "name": "Sam Rivera",
+    "time": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "type": {
+     "en": "Deadlift day · 55 min",
+     "es": "Deadlift day · 55 min"
+    },
+    "icon": "dumbbell"
+   },
+   {
+    "clientId": "cf1d63a5-1261-4ada-aae8-f5bbf223205b",
+    "name": "Marcus Johnson",
+    "time": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "type": {
+     "en": "Lower Body B · 50 min",
+     "es": "Lower Body B · 50 min"
+    },
+    "icon": "dumbbell"
+   },
+   {
+    "clientId": "d02e54d0-facf-4869-868b-8fbb48db255b",
+    "name": "Kevin Shah",
+    "time": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "type": {
+     "en": "Lower Body B · 50 min",
+     "es": "Lower Body B · 50 min"
+    },
+    "icon": "dumbbell"
+   },
+   {
+    "clientId": "ecfa0694-2fe3-4330-b24c-ffc788de650b",
+    "name": "Olivia Brooks",
+    "time": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "type": {
+     "en": "Upper strength · 45 min",
+     "es": "Upper strength · 45 min"
+    },
+    "icon": "dumbbell"
+   }
+  ],
+  "kpis": [
+   {
+    "value": "$2,669",
+    "label": {
+     "en": "Monthly revenue",
+     "es": "Ingresos mensuales"
+    },
+    "note": {
+     "en": "$2,140 collected this month",
+     "es": "$2,140 cobrado este mes"
+    },
+    "target": "payments"
+   },
+   {
+    "value": "16",
+    "label": {
+     "en": "Active clients",
+     "es": "Clientes activos"
+    },
+    "note": {
+     "en": "+3 this month",
+     "es": "+3 este mes"
+    },
+    "target": "clients"
+   },
+   {
+    "value": "9",
+    "label": {
+     "en": "Check-ins this week",
+     "es": "Check-ins esta semana"
+    },
+    "note": {
+     "en": "6 missing",
+     "es": "faltan 6"
+    },
+    "target": "checkins"
+   },
+   {
+    "value": "83%",
+    "label": {
+     "en": "90-day retention",
+     "es": "Retención a 90 días"
+    },
+    "note": {
+     "en": "Clients still with you after 90 days",
+     "es": "Clientes que siguen contigo tras 90 días"
+    },
+    "target": null
+   }
+  ],
+  "radar": [
+   {
+    "clientId": "cf1d63a5-1261-4ada-aae8-f5bbf223205b",
+    "score": 96,
+    "why": {
+     "en": "Missed 5 workouts in the last 14 days",
+     "es": "Faltó a 5 entrenamientos en los últimos 14 días"
+    }
+   },
+   {
+    "clientId": "9652fb57-fbf2-47b9-a7bb-fda6fa6d23cd",
+    "score": 61,
+    "why": {
+     "en": "Missed 3 workouts in the last 14 days",
+     "es": "Faltó a 3 entrenamientos en los últimos 14 días"
+    }
+   },
+   {
+    "clientId": "4295495c-1ba2-4ea3-82aa-90d4aa27504e",
+    "score": 50,
+    "why": {
+     "en": "Said “Starting to get annoyed honestly”",
+     "es": "Dijo “Starting to get annoyed honestly”"
+    }
+   },
+   {
+    "clientId": "9a588aa5-88f8-4a78-a38f-873d6836b717",
+    "score": 47,
+    "why": {
+     "en": "Missed 2 workouts in the last 14 days",
+     "es": "Faltó a 2 entrenamientos en los últimos 14 días"
+    }
+   },
+   {
+    "clientId": "d02e54d0-facf-4869-868b-8fbb48db255b",
+    "score": 41,
+    "why": {
+     "en": "Latest payment failed",
+     "es": "Falló el último pago"
+    }
+   }
+  ],
+  "activeClients": 16
+ },
+ "charts": {
+  "revenue": [
+   {
+    "label": {
+     "en": "May",
+     "es": "may"
+    },
+    "cents": 0,
+    "current": false
+   },
+   {
+    "label": {
+     "en": "Jun",
+     "es": "jun"
+    },
+    "cents": 0,
+    "current": false
+   },
+   {
+    "label": {
+     "en": "Jul",
+     "es": "jul"
+    },
+    "cents": 0,
+    "current": false
+   },
+   {
+    "label": {
+     "en": "Aug",
+     "es": "ago"
+    },
+    "cents": 170000,
+    "current": false
+   },
+   {
+    "label": {
+     "en": "Sep",
+     "es": "sep"
+    },
+    "cents": 203000,
+    "current": false
+   },
+   {
+    "label": {
+     "en": "Oct",
+     "es": "oct"
+    },
+    "cents": 214000,
+    "current": true
+   }
+  ],
+  "adherence": [
+   {
+    "label": {
+     "en": "7w ago",
+     "es": "hace 7 sem"
+    },
+    "pct": 79
+   },
+   {
+    "label": {
+     "en": "6w ago",
+     "es": "hace 6 sem"
+    },
+    "pct": 72
+   },
+   {
+    "label": {
+     "en": "5w ago",
+     "es": "hace 5 sem"
+    },
+    "pct": 96
+   },
+   {
+    "label": {
+     "en": "4w ago",
+     "es": "hace 4 sem"
+    },
+    "pct": 100
+   },
+   {
+    "label": {
+     "en": "3w ago",
+     "es": "hace 3 sem"
+    },
+    "pct": 88
+   },
+   {
+    "label": {
+     "en": "2w ago",
+     "es": "hace 2 sem"
+    },
+    "pct": 58
+   },
+   {
+    "label": {
+     "en": "1w ago",
+     "es": "hace 1 sem"
+    },
+    "pct": 88
+   },
+   {
+    "label": {
+     "en": "This week",
+     "es": "Esta semana"
+    },
+    "pct": 38
+   }
+  ],
+  "packages": [
+   {
+    "name": "Coached Online",
+    "cents": 150000,
+    "clients": 10
+   },
+   {
+    "name": "Coached Plus",
+    "cents": 36000,
+    "clients": 2
+   },
+   {
+    "name": "In-person 8-pack",
+    "cents": 32000,
+    "clients": 1
+   },
+   {
+    "name": "Hybrid 2×/week",
+    "cents": 26000,
+    "clients": 1
+   },
+   {
+    "name": "Private 1:1",
+    "cents": 22900,
+    "clients": 1
+   }
+  ],
+  "activeClients": [
+   {
+    "label": {
+     "en": "May",
+     "es": "may"
+    },
+    "count": 3
+   },
+   {
+    "label": {
+     "en": "Jun",
+     "es": "jun"
+    },
+    "count": 4
+   },
+   {
+    "label": {
+     "en": "Jul",
+     "es": "jul"
+    },
+    "count": 8
+   },
+   {
+    "label": {
+     "en": "Aug",
+     "es": "ago"
+    },
+    "count": 11
+   },
+   {
+    "label": {
+     "en": "Sep",
+     "es": "sep"
+    },
+    "count": 16
+   },
+   {
+    "label": {
+     "en": "Oct",
+     "es": "oct"
+    },
+    "count": 16
+   }
+  ]
+ },
+ "clients": [
+  {
+   "id": "e0d8ffb0-6d16-496c-b142-a55f8b141e36",
+   "name": "Aisha Bello",
+   "first": "Aisha",
+   "initials": "AB",
+   "avatar": 15190462,
+   "programId": "e90d6765-90d5-4415-9192-8d9942dadb09",
+   "programName": "Upper/Lower Builder",
+   "week": 5,
+   "weeks": 10,
+   "kind": "ok",
+   "tone": "good",
+   "adherence": 94,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 5 of 10 · Upper/Lower Builder",
+    "es": "Semana 5 de 10 · Upper/Lower Builder"
+   },
+   "goal": {
+    "en": "Build muscle and fix her posture",
+    "es": "Build muscle and fix her posture"
+   },
+   "package": {
+    "en": "In person · $320/mo",
+    "es": "Presencial · $320/mes"
+   },
+   "since": {
+    "en": "client since Aug 2026",
+    "es": "cliente desde agosto de 2026"
+   },
+   "weight": "150.1",
+   "weightChange": {
+    "en": "+0.2 lb since last weigh-in",
+    "es": "+0.2 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "+2.1 lb total",
+    "es": "+2.1 lb en total"
+   },
+   "streak": "22",
+   "spark": [
+    30,
+    26,
+    22,
+    16.7,
+    14,
+    10,
+    4.7,
+    2
+   ],
+   "insight": {
+    "en": "Aisha is on track: 94% of planned workouts done lately.",
+    "es": "Aisha va al día: 94% de los entrenamientos planeados."
+   },
+   "suggest": {
+    "en": "Message them",
+    "es": "Escribirle"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Fri · Lower B",
+    "es": "Vie · Lower B"
+   },
+   "billing": {
+    "en": "Paid · $320/mo",
+    "es": "Pagado · $320/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "31d9752e-0f11-4a21-a56d-21ca511f7678",
+   "name": "Ben Carter",
+   "first": "Ben",
+   "initials": "BC",
+   "avatar": 13227746,
+   "programId": "839951cd-f80c-4cec-8e44-05283f151994",
+   "programName": "Start From Zero",
+   "week": 1,
+   "weeks": 8,
+   "kind": "new",
+   "tone": "info",
+   "adherence": 100,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 1 of 8 · Start From Zero",
+    "es": "Semana 1 de 8 · Start From Zero"
+   },
+   "goal": {
+    "en": "Build muscle",
+    "es": "Build muscle"
+   },
+   "package": {
+    "en": "Online · $0/mo",
+    "es": "En línea · $0/mes"
+   },
+   "since": {
+    "en": "client since Oct 2026",
+    "es": "cliente desde octubre de 2026"
+   },
+   "weight": "168.4",
+   "weightChange": {
+    "en": "+0.4 lb since last weigh-in",
+    "es": "+0.4 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "+0.4 lb total",
+    "es": "+0.4 lb en total"
+   },
+   "streak": "2",
+   "spark": [
+    30,
+    2
+   ],
+   "insight": {
+    "en": "Ben is new. A quick hello in the first week helps a lot.",
+    "es": "Ben es nuevo. Un saludo en la primera semana ayuda mucho."
+   },
+   "suggest": {
+    "en": "Say hi",
+    "es": "Saludar"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Fri · Full Body C",
+    "es": "Vie · Full Body C"
+   },
+   "billing": {
+    "en": "Trial",
+    "es": "Prueba"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "new"
+   ],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "14da9e79-b795-49a2-b468-cbd71d4893c7",
+   "name": "Chris Nguyen",
+   "first": "Chris",
+   "initials": "CN",
+   "avatar": 13227746,
+   "programId": "780f67f8-d38d-4e37-84c3-c3cc74afe2e6",
+   "programName": "Strength Base",
+   "week": 7,
+   "weeks": 12,
+   "kind": "checkin",
+   "tone": "crit",
+   "adherence": 88,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 7 of 12 · Strength Base",
+    "es": "Semana 7 de 12 · Strength Base"
+   },
+   "goal": {
+    "en": "Squat 315 lb",
+    "es": "Squat 315 lb"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Jul 2026",
+    "es": "cliente desde julio de 2026"
+   },
+   "weight": "184.5",
+   "weightChange": {
+    "en": "+0.4 lb since last weigh-in",
+    "es": "+0.4 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "+2.5 lb total",
+    "es": "+2.5 lb en total"
+   },
+   "streak": "30",
+   "spark": [
+    30,
+    25.5,
+    18.8,
+    16.6,
+    9.8,
+    7.6,
+    6.5,
+    2
+   ],
+   "insight": {
+    "en": "Chris sent a check-in that mentions pain or a medical topic. Read it first.",
+    "es": "Chris envió un check-in que menciona dolor o un tema médico. Léelo primero."
+   },
+   "suggest": {
+    "en": "Open their check-in",
+    "es": "Abrir su check-in"
+   },
+   "suggestTarget": "checkin",
+   "next": {
+    "en": "Thu · Deadlift day",
+    "es": "Jue · Deadlift day"
+   },
+   "billing": {
+    "en": "Paid · $150/mo",
+    "es": "Pagado · $150/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "attention"
+   ],
+   "unread": 1,
+   "checkInId": "ed2d99de-1b35-4074-b94f-7bc97b1b2c2a"
+  },
+  {
+   "id": "24d4f31a-f468-4bbf-bd9f-a9fae8fa0340",
+   "name": "Diego Alvarez",
+   "first": "Diego",
+   "initials": "DA",
+   "avatar": 13031142,
+   "programId": "e13441cb-b3fc-4c7c-bd88-10239a57e0fb",
+   "programName": "Athletic Base",
+   "week": 2,
+   "weeks": 8,
+   "kind": "ok",
+   "tone": "good",
+   "adherence": 86,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 2 of 8 · Athletic Base",
+    "es": "Semana 2 de 8 · Athletic Base"
+   },
+   "goal": {
+    "en": "Be fast and fit for soccer season",
+    "es": "Be fast and fit for soccer season"
+   },
+   "package": {
+    "en": "Hybrid · $260/mo",
+    "es": "Híbrido · $260/mes"
+   },
+   "since": {
+    "en": "client since Sep 2026",
+    "es": "cliente desde septiembre de 2026"
+   },
+   "weight": "170.6",
+   "weightChange": {
+    "en": "−0.4 lb since last weigh-in",
+    "es": "−0.4 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−0.4 lb total",
+    "es": "−0.4 lb en total"
+   },
+   "streak": "6",
+   "spark": [
+    2,
+    30
+   ],
+   "insight": {
+    "en": "Diego is on track: 86% of planned workouts done lately.",
+    "es": "Diego va al día: 86% de los entrenamientos planeados."
+   },
+   "suggest": {
+    "en": "Message them",
+    "es": "Escribirle"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Fri · Power + strength B",
+    "es": "Vie · Power + strength B"
+   },
+   "billing": {
+    "en": "Paid · $260/mo",
+    "es": "Pagado · $260/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "4bd3caf9-2f0a-461b-baba-1c17e2ed2688",
+   "name": "Elena García",
+   "first": "Elena",
+   "initials": "EG",
+   "avatar": 13227746,
+   "programId": "65bbb422-b623-4fdd-8e4e-1fa90559ba86",
+   "programName": "Hybrid Athlete",
+   "week": 10,
+   "weeks": 12,
+   "kind": "ok",
+   "tone": "good",
+   "adherence": 94,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 10 of 12 · Hybrid Athlete",
+    "es": "Semana 10 de 12 · Hybrid Athlete"
+   },
+   "goal": {
+    "en": "Run a sub-25 5K and get stronger",
+    "es": "Run a sub-25 5K and get stronger"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Apr 2026",
+    "es": "cliente desde abril de 2026"
+   },
+   "weight": "136.2",
+   "weightChange": {
+    "en": "−0.2 lb since last weigh-in",
+    "es": "−0.2 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−1.8 lb total",
+    "es": "−1.8 lb en total"
+   },
+   "streak": "51",
+   "spark": [
+    2,
+    8.2,
+    14.4,
+    11.3,
+    20.7,
+    19.1,
+    26.9,
+    30
+   ],
+   "insight": {
+    "en": "Elena is on track: 94% of planned workouts done lately.",
+    "es": "Elena va al día: 94% de los entrenamientos planeados."
+   },
+   "suggest": {
+    "en": "Message them",
+    "es": "Escribirle"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Fri · Long run + core",
+    "es": "Vie · Long run + core"
+   },
+   "billing": {
+    "en": "Paid · $150/mo",
+    "es": "Pagado · $150/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "9a588aa5-88f8-4a78-a38f-873d6836b717",
+   "name": "Grace Owens",
+   "first": "Grace",
+   "initials": "GO",
+   "avatar": 14930613,
+   "programId": "839951cd-f80c-4cec-8e44-05283f151994",
+   "programName": "Start From Zero",
+   "week": 6,
+   "weeks": 8,
+   "kind": "risk",
+   "tone": "warn",
+   "adherence": 67,
+   "trainedThisWeek": false,
+   "programLabel": {
+    "en": "Week 6 of 8 · Start From Zero",
+    "es": "Semana 6 de 8 · Start From Zero"
+   },
+   "goal": {
+    "en": "Move without stiffness and lose 15 lb",
+    "es": "Move without stiffness and lose 15 lb"
+   },
+   "package": {
+    "en": "Online · $180/mo",
+    "es": "En línea · $180/mes"
+   },
+   "since": {
+    "en": "client since Aug 2026",
+    "es": "cliente desde agosto de 2026"
+   },
+   "weight": "169.4",
+   "weightChange": {
+    "en": "+0.1 lb since last weigh-in",
+    "es": "+0.1 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−0.4 lb total",
+    "es": "−0.4 lb en total"
+   },
+   "streak": "13",
+   "spark": [
+    2,
+    13.2,
+    24.4,
+    13.2,
+    30,
+    24.4
+   ],
+   "insight": {
+    "en": "Grace’s engagement is slipping: they missed 2 workouts in two weeks, skipped last week’s check-in, is messaging far less than usual and their weight has stalled. Nothing alarming, but a personal touch now is cheaper than a win-back later. They’re 45 days in, which is when early dropouts usually happen.",
+    "es": "Grace’s engagement is slipping: they missed 2 workouts in two weeks, skipped last week’s check-in, is messaging far less than usual and their weight has stalled. Nothing alarming, but a personal touch now is cheaper than a win-back later. They’re 45 days in, which is when early dropouts usually happen."
+   },
+   "suggest": {
+    "en": "Open the drafted message",
+    "es": "Abrir el mensaje redactado"
+   },
+   "suggestTarget": "queue",
+   "next": {
+    "en": "Fri · Full Body C",
+    "es": "Vie · Full Body C"
+   },
+   "billing": {
+    "en": "Paid · $180/mo",
+    "es": "Pagado · $180/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "attention"
+   ],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "a8dc6169-f6aa-49bc-829f-faa2dad8ba7f",
+   "name": "Hannah Lee",
+   "first": "Hannah",
+   "initials": "HL",
+   "avatar": 13227746,
+   "programId": "16ecc5f9-be81-44bf-8fab-958271be0b19",
+   "programName": "Fat Loss Foundations",
+   "week": 5,
+   "weeks": 8,
+   "kind": "overdue",
+   "tone": "warn",
+   "adherence": 81,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 5 of 8 · Fat Loss Foundations",
+    "es": "Semana 5 de 8 · Fat Loss Foundations"
+   },
+   "goal": {
+    "en": "Lose 10 lb and feel stronger",
+    "es": "Lose 10 lb and feel stronger"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Sep 2026",
+    "es": "cliente desde septiembre de 2026"
+   },
+   "weight": "154.4",
+   "weightChange": {
+    "en": "−0.4 lb since last weigh-in",
+    "es": "−0.4 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−3 lb total",
+    "es": "−3 lb en total"
+   },
+   "streak": "17",
+   "spark": [
+    2,
+    7.6,
+    13.2,
+    18.8,
+    20.7,
+    26.3,
+    30
+   ],
+   "insight": {
+    "en": "Hannah’s last payment didn’t go through. A friendly reminder usually fixes it within a day.",
+    "es": "El último pago de Hannah no pasó. Un recordatorio amable suele resolverlo en un día."
+   },
+   "suggest": {
+    "en": "Open payments",
+    "es": "Abrir pagos"
+   },
+   "suggestTarget": "payments",
+   "next": {
+    "en": "Thu · Lower Body B",
+    "es": "Jue · Lower Body B"
+   },
+   "billing": {
+    "en": "Payment due",
+    "es": "Pago pendiente"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "attention"
+   ],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "3b037633-5b2c-46ad-9be1-d5f7bfa72d86",
+   "name": "Jamal Wright",
+   "first": "Jamal",
+   "initials": "JW",
+   "avatar": 14214083,
+   "programId": "b15db89e-7eca-473e-bfe6-7c0cdac1a51d",
+   "programName": "Vertical Jump Program",
+   "week": 4,
+   "weeks": 8,
+   "kind": "ok",
+   "tone": "good",
+   "adherence": 92,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 4 of 8 · Vertical Jump Program",
+    "es": "Semana 4 de 8 · Vertical Jump Program"
+   },
+   "goal": {
+    "en": "Dunk a basketball (+6 in vertical)",
+    "es": "Dunk a basketball (+6 in vertical)"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Sep 2026",
+    "es": "cliente desde septiembre de 2026"
+   },
+   "weight": "183.2",
+   "weightChange": {
+    "en": "−0.2 lb since last weigh-in",
+    "es": "−0.2 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−0.8 lb total",
+    "es": "−0.8 lb en total"
+   },
+   "streak": "11",
+   "spark": [
+    2,
+    16,
+    23,
+    30
+   ],
+   "insight": {
+    "en": "Jamal is on track: 92% of planned workouts done lately.",
+    "es": "Jamal va al día: 92% de los entrenamientos planeados."
+   },
+   "suggest": {
+    "en": "Message them",
+    "es": "Escribirle"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Fri · Jump C",
+    "es": "Vie · Jump C"
+   },
+   "billing": {
+    "en": "Paid · $150/mo",
+    "es": "Pagado · $150/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "d02e54d0-facf-4869-868b-8fbb48db255b",
+   "name": "Kevin Shah",
+   "first": "Kevin",
+   "initials": "KS",
+   "avatar": 14469599,
+   "programId": "16ecc5f9-be81-44bf-8fab-958271be0b19",
+   "programName": "Fat Loss Foundations",
+   "week": 2,
+   "weeks": 8,
+   "kind": "risk",
+   "tone": "warn",
+   "adherence": 75,
+   "trainedThisWeek": false,
+   "programLabel": {
+    "en": "Week 2 of 8 · Fat Loss Foundations",
+    "es": "Semana 2 de 8 · Fat Loss Foundations"
+   },
+   "goal": {
+    "en": "Lose 30 lb",
+    "es": "Lose 30 lb"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Sep 2026",
+    "es": "cliente desde septiembre de 2026"
+   },
+   "weight": "246.4",
+   "weightChange": {
+    "en": "−1.6 lb since last weigh-in",
+    "es": "−1.6 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−1.6 lb total",
+    "es": "−1.6 lb en total"
+   },
+   "streak": "6",
+   "spark": [
+    2,
+    30
+   ],
+   "insight": {
+    "en": "Kevin’s engagement is slipping: they missed 2 workouts in two weeks, skipped last week’s check-in and their last payment failed. Nothing alarming, but a personal touch now is cheaper than a win-back later. They’re 15 days in, which is when early dropouts usually happen.",
+    "es": "Kevin’s engagement is slipping: they missed 2 workouts in two weeks, skipped last week’s check-in and their last payment failed. Nothing alarming, but a personal touch now is cheaper than a win-back later. They’re 15 days in, which is when early dropouts usually happen."
+   },
+   "suggest": {
+    "en": "Open the drafted message",
+    "es": "Abrir el mensaje redactado"
+   },
+   "suggestTarget": "queue",
+   "next": {
+    "en": "Thu · Lower Body B",
+    "es": "Jue · Lower Body B"
+   },
+   "billing": {
+    "en": "Last payment failed",
+    "es": "El último pago falló"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "attention"
+   ],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "340cd413-e335-416f-bf05-031230832d39",
+   "name": "Lauren Mitchell",
+   "first": "Lauren",
+   "initials": "LM",
+   "avatar": 13227746,
+   "programId": "839951cd-f80c-4cec-8e44-05283f151994",
+   "programName": "Start From Zero",
+   "week": 5,
+   "weeks": 8,
+   "kind": "paused",
+   "tone": "muted",
+   "adherence": 100,
+   "trainedThisWeek": false,
+   "programLabel": {
+    "en": "Week 5 of 8 · Start From Zero",
+    "es": "Semana 5 de 8 · Start From Zero"
+   },
+   "goal": {
+    "en": "Stay consistent while traveling",
+    "es": "Stay consistent while traveling"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since May 2026",
+    "es": "cliente desde mayo de 2026"
+   },
+   "weight": "160.4",
+   "weightChange": {
+    "en": "+0.2 lb since last weigh-in",
+    "es": "+0.2 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−1.6 lb total",
+    "es": "−1.6 lb en total"
+   },
+   "streak": "62",
+   "spark": [
+    2,
+    14.7,
+    22.4,
+    24.9,
+    30,
+    27.5,
+    24.9,
+    22.4
+   ],
+   "insight": {
+    "en": "Lauren is paused.",
+    "es": "Lauren está en pausa."
+   },
+   "suggest": {
+    "en": "Message them",
+    "es": "Escribirle"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Nothing scheduled",
+    "es": "Nada programado"
+   },
+   "billing": {
+    "en": "Billing paused",
+    "es": "Cobro en pausa"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "paused"
+   ],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "cf1d63a5-1261-4ada-aae8-f5bbf223205b",
+   "name": "Marcus Johnson",
+   "first": "Marcus",
+   "initials": "MJ",
+   "avatar": 13623491,
+   "programId": "16ecc5f9-be81-44bf-8fab-958271be0b19",
+   "programName": "Fat Loss Foundations",
+   "week": 3,
+   "weeks": 8,
+   "kind": "risk",
+   "tone": "crit",
+   "adherence": 36,
+   "trainedThisWeek": false,
+   "programLabel": {
+    "en": "Week 3 of 8 · Fat Loss Foundations",
+    "es": "Semana 3 de 8 · Fat Loss Foundations"
+   },
+   "goal": {
+    "en": "Drop 25 lb before his wedding in June",
+    "es": "Drop 25 lb before his wedding in June"
+   },
+   "package": {
+    "en": "Hybrid · $229/mo",
+    "es": "Híbrido · $229/mes"
+   },
+   "since": {
+    "en": "client since Sep 2026",
+    "es": "cliente desde septiembre de 2026"
+   },
+   "weight": "236.0",
+   "weightChange": {
+    "en": "−0.1 lb since last weigh-in",
+    "es": "−0.1 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−0.1 lb total",
+    "es": "−0.1 lb en total"
+   },
+   "streak": "5",
+   "spark": [
+    2,
+    30
+   ],
+   "insight": {
+    "en": "Marcus is one of the clients most likely to cancel: they missed 5 workouts in two weeks, hasn’t checked in for 2 weeks, their last payment failed and their recent messages sound doubtful. They’re 25 days in, which is when early dropouts usually happen.",
+    "es": "Marcus is one of the clients most likely to cancel: they missed 5 workouts in two weeks, hasn’t checked in for 2 weeks, their last payment failed and their recent messages sound doubtful. They’re 25 days in, which is when early dropouts usually happen."
+   },
+   "suggest": {
+    "en": "Open the drafted message",
+    "es": "Abrir el mensaje redactado"
+   },
+   "suggestTarget": "queue",
+   "next": {
+    "en": "Thu · Lower Body B",
+    "es": "Jue · Lower Body B"
+   },
+   "billing": {
+    "en": "Last payment failed",
+    "es": "El último pago falló"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "attention"
+   ],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+   "name": "Mike Torres",
+   "first": "Mike",
+   "initials": "MT",
+   "avatar": 13623491,
+   "programId": "16ecc5f9-be81-44bf-8fab-958271be0b19",
+   "programName": "Fat Loss Foundations",
+   "week": 6,
+   "weeks": 8,
+   "kind": "checkin",
+   "tone": "warn",
+   "adherence": 75,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 6 of 8 · Fat Loss Foundations",
+    "es": "Semana 6 de 8 · Fat Loss Foundations"
+   },
+   "goal": {
+    "en": "Lose 15 lb and keep his strength",
+    "es": "Lose 15 lb and keep his strength"
+   },
+   "package": {
+    "en": "Online · $180/mo",
+    "es": "En línea · $180/mes"
+   },
+   "since": {
+    "en": "client since Jul 2026",
+    "es": "cliente desde julio de 2026"
+   },
+   "weight": "205.4",
+   "weightChange": {
+    "en": "−1.4 lb since last weigh-in",
+    "es": "−1.4 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−8.6 lb total",
+    "es": "−8.6 lb en total"
+   },
+   "streak": "34",
+   "spark": [
+    2,
+    6.6,
+    9.2,
+    13.7,
+    15.3,
+    20.9,
+    25.4,
+    30
+   ],
+   "insight": {
+    "en": "Mike sent this week’s check-in. Assist drafted a summary and a reply.",
+    "es": "Mike envió el check-in de esta semana. Assist redactó un resumen y una respuesta."
+   },
+   "suggest": {
+    "en": "Open their check-in",
+    "es": "Abrir su check-in"
+   },
+   "suggestTarget": "checkin",
+   "next": {
+    "en": "Thu · Lower Body B",
+    "es": "Jue · Lower Body B"
+   },
+   "billing": {
+    "en": "Paid · $180/mo",
+    "es": "Pagado · $180/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "attention"
+   ],
+   "unread": 1,
+   "checkInId": "80dac11c-d1cc-4242-9b16-2461ad8d5886"
+  },
+  {
+   "id": "728be919-93a0-4515-90f3-6342db78db63",
+   "name": "Nora Fitzgerald",
+   "first": "Nora",
+   "initials": "NF",
+   "avatar": 13227746,
+   "programId": "16ecc5f9-be81-44bf-8fab-958271be0b19",
+   "programName": "Fat Loss Foundations",
+   "week": 8,
+   "weeks": 8,
+   "kind": "paused",
+   "tone": "muted",
+   "adherence": null,
+   "trainedThisWeek": false,
+   "programLabel": {
+    "en": "Week 8 of 8 · Fat Loss Foundations",
+    "es": "Semana 8 de 8 · Fat Loss Foundations"
+   },
+   "goal": {
+    "en": "Lose 12 lb",
+    "es": "Lose 12 lb"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Mar 2026",
+    "es": "cliente desde marzo de 2026"
+   },
+   "weight": "160.0",
+   "weightChange": {
+    "en": "−0.2 lb since last weigh-in",
+    "es": "−0.2 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−8 lb total",
+    "es": "−8 lb en total"
+   },
+   "streak": "97",
+   "spark": [
+    2,
+    9,
+    15.3,
+    20.2,
+    25.1,
+    27.2,
+    29.3,
+    30
+   ],
+   "insight": {
+    "en": "Nora is paused.",
+    "es": "Nora está en pausa."
+   },
+   "suggest": {
+    "en": "Message them",
+    "es": "Escribirle"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Nothing scheduled",
+    "es": "Nada programado"
+   },
+   "billing": {
+    "en": "Cancelled",
+    "es": "Cancelado"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "paused"
+   ],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "ecfa0694-2fe3-4330-b24c-ffc788de650b",
+   "name": "Olivia Brooks",
+   "first": "Olivia",
+   "initials": "OB",
+   "avatar": 14469599,
+   "programId": "65bbb422-b623-4fdd-8e4e-1fa90559ba86",
+   "programName": "Hybrid Athlete",
+   "week": 6,
+   "weeks": 12,
+   "kind": "ok",
+   "tone": "good",
+   "adherence": 81,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 6 of 12 · Hybrid Athlete",
+    "es": "Semana 6 de 12 · Hybrid Athlete"
+   },
+   "goal": {
+    "en": "Half marathon and a stronger core",
+    "es": "Half marathon and a stronger core"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Jul 2026",
+    "es": "cliente desde julio de 2026"
+   },
+   "weight": "144.8",
+   "weightChange": {
+    "en": "−0.3 lb since last weigh-in",
+    "es": "−0.3 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−1.2 lb total",
+    "es": "−1.2 lb en total"
+   },
+   "streak": "27",
+   "spark": [
+    2,
+    6.7,
+    11.3,
+    4.3,
+    20.7,
+    25.3,
+    23,
+    30
+   ],
+   "insight": {
+    "en": "Olivia is on track: 81% of planned workouts done lately.",
+    "es": "Olivia va al día: 81% de los entrenamientos planeados."
+   },
+   "suggest": {
+    "en": "Message them",
+    "es": "Escribirle"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Thu · Upper strength",
+    "es": "Jue · Upper strength"
+   },
+   "billing": {
+    "en": "Paid · $150/mo",
+    "es": "Pagado · $150/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "10170450-8ea0-423c-8573-29b48b5a03ca",
+   "name": "Priya Patel",
+   "first": "Priya",
+   "initials": "PP",
+   "avatar": 12836051,
+   "programId": "839951cd-f80c-4cec-8e44-05283f151994",
+   "programName": "Start From Zero",
+   "week": 1,
+   "weeks": 8,
+   "kind": "new",
+   "tone": "info",
+   "adherence": 67,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 1 of 8 · Start From Zero",
+    "es": "Semana 1 de 8 · Start From Zero"
+   },
+   "goal": {
+    "en": "Learn to lift with confidence",
+    "es": "Learn to lift with confidence"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Oct 2026",
+    "es": "cliente desde octubre de 2026"
+   },
+   "weight": "151.8",
+   "weightChange": {
+    "en": "−0.2 lb since last weigh-in",
+    "es": "−0.2 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−0.2 lb total",
+    "es": "−0.2 lb en total"
+   },
+   "streak": "2",
+   "spark": [
+    2,
+    30
+   ],
+   "insight": {
+    "en": "Priya is new. A quick hello in the first week helps a lot.",
+    "es": "Priya es nuevo. Un saludo en la primera semana ayuda mucho."
+   },
+   "suggest": {
+    "en": "Say hi",
+    "es": "Saludar"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Fri · Full Body C",
+    "es": "Vie · Full Body C"
+   },
+   "billing": {
+    "en": "Paid · $150/mo",
+    "es": "Pagado · $150/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "new"
+   ],
+   "unread": 1,
+   "checkInId": null
+  },
+  {
+   "id": "bb78606e-0b65-43e9-a172-f5f91717910a",
+   "name": "Sam Rivera",
+   "first": "Sam",
+   "initials": "SR",
+   "avatar": 15190462,
+   "programId": "780f67f8-d38d-4e37-84c3-c3cc74afe2e6",
+   "programName": "Strength Base",
+   "week": 11,
+   "weeks": 12,
+   "kind": "ok",
+   "tone": "good",
+   "adherence": 88,
+   "trainedThisWeek": true,
+   "programLabel": {
+    "en": "Week 11 of 12 · Strength Base",
+    "es": "Semana 11 de 12 · Strength Base"
+   },
+   "goal": {
+    "en": "Bench press 225 lb",
+    "es": "Bench press 225 lb"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Jul 2026",
+    "es": "cliente desde julio de 2026"
+   },
+   "weight": "179.5",
+   "weightChange": {
+    "en": "+0.3 lb since last weigh-in",
+    "es": "+0.3 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "+3.5 lb total",
+    "es": "+3.5 lb en total"
+   },
+   "streak": "40",
+   "spark": [
+    30,
+    23.6,
+    20.4,
+    14.8,
+    10.8,
+    9.2,
+    4.4,
+    2
+   ],
+   "insight": {
+    "en": "Sam is on track: 88% of planned workouts done lately.",
+    "es": "Sam va al día: 88% de los entrenamientos planeados."
+   },
+   "suggest": {
+    "en": "Message them",
+    "es": "Escribirle"
+   },
+   "suggestTarget": "thread",
+   "next": {
+    "en": "Thu · Deadlift day",
+    "es": "Jue · Deadlift day"
+   },
+   "billing": {
+    "en": "Paid · $150/mo",
+    "es": "Pagado · $150/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "9652fb57-fbf2-47b9-a7bb-fda6fa6d23cd",
+   "name": "Sarah Kim",
+   "first": "Sarah",
+   "initials": "SK",
+   "avatar": 13031142,
+   "programId": "780f67f8-d38d-4e37-84c3-c3cc74afe2e6",
+   "programName": "Strength Base",
+   "week": 4,
+   "weeks": 12,
+   "kind": "risk",
+   "tone": "warn",
+   "adherence": 50,
+   "trainedThisWeek": false,
+   "programLabel": {
+    "en": "Week 4 of 12 · Strength Base",
+    "es": "Semana 4 de 12 · Strength Base"
+   },
+   "goal": {
+    "en": "Deadlift 1.5× bodyweight (210 lb)",
+    "es": "Deadlift 1.5× bodyweight (210 lb)"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Aug 2026",
+    "es": "cliente desde agosto de 2026"
+   },
+   "weight": "141.3",
+   "weightChange": {
+    "en": "−0.2 lb since last weigh-in",
+    "es": "−0.2 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "+0.3 lb total",
+    "es": "+0.3 lb en total"
+   },
+   "streak": "14",
+   "spark": [
+    23,
+    9,
+    30,
+    16,
+    2,
+    19.5,
+    5.5,
+    12.5
+   ],
+   "insight": {
+    "en": "Sarah’s engagement is slipping: they missed 3 workouts in two weeks, skipped last week’s check-in and is messaging far less than usual. Nothing alarming, but a personal touch now is cheaper than a win-back later.",
+    "es": "Sarah’s engagement is slipping: they missed 3 workouts in two weeks, skipped last week’s check-in and is messaging far less than usual. Nothing alarming, but a personal touch now is cheaper than a win-back later."
+   },
+   "suggest": {
+    "en": "Open the drafted message",
+    "es": "Abrir el mensaje redactado"
+   },
+   "suggestTarget": "queue",
+   "next": {
+    "en": "Thu · Deadlift day",
+    "es": "Jue · Deadlift day"
+   },
+   "billing": {
+    "en": "Paid · $150/mo",
+    "es": "Pagado · $150/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "attention"
+   ],
+   "unread": 0,
+   "checkInId": null
+  },
+  {
+   "id": "4295495c-1ba2-4ea3-82aa-90d4aa27504e",
+   "name": "Tom Becker",
+   "first": "Tom",
+   "initials": "TB",
+   "avatar": 14930613,
+   "programId": "16ecc5f9-be81-44bf-8fab-958271be0b19",
+   "programName": "Fat Loss Foundations",
+   "week": 8,
+   "weeks": 8,
+   "kind": "risk",
+   "tone": "warn",
+   "adherence": 71,
+   "trainedThisWeek": false,
+   "programLabel": {
+    "en": "Week 8 of 8 · Fat Loss Foundations",
+    "es": "Semana 8 de 8 · Fat Loss Foundations"
+   },
+   "goal": {
+    "en": "Lose 20 lb",
+    "es": "Lose 20 lb"
+   },
+   "package": {
+    "en": "Online · $150/mo",
+    "es": "En línea · $150/mes"
+   },
+   "since": {
+    "en": "client since Jun 2026",
+    "es": "cliente desde junio de 2026"
+   },
+   "weight": "201.2",
+   "weightChange": {
+    "en": "−0.4 lb since last weigh-in",
+    "es": "−0.4 lb desde el último pesaje"
+   },
+   "weightTotal": {
+    "en": "−7.8 lb total",
+    "es": "−7.8 lb en total"
+   },
+   "streak": "31",
+   "spark": [
+    2,
+    11.3,
+    20.7,
+    27.5,
+    29.3,
+    30,
+    28.6,
+    30
+   ],
+   "insight": {
+    "en": "Tom’s engagement is slipping: they missed 2 workouts in two weeks, is messaging far less than usual, their recent messages sound doubtful and their weight has stalled. Nothing alarming, but a personal touch now is cheaper than a win-back later.",
+    "es": "Tom’s engagement is slipping: they missed 2 workouts in two weeks, is messaging far less than usual, their recent messages sound doubtful and their weight has stalled. Nothing alarming, but a personal touch now is cheaper than a win-back later."
+   },
+   "suggest": {
+    "en": "Open the drafted message",
+    "es": "Abrir el mensaje redactado"
+   },
+   "suggestTarget": "queue",
+   "next": {
+    "en": "Nothing scheduled",
+    "es": "Nada programado"
+   },
+   "billing": {
+    "en": "Paid · $150/mo",
+    "es": "Pagado · $150/mes"
+   },
+   "nutritionNote": {
+    "en": "—",
+    "es": "—"
+   },
+   "noLogs": false,
+   "lowProtein": false,
+   "filters": [
+    "attention"
+   ],
+   "unread": 0,
+   "checkInId": "c073b5eb-7ce4-4575-b36a-0d43ff7dc73e"
+  }
+ ],
+ "threads": [
+  {
+   "id": "14da9e79-b795-49a2-b468-cbd71d4893c7",
+   "unread": true,
+   "last": {
+    "fromMe": false,
+    "text": "Also my left knee has been bugging me on squats, mentioned it in my check-in.",
+    "time": {
+     "en": "8:32 PM",
+     "es": "8:32 p.m."
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "10170450-8ea0-423c-8573-29b48b5a03ca",
+   "unread": true,
+   "last": {
+    "fromMe": false,
+    "text": "Day 2 felt WAY better. Is it ok that my glutes are sore?",
+    "time": {
+     "en": "8:32 PM",
+     "es": "8:32 p.m."
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+   "unread": true,
+   "last": {
+    "fromMe": false,
+    "text": "Sent my check-in. Legs are still wrecked from Thursday, is that normal?",
+    "time": {
+     "en": "8:32 PM",
+     "es": "8:32 p.m."
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "4295495c-1ba2-4ea3-82aa-90d4aa27504e",
+   "unread": false,
+   "last": {
+    "fromMe": false,
+    "text": "Scale still stuck. Starting to get annoyed honestly.",
+    "time": {
+     "en": "Yesterday",
+     "es": "Ayer"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "4bd3caf9-2f0a-461b-baba-1c17e2ed2688",
+   "unread": false,
+   "last": {
+    "fromMe": true,
+    "text": "Huge. Sub-25 is coming this block.",
+    "time": {
+     "en": "Yesterday",
+     "es": "Ayer"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "ecfa0694-2fe3-4330-b24c-ffc788de650b",
+   "unread": false,
+   "last": {
+    "fromMe": false,
+    "text": "Done!",
+    "time": {
+     "en": "Tue",
+     "es": "Mar"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "a8dc6169-f6aa-49bc-829f-faa2dad8ba7f",
+   "unread": false,
+   "last": {
+    "fromMe": false,
+    "text": "Quick question answered, thanks!",
+    "time": {
+     "en": "Tue",
+     "es": "Mar"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "e0d8ffb0-6d16-496c-b142-a55f8b141e36",
+   "unread": false,
+   "last": {
+    "fromMe": false,
+    "text": "Felt good today.",
+    "time": {
+     "en": "Tue",
+     "es": "Mar"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "bb78606e-0b65-43e9-a172-f5f91717910a",
+   "unread": false,
+   "last": {
+    "fromMe": false,
+    "text": "Thanks!",
+    "time": {
+     "en": "Tue",
+     "es": "Mar"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "3b037633-5b2c-46ad-9be1-d5f7bfa72d86",
+   "unread": false,
+   "last": {
+    "fromMe": false,
+    "text": "Sounds good.",
+    "time": {
+     "en": "Tue",
+     "es": "Mar"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "9a588aa5-88f8-4a78-a38f-873d6836b717",
+   "unread": false,
+   "last": {
+    "fromMe": false,
+    "text": "Got it, thanks coach.",
+    "time": {
+     "en": "Sat",
+     "es": "Sáb"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "9652fb57-fbf2-47b9-a7bb-fda6fa6d23cd",
+   "unread": false,
+   "last": {
+    "fromMe": false,
+    "text": "Sounds good.",
+    "time": {
+     "en": "Sat",
+     "es": "Sáb"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "cf1d63a5-1261-4ada-aae8-f5bbf223205b",
+   "unread": false,
+   "last": {
+    "fromMe": true,
+    "text": "I hear you. Let’s find a version of this that fits your week. Call Saturday?",
+    "time": {
+     "en": "Oct 5",
+     "es": "5 oct"
+    },
+    "isVoice": false
+   }
+  },
+  {
+   "id": "340cd413-e335-416f-bf05-031230832d39",
+   "unread": false,
+   "last": {
+    "fromMe": false,
+    "text": "Felt good today.",
+    "time": {
+     "en": "Oct 1",
+     "es": "1 oct"
+    },
+    "isVoice": false
+   }
+  }
+ ],
+ "checkIns": {
+  "toReview": [
+   {
+    "id": "ed2d99de-1b35-4074-b94f-7bc97b1b2c2a",
+    "clientId": "14da9e79-b795-49a2-b468-cbd71d4893c7",
+    "name": "Chris Nguyen",
+    "week": {
+     "en": "Weekly check-in",
+     "es": "Check-in semanal"
+    },
+    "when": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "flag": {
+     "en": "Mentions pain or a medical topic.",
+     "es": "Mentions pain or a medical topic."
+    },
+    "answers": [
+     {
+      "question": {
+       "en": "Weight",
+       "es": "Peso"
+      },
+      "answer": {
+       "en": "184.5 lb",
+       "es": "184.5 lb"
+      }
+     },
+     {
+      "question": {
+       "en": "Workouts",
+       "es": "Entrenamientos"
+      },
+      "answer": {
+       "en": "4 of 4",
+       "es": "4 de 4"
+      }
+     },
+     {
+      "question": {
+       "en": "Energy",
+       "es": "Energía"
+      },
+      "answer": {
+       "en": "7 / 10",
+       "es": "7 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Sleep",
+       "es": "Sueño"
+      },
+      "answer": {
+       "en": "7.5 h",
+       "es": "7.5 h"
+      }
+     },
+     {
+      "question": {
+       "en": "Stress",
+       "es": "Estrés"
+      },
+      "answer": {
+       "en": "4 / 10",
+       "es": "4 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Soreness",
+       "es": "Dolor muscular"
+      },
+      "answer": {
+       "en": "5 / 10",
+       "es": "5 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Nutrition",
+       "es": "Nutrición"
+      },
+      "answer": {
+       "en": "8 / 10",
+       "es": "8 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Mood",
+       "es": "Ánimo"
+      },
+      "answer": {
+       "en": "7 / 10",
+       "es": "7 / 10"
+      }
+     }
+    ],
+    "note": {
+     "en": "Hit 285 for a clean triple. Left knee has been hurting on the way down in squats since Thursday, sharp-ish pain on the inside. Didn’t want to skip so I pushed through.",
+     "es": "Hit 285 for a clean triple. Left knee has been hurting on the way down in squats since Thursday, sharp-ish pain on the inside. Didn’t want to skip so I pushed through."
+    },
+    "summary": null,
+    "draft": null,
+    "insightId": null,
+    "food": {
+     "en": "No nutrition plan yet.",
+     "es": "Aún sin plan de nutrición."
+    },
+    "actions": [],
+    "status": "submitted"
+   },
+   {
+    "id": "c073b5eb-7ce4-4575-b36a-0d43ff7dc73e",
+    "clientId": "4295495c-1ba2-4ea3-82aa-90d4aa27504e",
+    "name": "Tom Becker",
+    "week": {
+     "en": "Weekly check-in",
+     "es": "Check-in semanal"
+    },
+    "when": {
+     "en": "Yesterday",
+     "es": "Ayer"
+    },
+    "flag": null,
+    "answers": [
+     {
+      "question": {
+       "en": "Weight",
+       "es": "Peso"
+      },
+      "answer": {
+       "en": "201.2 lb",
+       "es": "201.2 lb"
+      }
+     },
+     {
+      "question": {
+       "en": "Workouts",
+       "es": "Entrenamientos"
+      },
+      "answer": {
+       "en": "3 of 4",
+       "es": "3 de 4"
+      }
+     },
+     {
+      "question": {
+       "en": "Energy",
+       "es": "Energía"
+      },
+      "answer": {
+       "en": "6 / 10",
+       "es": "6 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Sleep",
+       "es": "Sueño"
+      },
+      "answer": {
+       "en": "6.9 h",
+       "es": "6.9 h"
+      }
+     },
+     {
+      "question": {
+       "en": "Stress",
+       "es": "Estrés"
+      },
+      "answer": {
+       "en": "7 / 10",
+       "es": "7 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Soreness",
+       "es": "Dolor muscular"
+      },
+      "answer": {
+       "en": "4 / 10",
+       "es": "4 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Nutrition",
+       "es": "Nutrición"
+      },
+      "answer": {
+       "en": "5 / 10",
+       "es": "5 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Mood",
+       "es": "Ánimo"
+      },
+      "answer": {
+       "en": "5 / 10",
+       "es": "5 / 10"
+      }
+     }
+    ],
+    "note": {
+     "en": "Scale hasn’t moved in a month and it’s frustrating. Was on the road Tue–Thu, ate out a lot. Still did 3 workouts in hotel gyms.",
+     "es": "Scale hasn’t moved in a month and it’s frustrating. Was on the road Tue–Thu, ate out a lot. Still did 3 workouts in hotel gyms."
+    },
+    "summary": null,
+    "draft": null,
+    "insightId": null,
+    "food": {
+     "en": "No nutrition plan yet.",
+     "es": "Aún sin plan de nutrición."
+    },
+    "actions": [],
+    "status": "submitted"
+   },
+   {
+    "id": "80dac11c-d1cc-4242-9b16-2461ad8d5886",
+    "clientId": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+    "name": "Mike Torres",
+    "week": {
+     "en": "Weekly check-in",
+     "es": "Check-in semanal"
+    },
+    "when": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "flag": null,
+    "answers": [
+     {
+      "question": {
+       "en": "Weight",
+       "es": "Peso"
+      },
+      "answer": {
+       "en": "205.4 lb",
+       "es": "205.4 lb"
+      }
+     },
+     {
+      "question": {
+       "en": "Workouts",
+       "es": "Entrenamientos"
+      },
+      "answer": {
+       "en": "3 of 4",
+       "es": "3 de 4"
+      }
+     },
+     {
+      "question": {
+       "en": "Energy",
+       "es": "Energía"
+      },
+      "answer": {
+       "en": "6 / 10",
+       "es": "6 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Sleep",
+       "es": "Sueño"
+      },
+      "answer": {
+       "en": "6.4 h",
+       "es": "6.4 h"
+      }
+     },
+     {
+      "question": {
+       "en": "Stress",
+       "es": "Estrés"
+      },
+      "answer": {
+       "en": "6 / 10",
+       "es": "6 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Soreness",
+       "es": "Dolor muscular"
+      },
+      "answer": {
+       "en": "8 / 10",
+       "es": "8 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Nutrition",
+       "es": "Nutrición"
+      },
+      "answer": {
+       "en": "7 / 10",
+       "es": "7 / 10"
+      }
+     },
+     {
+      "question": {
+       "en": "Mood",
+       "es": "Ánimo"
+      },
+      "answer": {
+       "en": "6 / 10",
+       "es": "6 / 10"
+      }
+     }
+    ],
+    "note": {
+     "en": "Good week overall. Legs were really sore after Thursday and stayed sore through the weekend. Work was crazy so sleep wasn’t great. Down another 1.4 lb though!",
+     "es": "Good week overall. Legs were really sore after Thursday and stayed sore through the weekend. Work was crazy so sleep wasn’t great. Down another 1.4 lb though!"
+    },
+    "summary": null,
+    "draft": null,
+    "insightId": null,
+    "food": {
+     "en": "No nutrition plan yet.",
+     "es": "Aún sin plan de nutrición."
+    },
+    "actions": [],
+    "status": "submitted"
+   }
+  ],
+  "reviewed": [
+   {
+    "clientId": "4bd3caf9-2f0a-461b-baba-1c17e2ed2688",
+    "name": "Elena García",
+    "when": {
+     "en": "Replied today",
+     "es": "Respondido hoy"
+    }
+   },
+   {
+    "clientId": "a8dc6169-f6aa-49bc-829f-faa2dad8ba7f",
+    "name": "Hannah Lee",
+    "when": {
+     "en": "Replied today",
+     "es": "Respondido hoy"
+    }
+   },
+   {
+    "clientId": "3b037633-5b2c-46ad-9be1-d5f7bfa72d86",
+    "name": "Jamal Wright",
+    "when": {
+     "en": "Replied yesterday",
+     "es": "Respondido ayer"
+    }
+   },
+   {
+    "clientId": "bb78606e-0b65-43e9-a172-f5f91717910a",
+    "name": "Sam Rivera",
+    "when": {
+     "en": "Replied yesterday",
+     "es": "Respondido ayer"
+    }
+   },
+   {
+    "clientId": "e0d8ffb0-6d16-496c-b142-a55f8b141e36",
+    "name": "Aisha Bello",
+    "when": {
+     "en": "Replied yesterday",
+     "es": "Respondido ayer"
+    }
+   },
+   {
+    "clientId": "24d4f31a-f468-4bbf-bd9f-a9fae8fa0340",
+    "name": "Diego Alvarez",
+    "when": {
+     "en": "Replied yesterday",
+     "es": "Respondido ayer"
+    }
+   },
+   {
+    "clientId": "14da9e79-b795-49a2-b468-cbd71d4893c7",
+    "name": "Chris Nguyen",
+    "when": {
+     "en": "Replied 6 days ago",
+     "es": "Respondido hace 6 días"
+    }
+   },
+   {
+    "clientId": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+    "name": "Mike Torres",
+    "when": {
+     "en": "Replied 6 days ago",
+     "es": "Respondido hace 6 días"
+    }
+   }
+  ],
+  "missing": [
+   {
+    "clientId": "9a588aa5-88f8-4a78-a38f-873d6836b717",
+    "why": {
+     "en": "Last check-in oct 7",
+     "es": "Último check-in 7 oct"
+    }
+   },
+   {
+    "clientId": "d02e54d0-facf-4869-868b-8fbb48db255b",
+    "why": {
+     "en": "Last check-in oct 8",
+     "es": "Último check-in 8 oct"
+    }
+   },
+   {
+    "clientId": "cf1d63a5-1261-4ada-aae8-f5bbf223205b",
+    "why": {
+     "en": "Last check-in sep 30",
+     "es": "Último check-in 30 sept"
+    }
+   },
+   {
+    "clientId": "ecfa0694-2fe3-4330-b24c-ffc788de650b",
+    "why": {
+     "en": "Last check-in oct 7",
+     "es": "Último check-in 7 oct"
+    }
+   },
+   {
+    "clientId": "10170450-8ea0-423c-8573-29b48b5a03ca",
+    "why": {
+     "en": "No check-in yet",
+     "es": "Aún sin check-in"
+    }
+   },
+   {
+    "clientId": "9652fb57-fbf2-47b9-a7bb-fda6fa6d23cd",
+    "why": {
+     "en": "Last check-in oct 4",
+     "es": "Último check-in 4 oct"
+    }
+   }
+  ]
+ },
+ "leads": {
+  "stats": {
+   "open": 7,
+   "pipeline": "$1,110",
+   "followUps": 2
+  },
+  "items": [
+   {
+    "id": "0a505dfb-e2de-4274-9075-4f4ef82e4d0f",
+    "name": "Jake Morris",
+    "initials": "JM",
+    "avatar": 12836051,
+    "source": {
+     "en": "Instagram DM",
+     "es": "DM de Instagram"
+    },
+    "when": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "interest": {
+     "en": "Get stronger for climbing",
+     "es": "Get stronger for climbing"
+    },
+    "stage": "new",
+    "draft": "Hi Jake, thanks for reaching out about get stronger for climbing! I’d love to hear more. Do you have 20 minutes this week for a free call? You can pick a time here: localhost:3000/coach/dani"
+   },
+   {
+    "id": "5e2657a0-d284-4d38-8106-31f358d59304",
+    "name": "Maria Lopez",
+    "initials": "ML",
+    "avatar": 13227746,
+    "source": {
+     "en": "Booking page",
+     "es": "Página de reservas"
+    },
+    "when": {
+     "en": "Today",
+     "es": "Hoy"
+    },
+    "interest": {
+     "en": "First 5K + strength",
+     "es": "First 5K + strength"
+    },
+    "stage": "new",
+    "draft": "Hi Maria, thanks for reaching out about first 5k + strength! I’d love to hear more. Do you have 20 minutes this week for a free call? You can pick a time here: localhost:3000/coach/dani"
+   },
+   {
+    "id": "897e75db-735d-4735-968e-2195977ea633",
+    "name": "Rachel Dunn",
+    "initials": "RD",
+    "avatar": 14214083,
+    "source": {
+     "en": "Booking page",
+     "es": "Página de reservas"
+    },
+    "when": {
+     "en": "Yesterday",
+     "es": "Ayer"
+    },
+    "interest": {
+     "en": "Lose 20 lb after second baby",
+     "es": "Lose 20 lb after second baby"
+    },
+    "stage": "booked",
+    "draft": "Hi Rachel, thanks for reaching out about lose 20 lb after second baby! I’d love to hear more. Do you have 20 minutes this week for a free call? You can pick a time here: localhost:3000/coach/dani"
+   },
+   {
+    "id": "dad15058-bd54-41c0-9c72-30d8b1542e83",
+    "name": "Ava Simmons",
+    "initials": "AS",
+    "avatar": 13623491,
+    "source": {
+     "en": "Instagram DM",
+     "es": "DM de Instagram"
+    },
+    "when": {
+     "en": "2 days ago",
+     "es": "hace 2 días"
+    },
+    "interest": {
+     "en": "Bridesmaid in May",
+     "es": "Bridesmaid in May"
+    },
+    "stage": "booked",
+    "draft": "Hi Ava, thanks for reaching out about bridesmaid in may! I’d love to hear more. Do you have 20 minutes this week for a free call? You can pick a time here: localhost:3000/coach/dani"
+   },
+   {
+    "id": "5182bad3-ff49-409c-83c0-9ac88cb9c7cd",
+    "name": "Tanya Brooks",
+    "initials": "TB",
+    "avatar": 13623491,
+    "source": {
+     "en": "Referral",
+     "es": "Recomendación"
+    },
+    "when": {
+     "en": "3 days ago",
+     "es": "hace 3 días"
+    },
+    "interest": {
+     "en": "Tone up for a trip",
+     "es": "Tone up for a trip"
+    },
+    "stage": "replied",
+    "draft": "Hi Tanya, thanks for reaching out about tone up for a trip! I’d love to hear more. Do you have 20 minutes this week for a free call? You can pick a time here: localhost:3000/coach/dani"
+   },
+   {
+    "id": "b9f46c7d-41a7-4dda-906e-c6305ce670a6",
+    "name": "Will Chen",
+    "initials": "WC",
+    "avatar": 15190462,
+    "source": {
+     "en": "Google",
+     "es": "Google"
+    },
+    "when": {
+     "en": "5 days ago",
+     "es": "hace 5 días"
+    },
+    "interest": {
+     "en": "Back pain-free lifting",
+     "es": "Back pain-free lifting"
+    },
+    "stage": "replied",
+    "draft": "Hi Will, thanks for reaching out about back pain-free lifting! I’d love to hear more. Do you have 20 minutes this week for a free call? You can pick a time here: localhost:3000/coach/dani"
+   },
+   {
+    "id": "24d89ed0-18a3-408f-86ac-4a01ccd8d0d4",
+    "name": "Owen Park",
+    "initials": "OP",
+    "avatar": 12836051,
+    "source": {
+     "en": "Referral",
+     "es": "Recomendación"
+    },
+    "when": {
+     "en": "Oct 7",
+     "es": "7 oct"
+    },
+    "interest": {
+     "en": "Lose 15 lb",
+     "es": "Lose 15 lb"
+    },
+    "stage": "booked",
+    "draft": "Hi Owen, thanks for reaching out about lose 15 lb! I’d love to hear more. Do you have 20 minutes this week for a free call? You can pick a time here: localhost:3000/coach/dani"
+   }
+  ],
+  "bookingUrl": "localhost:3000/coach/dani"
+ },
+ "payments": {
+  "mrr": "$2,669",
+  "mrrNote": {
+   "en": "From 15 paying clients",
+   "es": "De 15 clientes que pagan"
+  },
+  "collected": "$2,140",
+  "outstanding": "$529",
+  "avg": "$178",
+  "failedCount": 2,
+  "onTime": "94%",
+  "attention": [
+   {
+    "id": "ab8b253c-712b-4999-8ac2-c22429b3ed7a",
+    "clientId": "d02e54d0-facf-4869-868b-8fbb48db255b",
+    "name": "Kevin Shah",
+    "initials": "KS",
+    "avatar": 14469599,
+    "sub": {
+     "en": "$150 failed today · reminder sent",
+     "es": "$150 falló hoy · recordatorio enviado"
+    },
+    "reminded": true
+   },
+   {
+    "id": "980c0a94-171c-4ff3-9373-478ae8628a6a",
+    "clientId": "cf1d63a5-1261-4ada-aae8-f5bbf223205b",
+    "name": "Marcus Johnson",
+    "initials": "MJ",
+    "avatar": 13623491,
+    "sub": {
+     "en": "$229 failed 2 days ago",
+     "es": "$229 falló hace 2 días"
+    },
+    "reminded": false
+   }
+  ],
+  "reminderDraft": "Hi {first}, your last payment didn’t go through. You can update your card in the app under Me → Billing. Thanks!",
+  "packages": [
+   {
+    "name": "Coached Online",
+    "meta": {
+     "en": "10 clients · $150/mo",
+     "es": "10 clientes · $150/mes"
+    },
+    "total": "$1,500",
+    "value": 150000
+   },
+   {
+    "name": "Coached Plus",
+    "meta": {
+     "en": "2 clients · $180/mo",
+     "es": "2 clientes · $180/mes"
+    },
+    "total": "$360",
+    "value": 36000
+   },
+   {
+    "name": "In-person 8-pack",
+    "meta": {
+     "en": "1 client · $320/mo",
+     "es": "1 cliente · $320/mes"
+    },
+    "total": "$320",
+    "value": 32000
+   },
+   {
+    "name": "Hybrid 2×/week",
+    "meta": {
+     "en": "1 client · $260/mo",
+     "es": "1 cliente · $260/mes"
+    },
+    "total": "$260",
+    "value": 26000
+   },
+   {
+    "name": "Private 1:1",
+    "meta": {
+     "en": "1 client · $229/mo",
+     "es": "1 cliente · $229/mes"
+    },
+    "total": "$229",
+    "value": 22900
+   },
+   {
+    "name": "14-day trial",
+    "meta": {
+     "en": "1 client · $0/once",
+     "es": "1 cliente · $0/pago único"
+    },
+    "total": "$0",
+    "value": 0
+   },
+   {
+    "name": "Single session",
+    "meta": {
+     "en": "0 clients · $75/once",
+     "es": "0 clientes · $75/pago único"
+    },
+    "total": "$0",
+    "value": 0
+   }
+  ],
+  "recent": [
+   {
+    "clientId": "4295495c-1ba2-4ea3-82aa-90d4aa27504e",
+    "name": "Tom Becker",
+    "initials": "TB",
+    "avatar": 14930613,
+    "when": {
+     "en": "Oct 15",
+     "es": "15 oct"
+    },
+    "amount": "$150"
+   },
+   {
+    "clientId": "3b037633-5b2c-46ad-9be1-d5f7bfa72d86",
+    "name": "Jamal Wright",
+    "initials": "JW",
+    "avatar": 14214083,
+    "when": {
+     "en": "Oct 14",
+     "es": "14 oct"
+    },
+    "amount": "$150"
+   },
+   {
+    "clientId": "9a588aa5-88f8-4a78-a38f-873d6836b717",
+    "name": "Grace Owens",
+    "initials": "GO",
+    "avatar": 14930613,
+    "when": {
+     "en": "Oct 14",
+     "es": "14 oct"
+    },
+    "amount": "$180"
+   },
+   {
+    "clientId": "9652fb57-fbf2-47b9-a7bb-fda6fa6d23cd",
+    "name": "Sarah Kim",
+    "initials": "SK",
+    "avatar": 13031142,
+    "when": {
+     "en": "Oct 13",
+     "es": "13 oct"
+    },
+    "amount": "$150"
+   },
+   {
+    "clientId": "ecfa0694-2fe3-4330-b24c-ffc788de650b",
+    "name": "Olivia Brooks",
+    "initials": "OB",
+    "avatar": 14469599,
+    "when": {
+     "en": "Oct 13",
+     "es": "13 oct"
+    },
+    "amount": "$150"
+   },
+   {
+    "clientId": "14da9e79-b795-49a2-b468-cbd71d4893c7",
+    "name": "Chris Nguyen",
+    "initials": "CN",
+    "avatar": 13227746,
+    "when": {
+     "en": "Oct 11",
+     "es": "11 oct"
+    },
+    "amount": "$150"
+   },
+   {
+    "clientId": "bb78606e-0b65-43e9-a172-f5f91717910a",
+    "name": "Sam Rivera",
+    "initials": "SR",
+    "avatar": 15190462,
+    "when": {
+     "en": "Oct 11",
+     "es": "11 oct"
+    },
+    "amount": "$150"
+   },
+   {
+    "clientId": "24d4f31a-f468-4bbf-bd9f-a9fae8fa0340",
+    "name": "Diego Alvarez",
+    "initials": "DA",
+    "avatar": 13031142,
+    "when": {
+     "en": "Oct 11",
+     "es": "11 oct"
+    },
+    "amount": "$260"
+   },
+   {
+    "clientId": "4bd3caf9-2f0a-461b-baba-1c17e2ed2688",
+    "name": "Elena García",
+    "initials": "EG",
+    "avatar": 13227746,
+    "when": {
+     "en": "Oct 10",
+     "es": "10 oct"
+    },
+    "amount": "$150"
+   },
+   {
+    "clientId": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+    "name": "Mike Torres",
+    "initials": "MT",
+    "avatar": 13623491,
+    "when": {
+     "en": "Oct 10",
+     "es": "10 oct"
+    },
+    "amount": "$180"
+   }
+  ]
+ },
+ "programs": [
+  {
+   "id": "b15db89e-7eca-473e-bfe6-7c0cdac1a51d",
+   "name": "Vertical Jump Program",
+   "meta": {
+    "en": "8 weeks · 3 days a week · Intermediate",
+    "es": "8 semanas · 3 días por semana · Intermediate"
+   },
+   "tag": {
+    "en": "1 client",
+    "es": "1 cliente"
+   },
+   "tone": "good",
+   "kind": "active",
+   "clients": 1
+  },
+  {
+   "id": "e13441cb-b3fc-4c7c-bd88-10239a57e0fb",
+   "name": "Athletic Base",
+   "meta": {
+    "en": "8 weeks · 3 days a week · Intermediate",
+    "es": "8 semanas · 3 días por semana · Intermediate"
+   },
+   "tag": {
+    "en": "Assist draft",
+    "es": "Borrador de Assist"
+   },
+   "tone": "ai",
+   "kind": "assistDraft",
+   "clients": 1
+  },
+  {
+   "id": "e90d6765-90d5-4415-9192-8d9942dadb09",
+   "name": "Upper/Lower Builder",
+   "meta": {
+    "en": "10 weeks · 4 days a week · Intermediate",
+    "es": "10 semanas · 4 días por semana · Intermediate"
+   },
+   "tag": {
+    "en": "1 client",
+    "es": "1 cliente"
+   },
+   "tone": "good",
+   "kind": "active",
+   "clients": 1
+  },
+  {
+   "id": "65bbb422-b623-4fdd-8e4e-1fa90559ba86",
+   "name": "Hybrid Athlete",
+   "meta": {
+    "en": "12 weeks · 4 days a week · Intermediate",
+    "es": "12 semanas · 4 días por semana · Intermediate"
+   },
+   "tag": {
+    "en": "2 clients",
+    "es": "2 clientes"
+   },
+   "tone": "good",
+   "kind": "active",
+   "clients": 2
+  },
+  {
+   "id": "839951cd-f80c-4cec-8e44-05283f151994",
+   "name": "Start From Zero",
+   "meta": {
+    "en": "8 weeks · 3 days a week · Beginner",
+    "es": "8 semanas · 3 días por semana · Beginner"
+   },
+   "tag": {
+    "en": "Assist draft",
+    "es": "Borrador de Assist"
+   },
+   "tone": "ai",
+   "kind": "assistDraft",
+   "clients": 3
+  },
+  {
+   "id": "780f67f8-d38d-4e37-84c3-c3cc74afe2e6",
+   "name": "Strength Base",
+   "meta": {
+    "en": "12 weeks · 4 days a week · Intermediate",
+    "es": "12 semanas · 4 días por semana · Intermediate"
+   },
+   "tag": {
+    "en": "3 clients",
+    "es": "3 clientes"
+   },
+   "tone": "good",
+   "kind": "active",
+   "clients": 3
+  },
+  {
+   "id": "16ecc5f9-be81-44bf-8fab-958271be0b19",
+   "name": "Fat Loss Foundations",
+   "meta": {
+    "en": "8 weeks · 4 days a week · Beginner–Intermediate",
+    "es": "8 semanas · 4 días por semana · Beginner–Intermediate"
+   },
+   "tag": {
+    "en": "5 clients",
+    "es": "5 clientes"
+   },
+   "tone": "good",
+   "kind": "active",
+   "clients": 5
+  }
+ ],
+ "nutrition": {
+  "stats": [
+   {
+    "value": "11",
+    "label": {
+     "en": "On a plan",
+     "es": "Con plan"
+    }
+   },
+   {
+    "value": "63%",
+    "label": {
+     "en": "Protein days hit",
+     "es": "Días con proteína"
+    }
+   },
+   {
+    "value": "6",
+    "label": {
+     "en": "Logging 5+ days",
+     "es": "Registran 5+ días"
+    }
+   }
+  ],
+  "summary": {
+   "en": "11 clients have a nutrition plan. 6 clients logged food on 5 or more days this week, with 2 meal photos.",
+   "es": "11 clientes tienen plan de nutrición. 6 registraron comida 5 o más días esta semana, con 2 fotos de comidas."
+  },
+  "rows": [
+   {
+    "clientId": "e0d8ffb0-6d16-496c-b142-a55f8b141e36",
+    "percent": 83,
+    "label": {
+     "en": "5 of 6 days",
+     "es": "5 de 6 días"
+    }
+   },
+   {
+    "clientId": "4bd3caf9-2f0a-461b-baba-1c17e2ed2688",
+    "percent": 83,
+    "label": {
+     "en": "5 of 6 days",
+     "es": "5 de 6 días"
+    }
+   },
+   {
+    "clientId": "9a588aa5-88f8-4a78-a38f-873d6836b717",
+    "percent": 25,
+    "label": {
+     "en": "1 of 4 days",
+     "es": "1 de 4 días"
+    }
+   },
+   {
+    "clientId": "a8dc6169-f6aa-49bc-829f-faa2dad8ba7f",
+    "percent": 83,
+    "label": {
+     "en": "5 of 6 days",
+     "es": "5 de 6 días"
+    }
+   },
+   {
+    "clientId": "d02e54d0-facf-4869-868b-8fbb48db255b",
+    "percent": 0,
+    "label": {
+     "en": "0 of 4 days",
+     "es": "0 de 4 días"
+    }
+   },
+   {
+    "clientId": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+    "percent": 71,
+    "label": {
+     "en": "5 of 7 days",
+     "es": "5 de 7 días"
+    }
+   },
+   {
+    "clientId": "bb78606e-0b65-43e9-a172-f5f91717910a",
+    "percent": 100,
+    "label": {
+     "en": "5 of 5 days",
+     "es": "5 de 5 días"
+    }
+   },
+   {
+    "clientId": "9652fb57-fbf2-47b9-a7bb-fda6fa6d23cd",
+    "percent": 0,
+    "label": {
+     "en": "Nothing logged",
+     "es": "Nada registrado"
+    }
+   },
+   {
+    "clientId": "4295495c-1ba2-4ea3-82aa-90d4aa27504e",
+    "percent": 20,
+    "label": {
+     "en": "1 of 5 days",
+     "es": "1 de 5 días"
+    }
+   }
+  ],
+  "mealPlans": [
+   {
+    "id": "5c226efd-09dd-46eb-932e-b679a12c5966",
+    "name": "Muscle builder · 2,400 kcal",
+    "meta": {
+     "en": "2 days · 2,400 kcal · 1 client",
+     "es": "2 días · 2,400 kcal · 1 cliente"
+    }
+   }
+  ]
+ },
+ "automations": {
+  "items": [
+   {
+    "id": "866faa4c-8e89-4a1f-8803-0ee745c88273",
+    "name": {
+     "en": "Failed payment",
+     "es": "Pago fallido"
+    },
+    "detail": {
+     "en": "Tells you and sends a card-update reminder",
+     "es": "Te avisa y envía un recordatorio para actualizar la tarjeta"
+    },
+    "enabled": true
+   },
+   {
+    "id": "f5f7d80f-806f-440d-89ee-c83496d69190",
+    "name": {
+     "en": "Gone quiet",
+     "es": "Sin actividad"
+    },
+    "detail": {
+     "en": "Tells you when a client hasn’t opened the app in a while",
+     "es": "Te avisa cuando un cliente lleva días sin abrir la app"
+    },
+    "enabled": true
+   },
+   {
+    "id": "906161ee-fda2-4619-aab8-72bcfc00e5fe",
+    "name": {
+     "en": "Milestones",
+     "es": "Logros"
+    },
+    "detail": {
+     "en": "Assist drafts a congratulations at workout milestones",
+     "es": "Assist redacta una felicitación en cada logro"
+    },
+    "enabled": true
+   },
+   {
+    "id": "2299e257-d552-45c9-9c25-bb024bf7a99e",
+    "name": {
+     "en": "Missed workouts",
+     "es": "Entrenamientos perdidos"
+    },
+    "detail": {
+     "en": "Assist drafts a check-in message for you to approve",
+     "es": "Assist redacta un mensaje para que lo apruebes"
+    },
+    "enabled": true
+   },
+   {
+    "id": "7454df0d-3a71-427e-be69-11511816a772",
+    "name": {
+     "en": "Check-in reminder",
+     "es": "Recordatorio de check-in"
+    },
+    "detail": {
+     "en": "Sunday evening, to anyone who hasn’t checked in",
+     "es": "Domingo en la noche, a quien no haya hecho su check-in"
+    },
+    "enabled": true
+   }
+  ],
+  "runs": [
+   {
+    "date": {
+     "en": "Oct 15",
+     "es": "15 oct"
+    },
+    "text": {
+     "en": "Elena hit 50 workouts: congratulations drafted",
+     "es": "Elena llegó a 50 entrenamientos: felicitación redactada"
+    }
+   },
+   {
+    "date": {
+     "en": "Oct 15",
+     "es": "15 oct"
+    },
+    "text": {
+     "en": "Card-update reminder sent to Kevin",
+     "es": "Recordatorio para actualizar la tarjeta enviado a Kevin"
+    }
+   },
+   {
+    "date": {
+     "en": "Oct 15",
+     "es": "15 oct"
+    },
+    "text": {
+     "en": "Payment failed: notified you, reminder sent to Kevin",
+     "es": "Pago fallido: te avisamos y enviamos un recordatorio a Kevin"
+    }
+   },
+   {
+    "date": {
+     "en": "Oct 14",
+     "es": "14 oct"
+    },
+    "text": {
+     "en": "Check-in reminder sent to 5 clients",
+     "es": "Recordatorio de check-in enviado a 5 clientes"
+    }
+   },
+   {
+    "date": {
+     "en": "Oct 12",
+     "es": "12 oct"
+    },
+    "text": {
+     "en": "Nora hasn’t opened the app for 7 days: notified you",
+     "es": "Nora no ha abierto la app en 7 días: te avisamos"
+    }
+   }
+  ]
+ },
+ "assist": {
+  "requests": "9",
+  "approvedAsIs": "50%",
+  "timeSaved": "0h"
+ },
+ "library": [
+  {
+   "id": "5f1ca5fb-784a-47ba-8b16-b9f1037dff42",
+   "name": {
+    "en": "90/90 hip switch",
+    "es": "90/90 hip switch"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Hip flexor stretch",
+     "es": "Hip flexor stretch"
+    }
+   ]
+  },
+  {
+   "id": "f48742a0-cb64-4174-bbc8-71a309567538",
+   "name": {
+    "en": "Ab wheel rollout",
+    "es": "Ab wheel rollout"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Plank",
+     "es": "Plank"
+    }
+   ]
+  },
+  {
+   "id": "70f53ae7-397d-43e2-96f8-98774dde307e",
+   "name": {
+    "en": "Arnold press",
+    "es": "Arnold press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Seated dumbbell press",
+     "es": "Seated dumbbell press"
+    }
+   ]
+  },
+  {
+   "id": "a6906f8e-788f-429f-b687-ba0216a26f83",
+   "name": {
+    "en": "Assault bike sprints",
+    "es": "Assault bike sprints"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bike",
+    "es": "Bicicleta"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Bike intervals",
+     "es": "Bike intervals"
+    }
+   ]
+  },
+  {
+   "id": "1b2a6afa-3972-4234-8317-b55c37184e84",
+   "name": {
+    "en": "Assisted pull-up",
+    "es": "Assisted pull-up"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Lat pulldown",
+     "es": "Lat pulldown"
+    }
+   ]
+  },
+  {
+   "id": "a076c305-4d77-400c-a256-635e57b7b9d0",
+   "name": {
+    "en": "Back extension",
+    "es": "Back extension"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Glute bridge",
+     "es": "Glute bridge"
+    }
+   ]
+  },
+  {
+   "id": "62b9eb17-c051-4d3d-bc92-29e83068ae18",
+   "name": {
+    "en": "Back squat",
+    "es": "Back squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Box squat",
+     "es": "Box squat"
+    },
+    {
+     "en": "Goblet squat",
+     "es": "Goblet squat"
+    },
+    {
+     "en": "Leg press",
+     "es": "Leg press"
+    }
+   ]
+  },
+  {
+   "id": "86907ab0-4219-437a-8dcd-3a459b2d5a95",
+   "name": {
+    "en": "Band pull-apart",
+    "es": "Band pull-apart"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Band",
+    "es": "Banda"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Face pull",
+     "es": "Face pull"
+    }
+   ]
+  },
+  {
+   "id": "3adc4d5c-1b79-4f27-acb8-327693827c77",
+   "name": {
+    "en": "Band row",
+    "es": "Band row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Band",
+    "es": "Banda"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Seated cable row",
+     "es": "Seated cable row"
+    }
+   ]
+  },
+  {
+   "id": "87dbddc9-726c-43ad-af78-68236c40de11",
+   "name": {
+    "en": "Banded lateral walk",
+    "es": "Banded lateral walk"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Band",
+    "es": "Banda"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Hip abduction",
+     "es": "Hip abduction"
+    }
+   ]
+  },
+  {
+   "id": "5e367706-657c-4ac8-b0ae-548b7dd15804",
+   "name": {
+    "en": "Barbell reverse lunge",
+    "es": "Barbell reverse lunge"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Reverse lunge",
+     "es": "Reverse lunge"
+    }
+   ]
+  },
+  {
+   "id": "c42e4e5d-e7c3-4e1f-af64-dce178bcb593",
+   "name": {
+    "en": "Barbell row",
+    "es": "Barbell row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "One-arm dumbbell row",
+     "es": "One-arm dumbbell row"
+    }
+   ]
+  },
+  {
+   "id": "8fbc9ce8-e574-4ea5-8537-fa5403405a95",
+   "name": {
+    "en": "Battle ropes",
+    "es": "Battle ropes"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Battle rope",
+    "es": "Battle rope"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Bike intervals",
+     "es": "Bike intervals"
+    }
+   ]
+  },
+  {
+   "id": "eeb8bb1c-4aed-48c2-8dec-bb1f54590d14",
+   "name": {
+    "en": "Bear crawl",
+    "es": "Bear crawl"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Plank",
+     "es": "Plank"
+    }
+   ]
+  },
+  {
+   "id": "c0025f2a-0cc4-4075-8cfe-94b12457cd48",
+   "name": {
+    "en": "Belt squat",
+    "es": "Belt squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Leg press",
+     "es": "Leg press"
+    }
+   ]
+  },
+  {
+   "id": "b246465b-7d1c-4217-8c09-7f4b68e8efa2",
+   "name": {
+    "en": "Bench press",
+    "es": "Bench press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell bench press",
+     "es": "Dumbbell bench press"
+    },
+    {
+     "en": "Push-up",
+     "es": "Push-up"
+    }
+   ]
+  },
+  {
+   "id": "c1a3d5a6-3bba-4726-918e-fdcf2770e0be",
+   "name": {
+    "en": "Bike intervals",
+    "es": "Bike intervals"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bike",
+    "es": "Bicicleta"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Rower intervals",
+     "es": "Rower intervals"
+    },
+    {
+     "en": "Incline walk",
+     "es": "Incline walk"
+    }
+   ]
+  },
+  {
+   "id": "f069fb6c-af60-438f-92ee-9ad9e2b2a38d",
+   "name": {
+    "en": "Bird dog",
+    "es": "Bird dog"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dead bug",
+     "es": "Dead bug"
+    }
+   ]
+  },
+  {
+   "id": "eb7d3d4e-5fee-43c8-8c42-3a8ddfd42641",
+   "name": {
+    "en": "Bodyweight squat",
+    "es": "Bodyweight squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Box squat",
+     "es": "Box squat"
+    },
+    {
+     "en": "Wall sit",
+     "es": "Wall sit"
+    }
+   ]
+  },
+  {
+   "id": "2dc12b14-0c0b-46ca-896f-6e99a6cda755",
+   "name": {
+    "en": "Box jump",
+    "es": "Box jump"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Box",
+    "es": "Cajón"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Countermovement jump",
+     "es": "Countermovement jump"
+    },
+    {
+     "en": "Broad jump",
+     "es": "Broad jump"
+    }
+   ]
+  },
+  {
+   "id": "5df49d80-bfa5-461b-a68e-8505fb8abff7",
+   "name": {
+    "en": "Box squat",
+    "es": "Box squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Goblet squat",
+     "es": "Goblet squat"
+    },
+    {
+     "en": "Hip thrust",
+     "es": "Hip thrust"
+    }
+   ]
+  },
+  {
+   "id": "51ef8a80-14ee-4d56-978e-1c9177dc30b2",
+   "name": {
+    "en": "Broad jump",
+    "es": "Broad jump"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Countermovement jump",
+     "es": "Countermovement jump"
+    }
+   ]
+  },
+  {
+   "id": "df143a1c-04ae-44a8-823f-949f5f9a2d27",
+   "name": {
+    "en": "Bulgarian split squat",
+    "es": "Bulgarian split squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Split squat",
+     "es": "Split squat"
+    }
+   ]
+  },
+  {
+   "id": "7b2ffdfe-c296-4de1-8818-c650e3b67d34",
+   "name": {
+    "en": "Cable crunch",
+    "es": "Cable crunch"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Reverse crunch",
+     "es": "Reverse crunch"
+    }
+   ]
+  },
+  {
+   "id": "ea0fce9b-2f41-453e-b461-c6aa016c7298",
+   "name": {
+    "en": "Cable curl",
+    "es": "Cable curl"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell curl",
+     "es": "Dumbbell curl"
+    }
+   ]
+  },
+  {
+   "id": "b8283cf1-1004-4d74-8691-8dda35d1a328",
+   "name": {
+    "en": "Cable fly",
+    "es": "Cable fly"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell fly",
+     "es": "Dumbbell fly"
+    }
+   ]
+  },
+  {
+   "id": "e18e9982-5a29-4f64-ab94-df52756b91f4",
+   "name": {
+    "en": "Cable lateral raise",
+    "es": "Cable lateral raise"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Lateral raise",
+     "es": "Lateral raise"
+    }
+   ]
+  },
+  {
+   "id": "44c3dc16-c544-40d7-9b2d-38e331d2f4e9",
+   "name": {
+    "en": "Cable pull-through",
+    "es": "Cable pull-through"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Kettlebell swing",
+     "es": "Kettlebell swing"
+    }
+   ]
+  },
+  {
+   "id": "62b9aee8-ed98-4230-8623-b04c9dc49915",
+   "name": {
+    "en": "Cable woodchop",
+    "es": "Cable woodchop"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Pallof press",
+     "es": "Pallof press"
+    }
+   ]
+  },
+  {
+   "id": "1d1616d1-d351-43c2-b9ed-653511ee2c48",
+   "name": {
+    "en": "Calf raise",
+    "es": "Calf raise"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Pogo hops",
+     "es": "Pogo hops"
+    }
+   ]
+  },
+  {
+   "id": "67769f56-dd04-4b84-a7dd-a3ea7f09bf79",
+   "name": {
+    "en": "Cat-cow",
+    "es": "Cat-cow"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Thoracic rotation",
+     "es": "Thoracic rotation"
+    }
+   ]
+  },
+  {
+   "id": "5ad56886-fd0b-42e6-b103-5616c5de2534",
+   "name": {
+    "en": "Chest-supported row",
+    "es": "Chest-supported row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "One-arm dumbbell row",
+     "es": "One-arm dumbbell row"
+    },
+    {
+     "en": "Seated cable row",
+     "es": "Seated cable row"
+    }
+   ]
+  },
+  {
+   "id": "98f7eb02-abea-41c3-9eb1-5b3b2c09691a",
+   "name": {
+    "en": "Chin-up",
+    "es": "Chin-up"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Lat pulldown",
+     "es": "Lat pulldown"
+    }
+   ]
+  },
+  {
+   "id": "7463ef78-aa88-444c-ae7a-6fc6b3e56c84",
+   "name": {
+    "en": "Close-grip bench press",
+    "es": "Close-grip bench press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dips",
+     "es": "Dips"
+    }
+   ]
+  },
+  {
+   "id": "8fc342c0-1422-4d2c-a3a4-4be10e69ec00",
+   "name": {
+    "en": "Copenhagen plank",
+    "es": "Copenhagen plank"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Side plank",
+     "es": "Side plank"
+    }
+   ]
+  },
+  {
+   "id": "c12f29ca-0a31-4310-9f03-35446dd0abc5",
+   "name": {
+    "en": "Cossack squat",
+    "es": "Cossack squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Lateral lunge",
+     "es": "Lateral lunge"
+    }
+   ]
+  },
+  {
+   "id": "db2058df-606c-4dbf-919e-b6fb0189da0e",
+   "name": {
+    "en": "Couch stretch",
+    "es": "Couch stretch"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Hip flexor stretch",
+     "es": "Hip flexor stretch"
+    }
+   ]
+  },
+  {
+   "id": "53972ca0-73ca-4431-b675-a5c0625b6e5a",
+   "name": {
+    "en": "Countermovement jump",
+    "es": "Countermovement jump"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Box jump",
+     "es": "Box jump"
+    }
+   ]
+  },
+  {
+   "id": "5f8ed45f-7524-47f7-8365-65616a2d3ed5",
+   "name": {
+    "en": "Curtsy lunge",
+    "es": "Curtsy lunge"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Reverse lunge",
+     "es": "Reverse lunge"
+    }
+   ]
+  },
+  {
+   "id": "d0870f8b-1876-4e4f-8b22-1fb6c154e50c",
+   "name": {
+    "en": "Dead bug",
+    "es": "Dead bug"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Plank",
+     "es": "Plank"
+    },
+    {
+     "en": "Pallof press",
+     "es": "Pallof press"
+    }
+   ]
+  },
+  {
+   "id": "7db3223a-7fa3-4d94-836d-10c953a68937",
+   "name": {
+    "en": "Deadlift",
+    "es": "Deadlift"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Trap bar deadlift",
+     "es": "Trap bar deadlift"
+    },
+    {
+     "en": "Romanian deadlift",
+     "es": "Romanian deadlift"
+    }
+   ]
+  },
+  {
+   "id": "bb627984-f8f0-40fc-a40f-1778d5eef657",
+   "name": {
+    "en": "Depth jump",
+    "es": "Depth jump"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Box",
+    "es": "Cajón"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Box jump",
+     "es": "Box jump"
+    }
+   ]
+  },
+  {
+   "id": "fb622708-6939-4047-b25d-e5f09222ec22",
+   "name": {
+    "en": "Dips",
+    "es": "Dips"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Push-up",
+     "es": "Push-up"
+    },
+    {
+     "en": "Rope pushdown",
+     "es": "Rope pushdown"
+    }
+   ]
+  },
+  {
+   "id": "d343b4bb-2f80-403c-ba69-c0df59b14b3a",
+   "name": {
+    "en": "Dumbbell bench press",
+    "es": "Dumbbell bench press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Bench press",
+     "es": "Bench press"
+    },
+    {
+     "en": "Push-up",
+     "es": "Push-up"
+    },
+    {
+     "en": "Incline dumbbell press",
+     "es": "Incline dumbbell press"
+    }
+   ]
+  },
+  {
+   "id": "c967f568-4e52-48a9-a46d-078130e649a2",
+   "name": {
+    "en": "Dumbbell curl",
+    "es": "Dumbbell curl"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Hammer curl",
+     "es": "Hammer curl"
+    }
+   ]
+  },
+  {
+   "id": "a1324eb5-d0c5-451d-9473-61058bc2f6f6",
+   "name": {
+    "en": "Dumbbell fly",
+    "es": "Dumbbell fly"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Cable fly",
+     "es": "Cable fly"
+    }
+   ]
+  },
+  {
+   "id": "fefe4c96-5691-466d-8e6b-1ea13f2877cc",
+   "name": {
+    "en": "Dumbbell RDL",
+    "es": "Dumbbell RDL"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Romanian deadlift",
+     "es": "Romanian deadlift"
+    }
+   ]
+  },
+  {
+   "id": "45e6a26b-d1fc-41f3-b68f-875bb9c11e42",
+   "name": {
+    "en": "Dumbbell squat",
+    "es": "Dumbbell squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Goblet squat",
+     "es": "Goblet squat"
+    }
+   ]
+  },
+  {
+   "id": "3863729c-b99e-4b2f-b3da-6972cc7db067",
+   "name": {
+    "en": "Easy run",
+    "es": "Easy run"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Incline walk",
+     "es": "Incline walk"
+    }
+   ]
+  },
+  {
+   "id": "e4844537-36b3-4511-8f48-05bc50eb17f7",
+   "name": {
+    "en": "EZ-bar curl",
+    "es": "EZ-bar curl"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell curl",
+     "es": "Dumbbell curl"
+    }
+   ]
+  },
+  {
+   "id": "bf3844d7-1ce9-4d51-a2d0-c0b10c592fb2",
+   "name": {
+    "en": "Face pull",
+    "es": "Face pull"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Band pull-apart",
+     "es": "Band pull-apart"
+    }
+   ]
+  },
+  {
+   "id": "5e3a7a82-e854-4752-aac5-87c241ac3656",
+   "name": {
+    "en": "Farmer carry",
+    "es": "Farmer carry"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Stand tall, grip hard.",
+     "es": "Stand tall, grip hard."
+    },
+    {
+     "en": "Walk with short, quick steps.",
+     "es": "Walk with short, quick steps."
+    },
+    {
+     "en": "Keep shoulders level.",
+     "es": "Keep shoulders level."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Suitcase carry",
+     "es": "Suitcase carry"
+    }
+   ]
+  },
+  {
+   "id": "ddf59cb2-6d03-4d57-892a-6524bd6804e5",
+   "name": {
+    "en": "Frog pump",
+    "es": "Frog pump"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Glute bridge",
+     "es": "Glute bridge"
+    }
+   ]
+  },
+  {
+   "id": "725edbe6-24c0-48a7-9875-2b748bcf45e2",
+   "name": {
+    "en": "Front rack carry",
+    "es": "Front rack carry"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Kettlebell",
+    "es": "Pesa rusa"
+   },
+   "howTo": [
+    {
+     "en": "Stand tall, grip hard.",
+     "es": "Stand tall, grip hard."
+    },
+    {
+     "en": "Walk with short, quick steps.",
+     "es": "Walk with short, quick steps."
+    },
+    {
+     "en": "Keep shoulders level.",
+     "es": "Keep shoulders level."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Farmer carry",
+     "es": "Farmer carry"
+    }
+   ]
+  },
+  {
+   "id": "366fb686-93d7-4763-a0f6-d78e653e77ef",
+   "name": {
+    "en": "Front squat",
+    "es": "Front squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Goblet squat",
+     "es": "Goblet squat"
+    },
+    {
+     "en": "Safety bar squat",
+     "es": "Safety bar squat"
+    }
+   ]
+  },
+  {
+   "id": "1556557d-1b5b-4e66-a6c7-805e6a197cc9",
+   "name": {
+    "en": "Front-foot-elevated split squat",
+    "es": "Front-foot-elevated split squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Split squat",
+     "es": "Split squat"
+    }
+   ]
+  },
+  {
+   "id": "d9aaf022-c7c7-4960-b8be-b156dd1fe264",
+   "name": {
+    "en": "Glute bridge",
+    "es": "Glute bridge"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Hip thrust",
+     "es": "Hip thrust"
+    }
+   ]
+  },
+  {
+   "id": "0e944cab-6475-4d36-bb0d-d9a233eafcc8",
+   "name": {
+    "en": "Goblet squat",
+    "es": "Goblet squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Box squat",
+     "es": "Box squat"
+    },
+    {
+     "en": "Leg press",
+     "es": "Leg press"
+    },
+    {
+     "en": "Step-up",
+     "es": "Step-up"
+    }
+   ]
+  },
+  {
+   "id": "ef36bb8e-b508-4eef-ac33-5320673c2782",
+   "name": {
+    "en": "Good morning",
+    "es": "Buenos días"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Romanian deadlift",
+     "es": "Romanian deadlift"
+    }
+   ]
+  },
+  {
+   "id": "652110e7-6004-4cd3-bf97-39a1bacfb370",
+   "name": {
+    "en": "Hack squat",
+    "es": "Hack squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Leg press",
+     "es": "Leg press"
+    },
+    {
+     "en": "Goblet squat",
+     "es": "Goblet squat"
+    }
+   ]
+  },
+  {
+   "id": "68904970-97ee-4d6d-af01-6fa7592e2c37",
+   "name": {
+    "en": "Half-kneeling landmine press",
+    "es": "Half-kneeling landmine press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Landmine press",
+     "es": "Landmine press"
+    }
+   ]
+  },
+  {
+   "id": "3c3f8da7-a888-48e1-981d-428bed67cbf4",
+   "name": {
+    "en": "Hammer curl",
+    "es": "Hammer curl"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell curl",
+     "es": "Dumbbell curl"
+    }
+   ]
+  },
+  {
+   "id": "dd509a17-ed14-458b-a34a-873e17bfe86d",
+   "name": {
+    "en": "Hang power clean",
+    "es": "Hang power clean"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Trap bar deadlift",
+     "es": "Trap bar deadlift"
+    }
+   ]
+  },
+  {
+   "id": "f84061f3-1bc6-40cf-a845-f91fc4ff766c",
+   "name": {
+    "en": "Hanging knee raise",
+    "es": "Hanging knee raise"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dead bug",
+     "es": "Dead bug"
+    }
+   ]
+  },
+  {
+   "id": "ddaee5a5-57ea-461a-b6c8-7fa68873e9bc",
+   "name": {
+    "en": "Hanging leg raise",
+    "es": "Hanging leg raise"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Hanging knee raise",
+     "es": "Hanging knee raise"
+    }
+   ]
+  },
+  {
+   "id": "472396ee-cb3f-40a1-922d-e7a18da6b507",
+   "name": {
+    "en": "Heels-elevated goblet squat",
+    "es": "Heels-elevated goblet squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Goblet squat",
+     "es": "Goblet squat"
+    }
+   ]
+  },
+  {
+   "id": "c76d9d8e-e719-409b-8d16-8f5ec8503292",
+   "name": {
+    "en": "Hip abduction",
+    "es": "Hip abduction"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Banded lateral walk",
+     "es": "Banded lateral walk"
+    }
+   ]
+  },
+  {
+   "id": "baa43aa1-8dbf-4b9c-9aed-a2660fd255b9",
+   "name": {
+    "en": "Hip flexor stretch",
+    "es": "Hip flexor stretch"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "World’s greatest stretch",
+     "es": "World’s greatest stretch"
+    }
+   ]
+  },
+  {
+   "id": "f195fa83-7965-40dd-93f0-e7d69e58e92e",
+   "name": {
+    "en": "Hip thrust",
+    "es": "Hip thrust"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Glute bridge",
+     "es": "Glute bridge"
+    },
+    {
+     "en": "Romanian deadlift",
+     "es": "Romanian deadlift"
+    }
+   ]
+  },
+  {
+   "id": "9a490548-e241-4b00-bd71-090c938db931",
+   "name": {
+    "en": "Hollow hold",
+    "es": "Hollow hold"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dead bug",
+     "es": "Dead bug"
+    }
+   ]
+  },
+  {
+   "id": "820abd4a-367e-41dc-a70f-eb79a82f2cc0",
+   "name": {
+    "en": "Incline bench press",
+    "es": "Incline bench press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Incline dumbbell press",
+     "es": "Incline dumbbell press"
+    }
+   ]
+  },
+  {
+   "id": "40095af2-3479-4593-9bba-9aa30d638ac8",
+   "name": {
+    "en": "Incline dumbbell press",
+    "es": "Incline dumbbell press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell bench press",
+     "es": "Dumbbell bench press"
+    },
+    {
+     "en": "Landmine press",
+     "es": "Landmine press"
+    }
+   ]
+  },
+  {
+   "id": "3aa567bb-13e0-42aa-bab5-b798eb94c8f5",
+   "name": {
+    "en": "Incline push-up",
+    "es": "Incline push-up"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Push-up",
+     "es": "Push-up"
+    }
+   ]
+  },
+  {
+   "id": "1584ed16-e813-49c4-b201-9e8da47cca98",
+   "name": {
+    "en": "Incline walk",
+    "es": "Incline walk"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Treadmill",
+    "es": "Treadmill"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Bike intervals",
+     "es": "Bike intervals"
+    }
+   ]
+  },
+  {
+   "id": "f0ee3eb9-0ba7-4513-8aef-fb0416bcb3d2",
+   "name": {
+    "en": "Inverted row",
+    "es": "Inverted row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Seated cable row",
+     "es": "Seated cable row"
+    }
+   ]
+  },
+  {
+   "id": "e6870038-b021-4cdf-8af3-4510039386b8",
+   "name": {
+    "en": "Jump rope",
+    "es": "Jump rope"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Jump rope",
+    "es": "Jump rope"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Pogo hops",
+     "es": "Pogo hops"
+    }
+   ]
+  },
+  {
+   "id": "41ed357b-b11c-4ec7-b7ef-2c900d7035a6",
+   "name": {
+    "en": "Jump squat",
+    "es": "Jump squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Countermovement jump",
+     "es": "Countermovement jump"
+    }
+   ]
+  },
+  {
+   "id": "29c77539-31e5-4da6-8703-80bc06957765",
+   "name": {
+    "en": "Kettlebell deadlift",
+    "es": "Kettlebell deadlift"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Kettlebell",
+    "es": "Pesa rusa"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell RDL",
+     "es": "Dumbbell RDL"
+    }
+   ]
+  },
+  {
+   "id": "76e46ec8-e7a6-4dfd-8e75-020e0594159c",
+   "name": {
+    "en": "Kettlebell floor press",
+    "es": "Kettlebell floor press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Kettlebell",
+    "es": "Pesa rusa"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell bench press",
+     "es": "Dumbbell bench press"
+    }
+   ]
+  },
+  {
+   "id": "b8385f86-7b9d-4448-bba7-b61bb28e9e4e",
+   "name": {
+    "en": "Kettlebell goblet squat",
+    "es": "Kettlebell goblet squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Kettlebell",
+    "es": "Pesa rusa"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Goblet squat",
+     "es": "Goblet squat"
+    }
+   ]
+  },
+  {
+   "id": "6a68eb43-5291-4691-8d9a-c5e47464b2e1",
+   "name": {
+    "en": "Kettlebell row",
+    "es": "Kettlebell row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Kettlebell",
+    "es": "Pesa rusa"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "One-arm dumbbell row",
+     "es": "One-arm dumbbell row"
+    }
+   ]
+  },
+  {
+   "id": "864f8da4-19ac-45ae-b23b-62a35bee5519",
+   "name": {
+    "en": "Kettlebell snatch",
+    "es": "Kettlebell snatch"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Kettlebell",
+    "es": "Pesa rusa"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Kettlebell swing",
+     "es": "Kettlebell swing"
+    }
+   ]
+  },
+  {
+   "id": "f02a8fa5-2c88-4be8-acd3-bd0796a5781f",
+   "name": {
+    "en": "Kettlebell swing",
+    "es": "Kettlebell swing"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Kettlebell",
+    "es": "Pesa rusa"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Romanian deadlift",
+     "es": "Romanian deadlift"
+    },
+    {
+     "en": "Hip thrust",
+     "es": "Hip thrust"
+    }
+   ]
+  },
+  {
+   "id": "2a999f61-9e6a-428e-8473-0e151619f3bd",
+   "name": {
+    "en": "Landmine press",
+    "es": "Landmine press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Seated dumbbell press",
+     "es": "Seated dumbbell press"
+    }
+   ]
+  },
+  {
+   "id": "32bbddb7-52a9-4f53-a5ef-f355aadc0406",
+   "name": {
+    "en": "Lat pulldown",
+    "es": "Lat pulldown"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Pull-up",
+     "es": "Pull-up"
+    },
+    {
+     "en": "Seated cable row",
+     "es": "Seated cable row"
+    }
+   ]
+  },
+  {
+   "id": "c6648196-61e1-41a7-877b-79c6463ada4d",
+   "name": {
+    "en": "Lateral bound",
+    "es": "Lateral bound"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Skater jump",
+     "es": "Skater jump"
+    }
+   ]
+  },
+  {
+   "id": "3ecd2e3d-fd7f-428a-9249-6c2c7672e8d3",
+   "name": {
+    "en": "Lateral lunge",
+    "es": "Lateral lunge"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Cossack squat",
+     "es": "Cossack squat"
+    }
+   ]
+  },
+  {
+   "id": "7acf9011-c5a4-47a7-a02e-f2ad6af3ce9a",
+   "name": {
+    "en": "Lateral raise",
+    "es": "Lateral raise"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Cable lateral raise",
+     "es": "Cable lateral raise"
+    }
+   ]
+  },
+  {
+   "id": "98906dae-6946-4db6-8fc0-2ce6b2ac6572",
+   "name": {
+    "en": "Leg curl",
+    "es": "Leg curl"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Single-leg RDL",
+     "es": "Single-leg RDL"
+    },
+    {
+     "en": "Romanian deadlift",
+     "es": "Romanian deadlift"
+    }
+   ]
+  },
+  {
+   "id": "fc3cfa3f-8901-458a-88c6-ab049622c47c",
+   "name": {
+    "en": "Leg extension",
+    "es": "Leg extension"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Split squat",
+     "es": "Split squat"
+    }
+   ]
+  },
+  {
+   "id": "5bc28bbf-72bd-4a0c-a0d1-1dd193a57df2",
+   "name": {
+    "en": "Leg press",
+    "es": "Leg press"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Goblet squat",
+     "es": "Goblet squat"
+    },
+    {
+     "en": "Box squat",
+     "es": "Box squat"
+    }
+   ]
+  },
+  {
+   "id": "25aa572f-2d40-4eba-bf54-5dd03ff7670f",
+   "name": {
+    "en": "Machine chest press",
+    "es": "Machine chest press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell bench press",
+     "es": "Dumbbell bench press"
+    }
+   ]
+  },
+  {
+   "id": "df56a497-7da1-4109-9272-87fbbbdbe41e",
+   "name": {
+    "en": "Machine shoulder press",
+    "es": "Machine shoulder press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Seated dumbbell press",
+     "es": "Seated dumbbell press"
+    }
+   ]
+  },
+  {
+   "id": "db6b17f3-4dda-45cc-8652-5f6108f4a923",
+   "name": {
+    "en": "Meadows row",
+    "es": "Meadows row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "One-arm dumbbell row",
+     "es": "One-arm dumbbell row"
+    }
+   ]
+  },
+  {
+   "id": "3960c993-471d-4f74-80a8-cefcb6f1ccab",
+   "name": {
+    "en": "Medicine ball chest pass",
+    "es": "Medicine ball chest pass"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Medicine ball",
+    "es": "Medicine ball"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Medicine ball slam",
+     "es": "Medicine ball slam"
+    }
+   ]
+  },
+  {
+   "id": "2738ada4-a8a9-49f7-9160-0ae214a75804",
+   "name": {
+    "en": "Medicine ball slam",
+    "es": "Medicine ball slam"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Medicine ball",
+    "es": "Medicine ball"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Medicine ball chest pass",
+     "es": "Medicine ball chest pass"
+    }
+   ]
+  },
+  {
+   "id": "b8cdae85-5cc0-4197-9c0a-d10f580b9cf4",
+   "name": {
+    "en": "Neutral-grip pulldown",
+    "es": "Neutral-grip pulldown"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Lat pulldown",
+     "es": "Lat pulldown"
+    }
+   ]
+  },
+  {
+   "id": "2fbd7f94-5a4b-47f3-8bae-abe208fc3e26",
+   "name": {
+    "en": "Nordic curl",
+    "es": "Nordic curl"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Leg curl",
+     "es": "Leg curl"
+    }
+   ]
+  },
+  {
+   "id": "eb161be0-a5c8-4dbf-a2f5-ba6d567ff9e3",
+   "name": {
+    "en": "One-arm dumbbell row",
+    "es": "One-arm dumbbell row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Seated cable row",
+     "es": "Seated cable row"
+    },
+    {
+     "en": "Chest-supported row",
+     "es": "Chest-supported row"
+    }
+   ]
+  },
+  {
+   "id": "7b63a862-1501-499f-b02e-d1cc6427e8dd",
+   "name": {
+    "en": "Overhead carry",
+    "es": "Overhead carry"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Stand tall, grip hard.",
+     "es": "Stand tall, grip hard."
+    },
+    {
+     "en": "Walk with short, quick steps.",
+     "es": "Walk with short, quick steps."
+    },
+    {
+     "en": "Keep shoulders level.",
+     "es": "Keep shoulders level."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Farmer carry",
+     "es": "Farmer carry"
+    }
+   ]
+  },
+  {
+   "id": "6f0f2920-d280-45dc-8868-afa0d0f7c6df",
+   "name": {
+    "en": "Overhead press",
+    "es": "Overhead press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Seated dumbbell press",
+     "es": "Seated dumbbell press"
+    },
+    {
+     "en": "Landmine press",
+     "es": "Landmine press"
+    }
+   ]
+  },
+  {
+   "id": "9be550a0-fd96-429e-bd79-96eeb04496bf",
+   "name": {
+    "en": "Overhead triceps extension",
+    "es": "Overhead triceps extension"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Rope pushdown",
+     "es": "Rope pushdown"
+    }
+   ]
+  },
+  {
+   "id": "e5910fe1-fed1-4935-96f1-4b4b8d6a5c53",
+   "name": {
+    "en": "Pallof press",
+    "es": "Pallof press"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Band",
+    "es": "Banda"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dead bug",
+     "es": "Dead bug"
+    }
+   ]
+  },
+  {
+   "id": "56690dcd-2d6c-4b08-9177-2d2b77e948aa",
+   "name": {
+    "en": "Pause squat",
+    "es": "Pause squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Back squat",
+     "es": "Back squat"
+    }
+   ]
+  },
+  {
+   "id": "ea8d833f-7787-4de0-aa34-ee61a4a8fac6",
+   "name": {
+    "en": "Pendlay row",
+    "es": "Pendlay row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Barbell row",
+     "es": "Barbell row"
+    }
+   ]
+  },
+  {
+   "id": "967e29fc-d66b-48a1-8364-494c35f3b669",
+   "name": {
+    "en": "Pike push-up",
+    "es": "Pike push-up"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Seated dumbbell press",
+     "es": "Seated dumbbell press"
+    }
+   ]
+  },
+  {
+   "id": "8c20600c-29c7-4bec-867d-ff333819f746",
+   "name": {
+    "en": "Plank",
+    "es": "Plank"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dead bug",
+     "es": "Dead bug"
+    }
+   ]
+  },
+  {
+   "id": "ce27138a-9d93-46c0-942d-be1f7c19c3d3",
+   "name": {
+    "en": "Pogo hops",
+    "es": "Pogo hops"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Calf raise",
+     "es": "Calf raise"
+    }
+   ]
+  },
+  {
+   "id": "1dc4e0fb-b17c-4423-8e29-c7f474a4e718",
+   "name": {
+    "en": "Pull-up",
+    "es": "Pull-up"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Lat pulldown",
+     "es": "Lat pulldown"
+    }
+   ]
+  },
+  {
+   "id": "a4f71a68-8c30-46e2-9f77-51f03eae42c6",
+   "name": {
+    "en": "Push press",
+    "es": "Push press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Overhead press",
+     "es": "Overhead press"
+    }
+   ]
+  },
+  {
+   "id": "293e5d19-80ca-4284-a4ac-4929c9933ace",
+   "name": {
+    "en": "Push-up",
+    "es": "Push-up"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dumbbell bench press",
+     "es": "Dumbbell bench press"
+    }
+   ]
+  },
+  {
+   "id": "16229876-148e-4be9-af85-09f3223d0bb4",
+   "name": {
+    "en": "Rack pull",
+    "es": "Rack pull"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Deadlift",
+     "es": "Deadlift"
+    }
+   ]
+  },
+  {
+   "id": "2df1a135-b00e-41d6-af4b-de6be0d77f07",
+   "name": {
+    "en": "Reverse crunch",
+    "es": "Reverse crunch"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dead bug",
+     "es": "Dead bug"
+    }
+   ]
+  },
+  {
+   "id": "fa03a3d1-3c63-4cf1-aafa-e57dc3069018",
+   "name": {
+    "en": "Reverse fly",
+    "es": "Reverse fly"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Face pull",
+     "es": "Face pull"
+    }
+   ]
+  },
+  {
+   "id": "5b935ddc-b5dc-4f7a-98da-de11de1f510b",
+   "name": {
+    "en": "Reverse lunge",
+    "es": "Reverse lunge"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Split squat",
+     "es": "Split squat"
+    }
+   ]
+  },
+  {
+   "id": "bb2688f4-7a94-4bad-9854-8764c16d8817",
+   "name": {
+    "en": "Romanian deadlift",
+    "es": "Romanian deadlift"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Single-leg RDL",
+     "es": "Single-leg RDL"
+    },
+    {
+     "en": "Kettlebell swing",
+     "es": "Kettlebell swing"
+    },
+    {
+     "en": "Trap bar deadlift",
+     "es": "Trap bar deadlift"
+    }
+   ]
+  },
+  {
+   "id": "777c5056-1f73-476f-9ee1-56f7fea7c848",
+   "name": {
+    "en": "Rope pushdown",
+    "es": "Rope pushdown"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Dips",
+     "es": "Dips"
+    }
+   ]
+  },
+  {
+   "id": "56ede14b-a7be-4bd8-8c64-34dce42104d3",
+   "name": {
+    "en": "Rower intervals",
+    "es": "Rower intervals"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Rower",
+    "es": "Remo"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Bike intervals",
+     "es": "Bike intervals"
+    }
+   ]
+  },
+  {
+   "id": "dce428ab-1517-4ea7-a61a-b364947a7f10",
+   "name": {
+    "en": "Russian twist",
+    "es": "Russian twist"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Medicine ball",
+    "es": "Medicine ball"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Cable woodchop",
+     "es": "Cable woodchop"
+    }
+   ]
+  },
+  {
+   "id": "c0f4e9e4-3e0f-4c5c-bd2f-6cf7ac211992",
+   "name": {
+    "en": "Safety bar squat",
+    "es": "Safety bar squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Back squat",
+     "es": "Back squat"
+    },
+    {
+     "en": "Box squat",
+     "es": "Box squat"
+    }
+   ]
+  },
+  {
+   "id": "f5688dd9-6b2f-412e-9495-40a750ec40f9",
+   "name": {
+    "en": "Seated cable row",
+    "es": "Seated cable row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "One-arm dumbbell row",
+     "es": "One-arm dumbbell row"
+    },
+    {
+     "en": "Chest-supported row",
+     "es": "Chest-supported row"
+    }
+   ]
+  },
+  {
+   "id": "151f4a7f-e3a5-4007-a77c-0c425766f084",
+   "name": {
+    "en": "Seated calf raise",
+    "es": "Seated calf raise"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Calf raise",
+     "es": "Calf raise"
+    }
+   ]
+  },
+  {
+   "id": "310029fc-e629-4004-aae1-df7552631eca",
+   "name": {
+    "en": "Seated dumbbell press",
+    "es": "Seated dumbbell press"
+   },
+   "group": "push",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Set shoulder blades down and back.",
+     "es": "Set shoulder blades down and back."
+    },
+    {
+     "en": "Lower under control to a full, comfortable range.",
+     "es": "Lower under control to a full, comfortable range."
+    },
+    {
+     "en": "Press smoothly without shrugging.",
+     "es": "Press smoothly without shrugging."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Overhead press",
+     "es": "Overhead press"
+    },
+    {
+     "en": "Landmine press",
+     "es": "Landmine press"
+    }
+   ]
+  },
+  {
+   "id": "dbd74020-044e-4804-b3cc-19143274181f",
+   "name": {
+    "en": "Shrug",
+    "es": "Shrug"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Farmer carry",
+     "es": "Farmer carry"
+    }
+   ]
+  },
+  {
+   "id": "120050e7-3523-442d-b215-ef5a3ee07ece",
+   "name": {
+    "en": "Shuttle runs",
+    "es": "Shuttle runs"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Sprint intervals",
+     "es": "Sprint intervals"
+    }
+   ]
+  },
+  {
+   "id": "0befbf98-ab2e-4e18-83b8-01fa2fb5d4b3",
+   "name": {
+    "en": "Side plank",
+    "es": "Side plank"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Plank",
+     "es": "Plank"
+    }
+   ]
+  },
+  {
+   "id": "3663200e-847d-4356-93c1-2e32f8f8607c",
+   "name": {
+    "en": "Single-leg hip thrust",
+    "es": "Single-leg hip thrust"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Hip thrust",
+     "es": "Hip thrust"
+    }
+   ]
+  },
+  {
+   "id": "d968763c-d404-40c9-afd6-4ab610934053",
+   "name": {
+    "en": "Single-leg RDL",
+    "es": "Single-leg RDL"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Romanian deadlift",
+     "es": "Romanian deadlift"
+    },
+    {
+     "en": "Leg curl",
+     "es": "Leg curl"
+    }
+   ]
+  },
+  {
+   "id": "6ef03284-63f7-4a42-a481-6d60553772bb",
+   "name": {
+    "en": "Skater jump",
+    "es": "Skater jump"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Quick dip with arms swinging back.",
+     "es": "Quick dip with arms swinging back."
+    },
+    {
+     "en": "Explode up through hips, knees and ankles.",
+     "es": "Explode up through hips, knees and ankles."
+    },
+    {
+     "en": "Land softly, knees over toes. Reset each rep.",
+     "es": "Land softly, knees over toes. Reset each rep."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Lateral lunge",
+     "es": "Lateral lunge"
+    }
+   ]
+  },
+  {
+   "id": "b751b6ed-ee1e-41c3-9743-31350ce05319",
+   "name": {
+    "en": "Ski erg intervals",
+    "es": "Ski erg intervals"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Ski erg",
+    "es": "Ski erg"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Rower intervals",
+     "es": "Rower intervals"
+    }
+   ]
+  },
+  {
+   "id": "e95744d1-b76c-4bd9-ab49-6e34ef3bc168",
+   "name": {
+    "en": "Skull crusher",
+    "es": "Skull crusher"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Rope pushdown",
+     "es": "Rope pushdown"
+    }
+   ]
+  },
+  {
+   "id": "1983d618-a514-42dd-9558-34655911947b",
+   "name": {
+    "en": "Sled drag",
+    "es": "Sled drag"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Sled",
+    "es": "Sled"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Incline walk",
+     "es": "Incline walk"
+    }
+   ]
+  },
+  {
+   "id": "147a5f79-ea94-4a80-b041-70ecaa0bab3e",
+   "name": {
+    "en": "Sled push",
+    "es": "Sled push"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Sled",
+    "es": "Sled"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Walking lunge",
+     "es": "Walking lunge"
+    }
+   ]
+  },
+  {
+   "id": "57d2cbf6-3dbe-49dc-beee-d5047ccd6786",
+   "name": {
+    "en": "Split squat",
+    "es": "Split squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Step-up",
+     "es": "Step-up"
+    },
+    {
+     "en": "Hip thrust",
+     "es": "Hip thrust"
+    }
+   ]
+  },
+  {
+   "id": "24036e91-42ff-498c-990a-7b0548f2c480",
+   "name": {
+    "en": "Sprint intervals",
+    "es": "Sprint intervals"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Bike intervals",
+     "es": "Bike intervals"
+    }
+   ]
+  },
+  {
+   "id": "b4cd7393-7ca6-4b20-952d-7398452a2b9f",
+   "name": {
+    "en": "Stair climber",
+    "es": "Stair climber"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Machine",
+    "es": "Máquina"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Incline walk",
+     "es": "Incline walk"
+    }
+   ]
+  },
+  {
+   "id": "c20bed25-f162-43ec-ac8c-a949039f21a4",
+   "name": {
+    "en": "Step-up",
+    "es": "Step-up"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Split squat",
+     "es": "Split squat"
+    },
+    {
+     "en": "Hip thrust",
+     "es": "Hip thrust"
+    }
+   ]
+  },
+  {
+   "id": "4d49c6e4-83fb-4749-b696-e7ab4aed0608",
+   "name": {
+    "en": "Stir the pot",
+    "es": "Stir the pot"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Plank",
+     "es": "Plank"
+    }
+   ]
+  },
+  {
+   "id": "3ca003e7-e026-441e-85f6-0f9ad11b2b88",
+   "name": {
+    "en": "Straight-arm pulldown",
+    "es": "Straight-arm pulldown"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Cable",
+    "es": "Polea"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Lat pulldown",
+     "es": "Lat pulldown"
+    }
+   ]
+  },
+  {
+   "id": "7e742b74-6699-438e-8fd4-01cb96481e28",
+   "name": {
+    "en": "Suitcase carry",
+    "es": "Suitcase carry"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Stand tall, grip hard.",
+     "es": "Stand tall, grip hard."
+    },
+    {
+     "en": "Walk with short, quick steps.",
+     "es": "Walk with short, quick steps."
+    },
+    {
+     "en": "Keep shoulders level.",
+     "es": "Keep shoulders level."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Farmer carry",
+     "es": "Farmer carry"
+    }
+   ]
+  },
+  {
+   "id": "32ee1cae-fa3c-491c-8d38-1eac70b687b2",
+   "name": {
+    "en": "Sumo deadlift",
+    "es": "Sumo deadlift"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Deadlift",
+     "es": "Deadlift"
+    },
+    {
+     "en": "Trap bar deadlift",
+     "es": "Trap bar deadlift"
+    }
+   ]
+  },
+  {
+   "id": "afd19f46-da91-4fae-842c-08e4a768c5cc",
+   "name": {
+    "en": "Swim intervals",
+    "es": "Swim intervals"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Pool",
+    "es": "Pool"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Rower intervals",
+     "es": "Rower intervals"
+    }
+   ]
+  },
+  {
+   "id": "4f36143a-5dfc-478d-8160-f6a8eab7cbb1",
+   "name": {
+    "en": "Tempo run",
+    "es": "Tempo run"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Warm up 3 minutes easy.",
+     "es": "Warm up 3 minutes easy."
+    },
+    {
+     "en": "Hit the work intervals at the target effort.",
+     "es": "Hit the work intervals at the target effort."
+    },
+    {
+     "en": "Recover easy between intervals.",
+     "es": "Recover easy between intervals."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Easy run",
+     "es": "Easy run"
+    }
+   ]
+  },
+  {
+   "id": "11ee9cdb-1013-4b58-9a82-ed3b988025fc",
+   "name": {
+    "en": "Thoracic rotation",
+    "es": "Thoracic rotation"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Cat-cow",
+     "es": "Cat-cow"
+    }
+   ]
+  },
+  {
+   "id": "dc6f5a76-a07e-4555-9ac9-1f6c92c82364",
+   "name": {
+    "en": "Tibialis raise",
+    "es": "Tibialis raise"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Calf raise",
+     "es": "Calf raise"
+    }
+   ]
+  },
+  {
+   "id": "12f90a80-4cb4-4d01-a62f-ada8aa01e96d",
+   "name": {
+    "en": "Trap bar carry",
+    "es": "Trap bar carry"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Trap bar",
+    "es": "Barra hexagonal"
+   },
+   "howTo": [
+    {
+     "en": "Stand tall, grip hard.",
+     "es": "Stand tall, grip hard."
+    },
+    {
+     "en": "Walk with short, quick steps.",
+     "es": "Walk with short, quick steps."
+    },
+    {
+     "en": "Keep shoulders level.",
+     "es": "Keep shoulders level."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Farmer carry",
+     "es": "Farmer carry"
+    }
+   ]
+  },
+  {
+   "id": "4e3e74ab-6137-4237-ad4a-519bbe5c03eb",
+   "name": {
+    "en": "Trap bar deadlift",
+    "es": "Trap bar deadlift"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Trap bar",
+    "es": "Barra hexagonal"
+   },
+   "howTo": [
+    {
+     "en": "Soft knees, weight in mid-foot.",
+     "es": "Soft knees, weight in mid-foot."
+    },
+    {
+     "en": "Push hips back with a flat back until you feel the hamstrings stretch.",
+     "es": "Push hips back with a flat back until you feel the hamstrings stretch."
+    },
+    {
+     "en": "Squeeze glutes to stand tall.",
+     "es": "Squeeze glutes to stand tall."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Romanian deadlift",
+     "es": "Romanian deadlift"
+    },
+    {
+     "en": "Deadlift",
+     "es": "Deadlift"
+    }
+   ]
+  },
+  {
+   "id": "2554e1d7-8377-41ff-921d-b1fe342748fe",
+   "name": {
+    "en": "TRX row",
+    "es": "TRX row"
+   },
+   "group": "pull",
+   "equipment": {
+    "en": "Suspension",
+    "es": "Suspension"
+   },
+   "howTo": [
+    {
+     "en": "Start tall with shoulders down.",
+     "es": "Start tall with shoulders down."
+    },
+    {
+     "en": "Lead with the elbows and pull to the body.",
+     "es": "Lead with the elbows and pull to the body."
+    },
+    {
+     "en": "Control the return to a full stretch.",
+     "es": "Control the return to a full stretch."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Inverted row",
+     "es": "Inverted row"
+    }
+   ]
+  },
+  {
+   "id": "ec142d21-baed-4a43-b311-5f47c6f44a25",
+   "name": {
+    "en": "Walking lunge",
+    "es": "Walking lunge"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Long stance, torso upright.",
+     "es": "Long stance, torso upright."
+    },
+    {
+     "en": "Lower the back knee toward the floor under control.",
+     "es": "Lower the back knee toward the floor under control."
+    },
+    {
+     "en": "Push through the front foot to return.",
+     "es": "Push through the front foot to return."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Split squat",
+     "es": "Split squat"
+    },
+    {
+     "en": "Step-up",
+     "es": "Step-up"
+    }
+   ]
+  },
+  {
+   "id": "500b82ca-fb10-4389-b7c1-b231469ef8f6",
+   "name": {
+    "en": "Wall sit",
+    "es": "Wall sit"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Bodyweight squat",
+     "es": "Bodyweight squat"
+    }
+   ]
+  },
+  {
+   "id": "5049a178-a40d-4feb-88d1-05a7e50f09f1",
+   "name": {
+    "en": "World’s greatest stretch",
+    "es": "World’s greatest stretch"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Bodyweight",
+    "es": "Peso corporal"
+   },
+   "howTo": [
+    {
+     "en": "Ribs down, lower back neutral.",
+     "es": "Ribs down, lower back neutral."
+    },
+    {
+     "en": "Move slowly and keep breathing.",
+     "es": "Move slowly and keep breathing."
+    },
+    {
+     "en": "Stop the set when position slips.",
+     "es": "Stop the set when position slips."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Hip flexor stretch",
+     "es": "Hip flexor stretch"
+    }
+   ]
+  },
+  {
+   "id": "ca127bc5-38ba-4465-9eed-ba6d424cf640",
+   "name": {
+    "en": "Wrist curl",
+    "es": "Wrist curl"
+   },
+   "group": "core",
+   "equipment": {
+    "en": "Dumbbell",
+    "es": "Mancuerna"
+   },
+   "howTo": [
+    {
+     "en": "Pick a weight you can control for every rep.",
+     "es": "Pick a weight you can control for every rep."
+    },
+    {
+     "en": "Move through the full range.",
+     "es": "Move through the full range."
+    },
+    {
+     "en": "Pause briefly at the hardest point.",
+     "es": "Pause briefly at the hardest point."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Farmer carry",
+     "es": "Farmer carry"
+    }
+   ]
+  },
+  {
+   "id": "60231460-5ac2-49fb-be3b-fbc7620505a1",
+   "name": {
+    "en": "Zercher squat",
+    "es": "Zercher squat"
+   },
+   "group": "legs",
+   "equipment": {
+    "en": "Barbell",
+    "es": "Barra"
+   },
+   "howTo": [
+    {
+     "en": "Feet about shoulder-width, toes slightly out.",
+     "es": "Feet about shoulder-width, toes slightly out."
+    },
+    {
+     "en": "Sit down and back between your hips, chest proud, knees tracking over toes.",
+     "es": "Sit down and back between your hips, chest proud, knees tracking over toes."
+    },
+    {
+     "en": "Drive through the whole foot to stand.",
+     "es": "Drive through the whole foot to stand."
+    }
+   ],
+   "alternatives": [
+    {
+     "en": "Front squat",
+     "es": "Front squat"
+    }
+   ]
+  }
+ ]
+}

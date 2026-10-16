@@ -12,10 +12,12 @@ struct CoachSettingsView: View {
 
         ScreenScroll {
             HStack(spacing: 12) {
-                Avatar(initials: "AR", color: Palette.volt)
-                TitleSub("Alex Rivera", sub: "alex@onejumpfit.com")
-                Button(CT.edit(lang)) { store.toast.show(CT.editProfileToast(lang)) }
-                    .buttonStyle(.oj(.ghost, size: .small))
+                Avatar(initials: store.me.initials, color: Palette.volt)
+                TitleSub(store.me.name, sub: store.me.email)
+                if !store.live {
+                    Button(CT.edit(lang)) { store.toast.show(CT.editProfileToast(lang)) }
+                        .buttonStyle(.oj(.ghost, size: .small))
+                }
             }
             .card()
 
@@ -75,9 +77,9 @@ struct CoachSettingsView: View {
             // Usage
             sectionTitle(CT.assistThisMonth(lang))
             HStack(spacing: 10) {
-                StatTile(value: "412", label: CT.requests(lang))
-                StatTile(value: "78%", label: CT.approvedAsIs(lang))
-                StatTile(value: "27h", label: CT.timeSaved(lang))
+                StatTile(value: store.data.assistUsage.requests, label: CT.requests(lang))
+                StatTile(value: store.data.assistUsage.approved, label: CT.approvedAsIs(lang))
+                StatTile(value: store.data.assistUsage.saved, label: CT.timeSaved(lang))
             }
 
             // Notifications
@@ -95,13 +97,13 @@ struct CoachSettingsView: View {
                 HStack(spacing: 12) {
                     IconTile(systemName: "checkmark.shield")
                     TitleSub(CT.twoStep(lang), sub: CT.twoStepSub(lang))
-                    Pill(CT.on(lang), tone: .good)
+                    Pill(store.me.totpEnabled ? CT.on(lang) : CL.off(lang), tone: store.me.totpEnabled ? .good : .muted)
                 }
                 .rowPadding()
                 RowDivider()
                 HStack(spacing: 12) {
                     IconTile(systemName: "doc.text")
-                    TitleSub(CT.planBilling(lang), sub: CT.trial11(lang))
+                    TitleSub(CT.planBilling(lang), sub: store.live ? CL.planLine(store.me.planLabel, store.me.trialDaysLeft)(lang) : CT.trial11(lang))
                     Button(CT.seePlans(lang)) { store.push(.billing) }
                         .buttonStyle(.oj(.ghost, size: .small))
                 }
@@ -119,8 +121,8 @@ struct CoachSettingsView: View {
             sectionTitle(CT.team(lang))
             ListCard {
                 HStack(spacing: 12) {
-                    Avatar(initials: "AR", color: Palette.volt, size: 36)
-                    TitleSub("Alex Rivera", sub: CT.ownerAll(lang))
+                    Avatar(initials: store.me.initials, color: Palette.volt, size: 36)
+                    TitleSub(store.me.name, sub: CT.ownerAll(lang))
                     Pill(CT.youPill(lang), tone: .muted)
                 }
                 .rowPadding()
@@ -155,20 +157,25 @@ struct CoachSettingsView: View {
             }
             .card()
 
-            // Preview: switch app
-            Button {
-                settings.role = nil
-            } label: {
-                HStack(spacing: 12) {
-                    IconTile(systemName: "arrow.left.arrow.right")
-                    TitleSub(SharedText.switchApp(lang), sub: SharedText.switchAppSub(lang))
+            if store.live {
+                Button(CL.logOut(lang)) { Task { await store.logOut() } }
+                    .buttonStyle(.oj(.danger, fullWidth: true))
+            } else {
+                // Demo: switch app, or leave the demo
+                Button {
+                    settings.role = nil
+                } label: {
+                    HStack(spacing: 12) {
+                        IconTile(systemName: "arrow.left.arrow.right")
+                        TitleSub(SharedText.switchApp(lang), sub: SharedText.switchAppSub(lang))
+                    }
+                    .card()
                 }
-                .card()
-            }
-            .buttonStyle(.plain)
+                .buttonStyle(.plain)
 
-            Button(CT.logOut(lang)) { store.toast.show(CT.logOutToast(lang)) }
-                .buttonStyle(.oj(.danger, fullWidth: true))
+                Button(CL.exitDemo(lang)) { settings.exitDemo() }
+                    .buttonStyle(.oj(.danger, fullWidth: true))
+            }
         }
         .ojNavigationTitle(CT.settings(lang))
     }
@@ -231,10 +238,14 @@ struct BillingView: View {
         ScreenScroll {
             VStack(alignment: .leading, spacing: 6) {
                 SubText(CT.currentPlan(lang), color: Palette.bone.opacity(0.75))
-                Text(CT.proTrial(lang)).font(.archivo(34, .heavy)).tracking(-1)
-                SubText(CT.trialSub(lang), color: Palette.bone.opacity(0.75))
+                Text(store.live ? store.me.planLabel(lang) : CT.proTrial(lang)).font(.archivo(34, .heavy)).tracking(-1)
+                SubText(store.live ? CL.planLine(store.me.planLabel, store.me.trialDaysLeft)(lang) : CT.trialSub(lang), color: Palette.bone.opacity(0.75))
             }
             .heroCard()
+
+            if store.live {
+                SubText(CL.plansOnWeb(lang))
+            }
 
             ForEach(CoachData.plans) { plan in
                 Button {
@@ -246,14 +257,16 @@ struct BillingView: View {
                 .buttonStyle(.plain)
             }
 
-            Button(CT.choosePlan(chosen.name)(lang)) { store.toast.show(CT.checkoutToast(lang)) }
-                .buttonStyle(.oj(.primary, fullWidth: true))
-            SubText(CT.checkoutNote(lang))
-                .frame(maxWidth: .infinity)
-                .multilineTextAlignment(.center)
+            if !store.live {
+                Button(CT.choosePlan(chosen.name)(lang)) { store.toast.show(CT.checkoutToast(lang)) }
+                    .buttonStyle(.oj(.primary, fullWidth: true))
+                SubText(CT.checkoutNote(lang))
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
 
-            SectionHeader(CT.invoices(lang))
-            EmptyStateCard(systemImage: "doc.text", title: CT.noInvoices(lang), message: CT.freeTrial(lang))
+                SectionHeader(CT.invoices(lang))
+                EmptyStateCard(systemImage: "doc.text", title: CT.noInvoices(lang), message: CT.freeTrial(lang))
+            }
         }
         .ojNavigationTitle(CT.planBilling(lang))
     }

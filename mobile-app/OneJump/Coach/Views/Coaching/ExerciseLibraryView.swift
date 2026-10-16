@@ -47,7 +47,7 @@ struct ExerciseLibraryView: View {
 
     private var filtered: [LibraryExercise] {
         let query = store.librarySearch.trimmingCharacters(in: .whitespaces).lowercased()
-        return CoachData.library.filter { x in
+        return store.data.library.filter { x in
             (store.libraryFilter == .all || x.group == store.libraryFilter)
                 && (query.isEmpty || x.name(lang).lowercased().contains(query))
         }
@@ -61,9 +61,9 @@ struct ExerciseDetailView: View {
     @Environment(\.lang) private var lang
 
     var body: some View {
-        let exercise = CoachData.library.first { $0.id == exerciseID } ?? CoachData.library[0]
-        let cues = CoachData.cues[exercise.group] ?? []
-        let alternatives = (CoachData.alternatives[exercise.group] ?? []).filter { $0 != exercise.name }
+        let exercise = store.data.library.first { $0.id == exerciseID } ?? store.data.library.first ?? CoachData.library[0]
+        let cues = exercise.howTo ?? CoachData.cues[exercise.group] ?? []
+        let alternatives = exercise.alternatives ?? (CoachData.alternatives[exercise.group] ?? []).filter { $0 != exercise.name }
 
         ScreenScroll {
             VideoPlaceholder(label: CT.playDemo(lang)) { store.toast.show(CT.toastDemo(lang)) }

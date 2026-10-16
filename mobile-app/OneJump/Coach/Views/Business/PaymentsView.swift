@@ -6,63 +6,93 @@ struct PaymentsView: View {
     @Environment(\.lang) private var lang
 
     var body: some View {
+        let p = store.data.payments
         ScreenScroll {
             VStack(alignment: .leading, spacing: 8) {
                 SubText(CT.mrrLabel(lang), color: Palette.bone.opacity(0.75))
-                Text("$1,972").font(OJFont.display).tracking(-1.4)
-                SubText(CT.mrrSub(lang), color: Palette.bone.opacity(0.75))
+                Text(p.mrr).font(OJFont.display).tracking(-1.4)
+                SubText(p.mrrNote(lang), color: Palette.bone.opacity(0.75))
                 HStack(spacing: 24) {
-                    heroStat(CT.collected(lang), "$1,574")
-                    heroStat(CT.outstanding(lang), "$398")
+                    heroStat(CT.collected(lang), p.collected)
+                    heroStat(CT.outstanding(lang), p.outstanding)
                 }
                 .padding(.top, 8)
             }
             .heroCard()
 
-            HStack(spacing: 12) {
-                IconTile(systemName: "dollarsign")
-                TitleSub(CT.nextPayout(lang), sub: CT.payoutSub(lang))
+            if !store.live {
+                HStack(spacing: 12) {
+                    IconTile(systemName: "dollarsign")
+                    TitleSub(CT.nextPayout(lang), sub: CT.payoutSub(lang))
+                }
+                .card()
             }
-            .card()
 
             HStack(spacing: 10) {
-                StatTile(value: "$219", label: CT.avgPerClient(lang))
-                StatTile(value: "0", label: CT.failedPayments(lang))
-                StatTile(value: "98%", label: CT.paidOnTime(lang))
+                StatTile(value: p.avg, label: CT.avgPerClient(lang))
+                StatTile(value: "\(p.failedCount)", label: CT.failedPayments(lang))
+                StatTile(value: p.onTime, label: CT.paidOnTime(lang))
             }
 
-            SectionHeader(CT.needsAttention(lang))
-            ListCard {
-                HStack(spacing: 12) {
-                    Avatar(initials: "SR", color: Color(hex: 0xE3D2B5), size: 36)
-                    TitleSub("Sofia Ramirez", sub: CT.overdue6(lang))
-                    if store.paymentReminderSent {
-                        Pill(CT.reminderSent(lang), tone: .good)
-                    } else {
-                        Button(CT.sendReminder(lang)) { store.sendPaymentReminder() }
-                            .buttonStyle(.oj(.primary, size: .small))
+            if store.live {
+                SectionHeader(CL.failedPayments(lang))
+                if p.attention.isEmpty {
+                    EmptyStateCard(title: CL.nothingOwed(lang))
+                } else {
+                    ListCard {
+                        DividedRows(p.attention) { item in
+                            HStack(spacing: 12) {
+                                Avatar(initials: item.initials, color: Color(hex: item.avatar), size: 36)
+                                TitleSub(item.name, sub: item.sub(lang))
+                                if item.reminded || store.remindedPayments.contains(item.id) {
+                                    Pill(CT.reminderSent(lang), tone: .good)
+                                } else {
+                                    Button(CT.sendReminder(lang)) { store.remindPayment(item) }
+                                        .buttonStyle(.oj(.primary, size: .small))
+                                }
+                            }
+                            .rowPadding()
+                        }
                     }
                 }
-                .rowPadding()
-                RowDivider()
-                HStack(spacing: 12) {
-                    Avatar(initials: "TJ", color: Color(hex: 0xC9D6E2), size: 36)
-                    TitleSub("Tyler Johnson", sub: CT.due15(lang))
-                    Pill(CT.autoReminder(lang), tone: .info)
+            } else {
+                SectionHeader(CT.needsAttention(lang))
+                ListCard {
+                    HStack(spacing: 12) {
+                        Avatar(initials: "SR", color: Color(hex: 0xE3D2B5), size: 36)
+                        TitleSub("Sofia Ramirez", sub: CT.overdue6(lang))
+                        if store.paymentReminderSent {
+                            Pill(CT.reminderSent(lang), tone: .good)
+                        } else {
+                            Button(CT.sendReminder(lang)) { store.sendPaymentReminder() }
+                                .buttonStyle(.oj(.primary, size: .small))
+                        }
+                    }
+                    .rowPadding()
+                    RowDivider()
+                    HStack(spacing: 12) {
+                        Avatar(initials: "TJ", color: Color(hex: 0xC9D6E2), size: 36)
+                        TitleSub("Tyler Johnson", sub: CT.due15(lang))
+                        Pill(CT.autoReminder(lang), tone: .info)
+                    }
+                    .rowPadding()
                 }
-                .rowPadding()
-            }
-            if !store.paymentReminderSent {
-                AssistCard(label: CT.reminderDrafted(lang)) {
-                    DraftText(CT.reminderText(lang))
+                if !store.paymentReminderSent {
+                    AssistCard(label: CT.reminderDrafted(lang)) {
+                        DraftText(CT.reminderText(lang))
+                    }
                 }
             }
 
-            SectionHeader(CT.packages(lang), link: CT.newPackage(lang)) {
-                store.toast.show(CT.newPackageToast(lang))
+            if store.live {
+                SectionHeader(CT.packages(lang))
+            } else {
+                SectionHeader(CT.packages(lang), link: CT.newPackage(lang)) {
+                    store.toast.show(CT.newPackageToast(lang))
+                }
             }
             ListCard {
-                DividedRows(CoachData.packages) { pkg in
+                DividedRows(store.data.packages) { pkg in
                     HStack {
                         TitleSub(pkg.name(lang), sub: pkg.meta(lang))
                         Text(pkg.total).font(OJFont.title)
@@ -72,26 +102,32 @@ struct PaymentsView: View {
             }
 
             SectionHeader(CT.recentPayments(lang))
-            ListCard {
-                DividedRows(CoachData.recentPayments) { payment in
-                    HStack(spacing: 12) {
-                        Avatar(initials: payment.initials, color: Color(hex: payment.avatar), size: 36)
-                        TitleSub(payment.name, sub: payment.when(lang))
-                        Text(payment.amount).font(OJFont.title)
+            if store.data.recentPayments.isEmpty {
+                EmptyStateCard(systemImage: "dollarsign", title: CL.noPayments(lang))
+            } else {
+                ListCard {
+                    DividedRows(store.data.recentPayments) { payment in
+                        HStack(spacing: 12) {
+                            Avatar(initials: payment.initials, color: Color(hex: payment.avatar), size: 36)
+                            TitleSub(payment.name, sub: payment.when(lang))
+                            Text(payment.amount).font(OJFont.title)
+                        }
+                        .rowPadding()
                     }
-                    .rowPadding()
                 }
             }
 
-            SectionHeader(CT.payouts(lang), note: CT.payoutsSub(lang))
-            ListCard {
-                DividedRows(Array(CoachData.payouts.indices)) { i in
-                    let payout = CoachData.payouts[i]
-                    HStack {
-                        TitleSub(payout.date(lang), sub: payout.status(lang))
-                        Text(payout.amount).font(OJFont.title)
+            if !store.live {
+                SectionHeader(CT.payouts(lang), note: CT.payoutsSub(lang))
+                ListCard {
+                    DividedRows(Array(CoachData.payouts.indices)) { i in
+                        let payout = CoachData.payouts[i]
+                        HStack {
+                            TitleSub(payout.date(lang), sub: payout.status(lang))
+                            Text(payout.amount).font(OJFont.title)
+                        }
+                        .rowPadding()
                     }
-                    .rowPadding()
                 }
             }
         }

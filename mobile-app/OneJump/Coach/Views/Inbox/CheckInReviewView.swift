@@ -2,16 +2,28 @@ import SwiftUI
 
 /// One weekly check-in: answers, Assist's summary, suggested actions and a drafted reply.
 struct CheckInReviewView: View {
-    let clientID: String
+    /// The check-in's id (the sample uses the client's id).
+    let checkInID: String
     @Environment(CoachStore.self) private var store
     @Environment(\.lang) private var lang
 
     var body: some View {
-        let client = store.client(clientID)
-        let report = CoachData.checkIns[clientID] ?? CoachData.checkIns["maya"]!
-        let sent = store.checkInState[clientID] == .sent
+        if let report = store.checkInReport(checkInID) {
+            content(report)
+        } else {
+            ScreenScroll {
+                EmptyStateCard(systemImage: "hourglass", title: CL.loadingPage(lang))
+            }
+            .ojNavigationTitle(CT.checkIn(lang))
+        }
+    }
 
-        ScreenScroll {
+    private func content(_ report: CheckInReport) -> some View {
+        let clientID = report.clientID.isEmpty ? checkInID : report.clientID
+        let client = store.client(clientID)
+        let sent = store.checkInState[checkInID] == .sent
+
+        return ScreenScroll {
             HStack(spacing: 12) {
                 Avatar(initials: client.initials, color: client.avatarColor)
                 VStack(alignment: .leading, spacing: 2) {
@@ -67,7 +79,14 @@ struct CheckInReviewView: View {
             .card()
 
             AssistCard(label: CT.assistSummary(lang)) {
-                DraftText(report.summary(lang))
+                if report.hasAssist {
+                    DraftText(report.summary(lang))
+                } else {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        SubText(CL.workingOnIt(client.first)(lang))
+                    }
+                }
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -76,20 +95,22 @@ struct CheckInReviewView: View {
             }
             .card()
 
+            if !report.actions.isEmpty {
             Eyebrow(CT.recommendedActions(lang))
             ListCard {
                 DividedRows(report.actions) { action in
                     HStack(spacing: 10) {
                         TitleSub(action.title(lang), sub: action.detail(lang))
-                        if store.actionsDone.contains(clientID + ":" + action.id) {
+                        if action.done || store.actionsDone.contains(checkInID + ":" + action.id) {
                             Pill(CT.doneDay(lang), tone: .good)
                         } else {
-                            Button(action.button(lang)) { store.applyAction(action, for: clientID) }
+                            Button(action.button(lang)) { store.applyAction(action, for: checkInID) }
                                 .buttonStyle(.oj(.ghost, size: .small))
                         }
                     }
                     .rowPadding()
                 }
+            }
             }
 
             if sent {
@@ -108,11 +129,15 @@ struct CheckInReviewView: View {
                     Eyebrow(CT.yourReply(lang))
                     TextBox(label: CT.replyAria(lang), text: draftBinding, minHeight: 150)
                     Button {
-                        store.sendCheckInReply(clientID)
+                        store.sendCheckInReply(checkInID)
                     } label: {
-                        Label(CT.sendReply(lang), systemImage: "paperplane.fill")
+                        HStack(spacing: 8) {
+                            if store.sendingCheckIn.contains(checkInID) { ProgressView().tint(Palette.onPrimary) } else { Image(systemName: "paperplane.fill") }
+                            Text(CT.sendReply(lang))
+                        }
                     }
                     .buttonStyle(.oj(.primary, fullWidth: true))
+                    .disabled(store.sendingCheckIn.contains(checkInID) || !report.hasAssist && store.checkInDraft(checkInID).isEmpty)
                 }
                 .card()
             }
@@ -122,8 +147,8 @@ struct CheckInReviewView: View {
 
     private var draftBinding: Binding<String> {
         Binding(
-            get: { store.checkInDraft(clientID) },
-            set: { store.checkInDrafts[clientID] = $0 }
+            get: { store.checkInDraft(checkInID) },
+            set: { store.checkInDrafts[checkInID] = $0 }
         )
     }
 }

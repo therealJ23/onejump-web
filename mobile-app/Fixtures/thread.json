@@ -1,0 +1,305 @@
+{
+ "id": "b98319ce-0e47-4fdc-be5a-ac6e99f6ac08",
+ "messages": [
+  {
+   "id": "0295636c-fb6a-4659-91f2-cc6baa0874e0",
+   "fromMe": true,
+   "text": "Great consistency lately.",
+   "time": {
+    "en": "Aug 24",
+    "es": "24 ago"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "ee32e30e-8504-4a91-b078-e29aedb2c90b",
+   "fromMe": false,
+   "text": "That one was tough but done.",
+   "time": {
+    "en": "Aug 24",
+    "es": "24 ago"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "8346da12-efd9-4b49-8560-4c1a4ef96223",
+   "fromMe": true,
+   "text": "Remember to log your weights so I can adjust next week.",
+   "time": {
+    "en": "Aug 27",
+    "es": "27 ago"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "8029164a-7e7c-4160-8c95-5964a4aac15e",
+   "fromMe": false,
+   "text": "Felt good today.",
+   "time": {
+    "en": "Aug 27",
+    "es": "27 ago"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "c654faad-bf04-4d22-a64c-4f175d2f7836",
+   "fromMe": true,
+   "text": "Nice work this week. Keep it rolling.",
+   "time": {
+    "en": "Aug 31",
+    "es": "31 ago"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "01315c8e-b12b-4822-b757-db1f17aec03d",
+   "fromMe": false,
+   "text": "Finished the session.",
+   "time": {
+    "en": "Aug 31",
+    "es": "31 ago"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "10a39b1c-dd06-421b-865c-44cb7acfdffe",
+   "fromMe": true,
+   "text": "How did today’s session feel?",
+   "time": {
+    "en": "Sep 3",
+    "es": "3 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "b7432643-3512-4367-9283-a0a92e6375ec",
+   "fromMe": false,
+   "text": "That one was tough but done.",
+   "time": {
+    "en": "Sep 3",
+    "es": "3 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "ffc78bb8-32e0-4c5a-be3c-3c499a736a70",
+   "fromMe": true,
+   "text": "Proud of the effort this week.",
+   "time": {
+    "en": "Sep 7",
+    "es": "7 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "9a9a1d92-6017-4fe5-8d39-d66932704db1",
+   "fromMe": false,
+   "text": "Will do.",
+   "time": {
+    "en": "Sep 7",
+    "es": "7 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "cd0186b8-b8dc-4b32-a47c-79a0f6d49f7a",
+   "fromMe": true,
+   "text": "Any soreness from the last session?",
+   "time": {
+    "en": "Sep 10",
+    "es": "10 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "20c5f591-5650-4846-8a8e-26ae199f3b48",
+   "fromMe": false,
+   "text": "Finished the session.",
+   "time": {
+    "en": "Sep 10",
+    "es": "10 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "757c7df0-1359-4100-a107-811bcb751ed9",
+   "fromMe": true,
+   "text": "Great consistency lately.",
+   "time": {
+    "en": "Sep 14",
+    "es": "14 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "902e51b0-9916-497c-85cc-fe8ec2128b1e",
+   "fromMe": false,
+   "text": "That one was tough but done.",
+   "time": {
+    "en": "Sep 14",
+    "es": "14 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "9dec1a1b-fb75-48c7-87c7-832ba9c6644b",
+   "fromMe": true,
+   "text": "Remember to log your weights so I can adjust next week.",
+   "time": {
+    "en": "Sep 17",
+    "es": "17 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "ef1fd8ab-220d-464a-bd08-abe491d82fe8",
+   "fromMe": false,
+   "text": "Logged it.",
+   "time": {
+    "en": "Sep 17",
+    "es": "17 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "7b2fad8a-6376-49d8-be8a-b155e81bc3e4",
+   "fromMe": true,
+   "text": "Nice work this week. Keep it rolling.",
+   "time": {
+    "en": "Sep 21",
+    "es": "21 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "6598d619-0b6c-41e7-b361-b34b4e7d5bc3",
+   "fromMe": false,
+   "text": "Thanks!",
+   "time": {
+    "en": "Sep 21",
+    "es": "21 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "3c5f2fa2-2b7f-4f6b-aca1-4cc6acec7911",
+   "fromMe": true,
+   "text": "How did today’s session feel?",
+   "time": {
+    "en": "Sep 24",
+    "es": "24 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "36250656-b01d-4fea-aaf6-690ee3719990",
+   "fromMe": false,
+   "text": "Finished the session.",
+   "time": {
+    "en": "Sep 24",
+    "es": "24 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "a51d2af2-e38b-4ee9-a227-a7884f2878fb",
+   "fromMe": true,
+   "text": "Proud of the effort this week.",
+   "time": {
+    "en": "Sep 28",
+    "es": "28 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "b0fef0bd-0acc-4dcb-96dd-16fc66be7f5e",
+   "fromMe": false,
+   "text": "Felt good today.",
+   "time": {
+    "en": "Sep 28",
+    "es": "28 sept"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "2a56ba71-4227-422f-9b95-6e4cad38c936",
+   "fromMe": true,
+   "text": "Any soreness from the last session?",
+   "time": {
+    "en": "Oct 1",
+    "es": "1 oct"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "27bb64a3-ea54-4261-90bc-8e43bd8dc49e",
+   "fromMe": false,
+   "text": "Quick question answered, thanks!",
+   "time": {
+    "en": "Oct 1",
+    "es": "1 oct"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "d3fd0747-792b-4659-9f8f-7263105fa696",
+   "fromMe": true,
+   "text": "How did today’s session feel?",
+   "time": {
+    "en": "Oct 4",
+    "es": "4 oct"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "6e7fff3a-820f-4ce4-9ce9-a9f7ba824828",
+   "fromMe": false,
+   "text": "Felt good today.",
+   "time": {
+    "en": "Oct 4",
+    "es": "4 oct"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "3f7b4f28-a0bf-4d95-82f0-dfcfcedc33ee",
+   "fromMe": false,
+   "text": "Morning! Quick one: can I swap Thursday’s session to Friday this week? Big deadline.",
+   "time": {
+    "en": "Sat",
+    "es": "Sáb"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "cf83c322-9765-4936-8e66-7dd96995233b",
+   "fromMe": true,
+   "text": "Of course. Just keep a rest day between Friday and Sunday’s session.",
+   "time": {
+    "en": "Sat",
+    "es": "Sáb"
+   },
+   "isVoice": false
+  },
+  {
+   "id": "47cc85c0-541a-4b06-97e7-ebb771fce9f8",
+   "fromMe": false,
+   "text": "Hey Dani, legs feel a lot better today. Can we move Friday’s session to 7 instead of 6?",
+   "time": {
+    "en": "6:05 PM",
+    "es": "6:05 p.m."
+   },
+   "isVoice": true
+  },
+  {
+   "id": "a33aabf1-9235-4b5b-8684-26a605fc300d",
+   "fromMe": false,
+   "text": "Sent my check-in. Legs are still wrecked from Thursday, is that normal?",
+   "time": {
+    "en": "8:32 PM",
+    "es": "8:32 p.m."
+   },
+   "isVoice": false
+  }
+ ]
+}

@@ -25,6 +25,13 @@ final class VoiceService {
         }
     }
 
+    /// When signed in, Assist speaks with the server's voice (Deepgram, e.g. Elise): this returns
+    /// the audio for some text, or nil (then the device's own voice is used).
+    @ObservationIgnored var remoteVoice: ((String, AppLanguage) async -> Data?)?
+    @ObservationIgnored private var player: AVAudioPlayer?
+    @ObservationIgnored private let playerDelegate = PlayerDelegate()
+    @ObservationIgnored private var speakToken = 0
+
     @ObservationIgnored private let synthesizer = AVSpeechSynthesizer()
     @ObservationIgnored private let speechDelegate = SpeechDelegate()
     @ObservationIgnored private var currentUtterance: AVSpeechUtterance?
@@ -45,6 +52,7 @@ final class VoiceService {
         speechDelegate.onFinish = { [weak self] utterance in
             DispatchQueue.main.async { self?.utteranceFinished(utterance) }
         }
+        player = nil
     }
 
     // MARK: - Speaking
@@ -58,8 +66,92 @@ final class VoiceService {
     /// Speaks text in Assist's voice. `completion` runs when it finishes (not when cancelled).
     func speak(_ text: String, completion: (() -> Void)? = nil) {
         stopSpeaking()
+        let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else {
+            if let completion { DispatchQueue.main.async { completion() } }
+            return
+        }
         speakCompletion = completion
         configureAudioSession()
+        guard let remoteVoice else {
+            speakOnDevice(clean)
+            return
+        }
+        // The server's voice: the first sentence is fetched and played while the rest is fetched.
+        speakToken += 1
+        let token = speakToken
+        isSpeaking = true
+        let parts = Self.splitForSpeech(clean)
+        let language = self.language
+        Task { @MainActor [weak self] in
+            let first = Task { await remoteVoice(parts[0], language) }
+            let rest = parts.count > 1 ? Task { await remoteVoice(parts[1], language) } : nil
+            guard let firstAudio = await first.value else {
+                guard let self, token == self.speakToken else { return }
+                self.speakOnDevice(clean)
+                return
+            }
+            guard let self, token == self.speakToken else { return }
+            self.play(firstAudio, token: token) { [weak self] in
+                guard let self, token == self.speakToken else { return }
+                guard let rest else { self.finishRemote(token); return }
+                Task { @MainActor [weak self] in
+                    guard let self, token == self.speakToken else { return }
+                    if let audio = await rest.value {
+                        self.play(audio, token: token) { [weak self] in self?.finishRemote(token) }
+                    } else {
+                        self.speakOnDevice(parts[1])
+                    }
+                }
+            }
+        }
+    }
+
+    /// "First sentence. Everything else." (short text stays in one piece)
+    static func splitForSpeech(_ text: String) -> [String] {
+        guard text.count >= 120 else { return [text] }
+        let enders: Set<Character> = [".", "!", "?", "…"]
+        var index = text.startIndex
+        var count = 0
+        while index < text.endIndex {
+            let ch = text[index]
+            count += 1
+            let next = text.index(after: index)
+            if enders.contains(ch), count >= 20, next < text.endIndex, text[next] == " " {
+                let first = String(text[...index])
+                let rest = String(text[next...]).trimmingCharacters(in: .whitespaces)
+                return rest.isEmpty ? [text] : [first, rest]
+            }
+            if count > 180 { break }
+            index = next
+        }
+        return [text]
+    }
+
+    private func play(_ audio: Data, token: Int, then: @escaping () -> Void) {
+        guard token == speakToken else { return }
+        do {
+            let p = try AVAudioPlayer(data: audio)
+            playerDelegate.onFinish = { DispatchQueue.main.async { then() } }
+            p.delegate = playerDelegate
+            player = p
+            p.prepareToPlay()
+            if !p.play() { then() }
+        } catch {
+            then()
+        }
+    }
+
+    private func finishRemote(_ token: Int) {
+        guard token == speakToken else { return }
+        player = nil
+        isSpeaking = false
+        let done = speakCompletion
+        speakCompletion = nil
+        done?()
+    }
+
+    private func speakOnDevice(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = Self.bestVoice(for: language)
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 1.02
@@ -71,6 +163,9 @@ final class VoiceService {
     }
 
     func stopSpeaking() {
+        speakToken += 1
+        player?.stop()
+        player = nil
         currentUtterance = nil
         speakCompletion = nil
         if synthesizer.isSpeaking {
@@ -274,6 +369,19 @@ final class VoiceService {
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .duckOthers, .allowBluetoothA2DP])
         try? session.setActive(true, options: [])
+    }
+}
+
+/// Receives "finished playing" callbacks from the server-voice player.
+private final class PlayerDelegate: NSObject, AVAudioPlayerDelegate {
+    var onFinish: (() -> Void)?
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        onFinish?()
+    }
+
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        onFinish?()
     }
 }
 

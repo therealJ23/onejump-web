@@ -32,6 +32,25 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build.log | grep -E " error: |\*\* BUILD" || true
           grep -q "BUILD SUCCEEDED" build.log
 
+  # The same build TestFlight gets: Release, for real iPhones, archived (unsigned here; Xcode
+  # signs it with your Apple team when you upload).
+  archive:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive for iPhone (Release)
+        run: |
+          cd mobile-app
+          set -o pipefail
+          xcodebuild -project OneJump.xcodeproj -scheme OneJump -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/OneJump.xcarchive" -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO archive 2>&1 | tee archive.log | grep -E " error: |\*\* ARCHIVE" || true
+          grep -q "ARCHIVE SUCCEEDED" archive.log
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" -c "Print :CFBundleVersion" -c "Print :ITSAppUsesNonExemptEncryption" "$RUNNER_TEMP/OneJump.xcarchive/Products/Applications/OneJump.app/Info.plist"
+          ls "$RUNNER_TEMP/OneJump.xcarchive/Products/Applications/OneJump.app/" | grep -E "PrivacyInfo|Assets.car"
+
   build:
     runs-on: macos-15
     timeout-minutes: 40
@@ -64,7 +83,7 @@ jobs:
         if: steps.build.outputs.code == '0'
         timeout-minutes: 20
         run: |
-          bash .github/ios/screens.sh "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/OneJump.app" "$GITHUB_WORKSPACE/shots" || true
+          bash .github/ios/screens.sh "$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/OneJump.app" "$GITHUB_WORKSPACE/shots" "$GITHUB_WORKSPACE/mobile-app/Fixtures" || true
 
       - name: Save results to ios-ci-logs branch
         if: always()
