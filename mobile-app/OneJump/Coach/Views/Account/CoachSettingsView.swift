@@ -64,8 +64,8 @@ struct CoachSettingsView: View {
             ListCard {
                 HStack(spacing: 12) {
                     IconTile(systemName: "speaker.wave.2", tone: .assist)
-                    TitleSub(CT.voice(lang), sub: "\(voiceName) · \(CT.voiceUsed(lang))")
-                    Button(CT.preview(lang)) { store.voice.speak(CT.voicePreview(lang)) }
+                    TitleSub(CT.voice(lang), sub: store.live ? CL.serverVoice(lang) : "\(voiceName) · \(CT.voiceUsed(lang))")
+                    Button(CT.preview(lang)) { store.voice.speak(store.live ? CL.voicePreview(store.me.first)(lang) : CT.voicePreview(lang)) }
                         .buttonStyle(.oj(.ghost, size: .small))
                 }
                 .rowPadding()

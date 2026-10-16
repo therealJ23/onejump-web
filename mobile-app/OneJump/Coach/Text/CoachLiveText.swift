@@ -87,6 +87,11 @@ enum CL {
     static let noMeasures = Loc("No measurements yet.", "Aún no hay medidas.")
     static let noCheckInHistory = Loc("No check-ins yet.", "Aún no hay check-ins.")
     static let editOnWeb = Loc("Build and edit programs on onejumpfit.com. Changes show up here.", "Crea y edita programas en onejumpfit.com. Los cambios aparecen aquí.")
+    static let serverVoice = Loc("Your OneJump voice (set on the server) · used for the briefing and every answer", "Tu voz de OneJump (configurada en el servidor) · para el resumen y todas las respuestas")
+    static func voicePreview(_ first: String) -> Loc {
+        Loc("Hi \(first)! This is Assist. This is the voice you’ll hear for your morning briefing and all of my answers.",
+            "¡Hola, \(first)! Soy Assist. Esta es la voz que vas a escuchar en tu resumen de la mañana y en todas mis respuestas.")
+    }
     static let off = Loc("Off", "Apagado")
     static func planLine(_ label: Loc, _ trialDays: Int?) -> Loc {
         guard let days = trialDays else { return label }

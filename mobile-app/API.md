@@ -1,6 +1,6 @@
 # Client API for the iPhone app
 
-Base URL: `http://localhost:3000` while developing, later `https://app.onejumpfit.com`.
+Base URL: `https://onejumpfit.com` (launch the app with `-oj.server http://127.0.0.1:3000` to use a local server).
 All requests and responses are JSON. Every request that changes something (POST, PUT, PATCH, DELETE) must send the header `X-CSRF-Token`.
 
 ## Logging in (no passwords for clients)
@@ -32,3 +32,40 @@ A `401` means “logged out” (show the login screen). A `403` with `{ code: "c
 | GET | `/export` | All of the client’s data as JSON |
 
 Errors look like `{ "error": "Plain-English message", "fields": { "email": "…" } }`.
+
+
+# Coach API for the iPhone app
+
+## Logging in (coaches)
+1. `POST /api/auth/login` `{ email, password }` → `{ ok, csrfToken }`, or `{ twoFactor: true, csrfToken }`.
+2. If `twoFactor`: `POST /api/auth/login/2fa` `{ code }` → `{ ok, csrfToken }`.
+3. `GET /api/auth/me` → `role` is `OWNER` or `COACH`.
+
+## Reading (one call per screen, labels as `{ en, es }`)
+| Method | Path | What |
+| --- | --- | --- |
+| GET | `/api/mobile/coach` | Everything: me, Today (queue, sessions, KPIs, radar), charts, clients, threads, check-ins, leads, payments, programs, nutrition, automations, Assist stats, exercise library |
+| GET | `/api/mobile/coach/clients/:id` | One client's page (stats, habits, activity, program week, food and nutrition plan, bests, measurements, photos, check-ins, notes) |
+| GET | `/api/mobile/coach/threads/:clientId` | One conversation (marks it read) |
+| GET | `/api/mobile/coach/checkins/:id` | One check-in with Assist's summary, reply draft and actions (written on first open) |
+| GET | `/api/briefing/today` | Morning briefing lines (Pro) |
+
+## Actions (same routes as the web app)
+| Method | Path | Body |
+| --- | --- | --- |
+| POST | `/api/insights/:id/approve` | `{ text? }` sends a Needs-you draft (edited text optional) |
+| POST | `/api/insights/:id/undo` | takes it back (5 minutes) |
+| POST | `/api/threads/:clientId/messages` | `{ body }` |
+| POST | `/api/checkins/:id/reply` | `{ insightId, text }` sends the reply and marks it reviewed |
+| POST | `/api/checkins/:id/actions/:index/apply` | applies one suggested action |
+| POST | `/api/checkins/remind` | `{ clientIds }` check-in reminder |
+| POST | `/api/clients` | `{ name, email, mode, sendInvite }` → `{ client, inviteLink, emailed }` |
+| POST | `/api/clients/:id/notes` | `{ body }` |
+| PATCH | `/api/leads/:id` | `{ stage }` |
+| POST | `/api/payments/:id/remind` | card-update reminder for a failed payment |
+| PATCH | `/api/automations/:id` | `{ enabled }` |
+| POST | `/api/assist/ask` | `{ question, voice, history: [{ role, text }], lang, pendingProposalId? }` → `{ answerText, spokenText, proposals, awaiting, decided? }` |
+| POST | `/api/assist/proposals/:id/confirm` / `cancel` | approve or cancel what Assist prepared |
+| POST | `/api/voice/speak` | `{ text, lang }` → MP3 (Elise), or 204 to use the phone's voice |
+| POST | `/api/clients/:id/nutrition-plan/assist` | `{ request, lang }` → Assist's draft plan (Pro) |
+| POST | `/api/clients/:id/nutrition-plan/apply-draft` | the (edited) draft → saves it for the client |

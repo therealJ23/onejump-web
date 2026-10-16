@@ -181,6 +181,8 @@ extension CoachStore {
     func saveNote(_ text: String, for clientID: String) async {
         do {
             let _: APIClient.Empty = try await api.post("/api/clients/\(clientID)/notes", ["body": text])
+            await loadDetail(clientID)
+            notes[clientID] = [] // now part of the loaded page
         } catch {
             notes[clientID]?.removeAll { $0.text.en == text }
             showError(error)

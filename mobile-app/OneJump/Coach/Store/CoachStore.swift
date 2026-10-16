@@ -294,7 +294,12 @@ final class CoachStore {
             clientDetailTab = .overview
             if live { Task { @MainActor [weak self] in await self?.loadDetail(id) } }
         }
-        if case .thread = route { threadReply = ""; recordingVoiceNote = false }
+        if case .thread(let id) = route {
+            threadReply = ""
+            recordingVoiceNote = false
+            readThreads.insert(id)
+            if live { Task { @MainActor [weak self] in await self?.loadThread(id) } }
+        }
         if case .checkIn(let id) = route, live { Task { @MainActor [weak self] in await self?.loadCheckIn(id) } }
         switch tab {
         case .today: todayPath.append(route)
@@ -463,9 +468,7 @@ final class CoachStore {
     }
 
     func openThread(_ id: String) {
-        readThreads.insert(id)
         push(.thread(id))
-        if live { Task { @MainActor [weak self] in await self?.loadThread(id) } }
     }
 
     func useSuggestion(in id: String) {

@@ -46,14 +46,10 @@ struct LoginView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    OneJumpWordmark(height: 26)
-                    Spacer()
-                    LanguageToggleButton(current: settings.language) {
-                        settings.language = settings.language == .english ? .spanish : .english
-                    }
-                }
-                .padding(.top, 24)
+                // No language switch here: the phone's language is used, and coaches change it in
+                // Settings once signed in (same as the website).
+                OneJumpWordmark(height: 26)
+                    .padding(.top, 24)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(needsCode ? CL.codeTitle(lang) : CL.loginTitle(lang))

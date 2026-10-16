@@ -1,12 +1,14 @@
 # OneJump iPhone app (Swift + SwiftUI)
 
 One Xcode project with **both apps**: the **Coach app** and the **Client app**.
-For now a small picker on the first screen lets you choose which one to open. In the real
-app, logging in decides it (coaches get the coach app, clients get the client app).
 
-> Status: **prototype built in Swift.** Every screen from the web prototypes is here, in
-> English and Spanish, with real voice. It runs on sample data. Connecting it to the live
-> server is the next step (see "Next steps" below).
+> Status: **the coach app runs on your real OneJump account.** Log in with the same email
+> and password as onejumpfit.com and you see your own clients, drafts, check-ins, messages,
+> payments and charts, and Assist (Claude, on the server) answers with your data and speaks
+> with your Elise voice. **Try the demo** on the login screen opens the sample business (and
+> the client app), with nothing sent anywhere.
+> The client app is still the demo: clients log in with an email link, and email isn't set
+> up yet (Resend).
 
 ## Open and run it (5 minutes)
 
@@ -25,7 +27,7 @@ To run it **on your own iPhone**:
 4. Press **▶ Run**. The first time, on the iPhone go to **Settings → General → VPN & Device
    Management** and trust your developer certificate.
 
-Needs **Xcode 16 or newer** and runs on **iOS 17 or newer**.
+Needs **Xcode 15 or newer** and runs on **iOS 17 or newer** (iPhone).
 
 ## Where things are
 
@@ -85,6 +87,7 @@ screens only show data and call the store. All changes go through `CoachStore` o
 
 ## Language (English / Español)
 
+- **Login screen:** follows the iPhone's language (like the website).
 - **Coach:** More → Settings → **Language** (or the EN/ES button at the top of More).
 - **Client:** tap your avatar on Today → **Language**.
 
@@ -102,16 +105,58 @@ plays a sample sentence so you can still see the flow.
 Tip: for a nicer voice, on the iPhone go to **Settings → Accessibility → Spoken Content →
 Voices → English → Ava (Premium)** (and **Spanish → Paulina**) and download it.
 
+## Logging in
+
+The app talks to `https://onejumpfit.com`, the same JSON API as the web app (see `API.md`).
+The session cookie is kept for 14 days of inactivity, so you stay logged in. **More →
+Settings → Log out** signs out. Coaches who turned on two-step login enter their 6-digit code.
+
+Everything Assist knows comes from the server; the app never holds an API key.
+
+## Test it on your iPhone with TestFlight
+
+You need the **Apple Developer Program** ($99/year) on your Apple ID.
+
+1. **Xcode → Settings → Accounts → +** → Apple ID → sign in.
+2. Open `OneJump.xcodeproj`, click **OneJump** (blue icon, top of the left sidebar) →
+   target **OneJump** → **Signing & Capabilities** → tick **Automatically manage signing** →
+   **Team**: pick your name (Apple Developer Program).
+3. In a browser, go to **appstoreconnect.apple.com → Apps → + → New App**:
+   Platform **iOS**, Name **OneJump** (if it's taken: **OneJump Coach**), Language
+   **English (U.S.)**, Bundle ID **com.onejumpfit.OneJump**, SKU **onejump-ios**, Access
+   **Full Access** → **Create**.
+4. Back in Xcode, at the top choose **Any iOS Device (arm64)** as the destination.
+5. **Product → Archive.** When the Organizer window opens: **Distribute App → App Store
+   Connect → Distribute**. Wait for "Uploaded".
+6. In App Store Connect → your app → **TestFlight**. After 5–15 minutes the build shows
+   (status "Ready to Submit" / "Testing"). Under **Internal Testing** click **+**, make a group
+   (for example "Me"), add yourself.
+7. On your iPhone, install **TestFlight** from the App Store, open the email invite (or the
+   TestFlight app) and tap **Install**.
+
+Every new upload needs a higher build number: target **OneJump → General → Build** (1 → 2 → 3).
+Export compliance is answered in the app (`ITSAppUsesNonExemptEncryption = NO`), so TestFlight
+won't ask about encryption.
+
+Without the paid program you can still run it on your own iPhone for 7 days: plug it in,
+pick it at the top of Xcode, choose your personal team in Signing, press ▶ Run.
+
+## Checks that run on every push (GitHub Actions)
+
+- Builds with Xcode 15.4 and 16, and a **Release archive for real iPhones** (the same build
+  TestFlight gets, unsigned).
+- Screenshots of the demo **and of the signed-in coach app**, using the server's real
+  responses from `Fixtures/` (made by the server's tests from its sample business). To
+  refresh them, run the dump test described in `Fixtures/README.md`.
+- Results are saved to the `ios-ci-logs` branch.
+
 ## Next steps
 
-1. **Connect to the server.** `Core/Networking/APIClient.swift` already handles the session
-   cookie, CSRF token and magic-link login from `API.md`. Swap each store's sample data
-   for API calls, one screen at a time.
-2. **Assist on the server.** The preview's Assist answers are canned
-   (`Coach/Data/AssistReplies.swift`). In production, `CoachStore.reply(to:)` calls the
-   server, which calls Claude with the coach's data.
-3. **Push notifications** (reminders, new messages) and **Apple Health** (steps, sleep).
-4. **TestFlight**: needs the Apple Developer Program ($99/year).
+1. **Client app on the server** (needs email for login links: Resend), then push
+   notifications for reminders and new messages.
+2. **Apple Health** (steps, sleep) for clients.
+3. **App Store release**: screenshots, description, privacy answers (the app collects name,
+   email and what coaches type or say to Assist, for app functionality only; no tracking).
 
 Server changes the iPhone app will need: universal links for login emails, push
 notifications, and an app-version check (details in the web app's PROGRESS.md).

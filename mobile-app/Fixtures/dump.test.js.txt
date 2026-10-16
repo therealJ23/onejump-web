@@ -1,0 +1,20 @@
+// Copy to tests/zz-dump.test.js in the web app, run `npx vitest run tests/zz-dump.test.js`,
+// then delete it. Writes the iPhone app's fixtures from the server's sample business.
+import { it } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fixtures, loginCoach } from './helpers.js';
+
+it('dump', async () => {
+  const f = await fixtures();
+  const d = await loginCoach();
+  const out = path.resolve('mobile-app/Fixtures');
+  const w = (n, v) => fs.writeFileSync(`${out}/${n}.json`, JSON.stringify(v, null, 1));
+  const s = (await d.get('/api/mobile/coach')).body; w('snapshot', s);
+  w('detail', (await d.get(`/api/mobile/coach/clients/${f.mike.id}`)).body);
+  w('thread', (await d.get(`/api/mobile/coach/threads/${f.mike.id}`)).body);
+  w('checkin', (await d.get(`/api/mobile/coach/checkins/${s.checkIns.toReview[0].id}`)).body);
+  w('ask', (await d.post('/api/assist/ask', { question: 'Message Mike: see you Monday at 6', voice: true })).body);
+  w('nplan', (await d.post(`/api/clients/${f.mike.id}/nutrition-plan/assist`, { request: 'meal plan please' })).body);
+  w('briefing', (await d.get('/api/briefing/today')).body);
+}, 60000);
