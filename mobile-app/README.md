@@ -115,19 +115,20 @@ Everything Assist knows comes from the server; the app never holds an API key.
 
 ## Test it on your iPhone with TestFlight
 
-You need the **Apple Developer Program** ($99/year) on your Apple ID.
+You need the **Apple Developer Program** ($99/year) on your Apple ID: developer.apple.com/programs → **Enroll**. Approval can take up to 48 hours.
 
 1. **Xcode → Settings → Accounts → +** → Apple ID → sign in.
 2. Open `OneJump.xcodeproj`, click **OneJump** (blue icon, top of the left sidebar) →
    target **OneJump** → **Signing & Capabilities** → tick **Automatically manage signing** →
-   **Team**: pick your name (Apple Developer Program).
+   **Team**: pick your name (Apple Developer Program). Press **⌘B** once: Xcode registers the
+   bundle ID with Apple, so it shows up in the next step.
 3. In a browser, go to **appstoreconnect.apple.com → Apps → + → New App**:
    Platform **iOS**, Name **OneJump** (if it's taken: **OneJump Coach**), Language
    **English (U.S.)**, Bundle ID **com.onejumpfit.OneJump**, SKU **onejump-ios**, Access
    **Full Access** → **Create**.
 4. Back in Xcode, at the top choose **Any iOS Device (arm64)** as the destination.
-5. **Product → Archive.** When the Organizer window opens: **Distribute App → App Store
-   Connect → Distribute**. Wait for "Uploaded".
+5. **Product → Archive.** When the Organizer window opens: **Distribute App → TestFlight
+   Internal Only** (or **App Store Connect**) **→ Distribute**. Wait for "Uploaded".
 6. In App Store Connect → your app → **TestFlight**. After 5–15 minutes the build shows
    (status "Ready to Submit" / "Testing"). Under **Internal Testing** click **+**, make a group
    (for example "Me"), add yourself.
