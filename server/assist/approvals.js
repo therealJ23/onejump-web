@@ -21,7 +21,11 @@ export function yesNo(text) {
   return null;
 }
 
-const clip = (s, max = 420) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); return t.length <= max ? t : `${t.slice(0, max).replace(/\s+\S*$/, '')}… The rest is on screen.`; };
+const clip = (s, max = 420) => {
+  const t = String(s || '').replace(/\s+/g, ' ').trim();
+  if (t.length > max) return `${t.slice(0, max).replace(/\s+\S*$/, '')}… The rest is on screen.`;
+  return /[.!?…”"')]$/.test(t) ? t : `${t}.`; // a full stop before "Should I send it?"
+};
 
 /** What Assist says out loud when it creates a proposal: the content, then a yes-or-no question. */
 export function readBack(p, lang = 'en') {
