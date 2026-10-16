@@ -77,6 +77,9 @@ extension CoachStore {
     /// Listens for "yes" or "no" to the card at `index`.
     func askListen(_ index: Int, force: Bool = false) {
         guard (force || pendingIndex == index), voiceOn else { return }
+        // Screenshot runs (fixture data) don't open the microphone on their own: the speech
+        // permission prompt would cover the screen. A tap on the mic still works.
+        if Fixtures.isOn && !force { return }
         pendingIndex = index
         listenMode = .confirm
         let isProposal = assistMessages[safe: index]?.card?.kind == .proposal

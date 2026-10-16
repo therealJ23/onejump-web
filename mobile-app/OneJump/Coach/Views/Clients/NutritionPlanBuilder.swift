@@ -14,6 +14,9 @@ struct NutritionPlanBuilder: View {
     @State private var reviewedTarget = false
     @FocusState private var typing: Bool
 
+    /// Scroll target, so the client screen can bring a new draft into view.
+    static let anchor = "nutrition-plan-builder"
+
     var body: some View {
         Group {
             if let response = store.planDrafts[client.id], let draft = edited {
@@ -22,6 +25,7 @@ struct NutritionPlanBuilder: View {
                 requestCard
             }
         }
+        .id(Self.anchor)
         .onAppear { syncDraft() }
         .onChange(of: store.planDrafts[client.id]?.draft) { _, _ in syncDraft() }
     }

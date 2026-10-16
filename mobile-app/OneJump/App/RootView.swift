@@ -201,12 +201,9 @@ struct AppPickerView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    OneJumpWordmark(height: 26)
-                    Spacer()
-                    languageButton
-                }
-                .padding(.top, 24)
+                // No language switch: the phone's language is used, and each demo app has it in its settings.
+                OneJumpWordmark(height: 26)
+                    .padding(.top, 24)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(SharedText.previewTitle(lang))
@@ -250,21 +247,6 @@ struct AppPickerView: View {
             .frame(maxWidth: .infinity)
         }
         .background(Palette.bg.ignoresSafeArea())
-    }
-
-    private var languageButton: some View {
-        Button {
-            settings.language = settings.language == .english ? .spanish : .english
-        } label: {
-            Text(settings.language.code)
-                .font(.archivo(13, .heavy))
-                .foregroundStyle(Palette.ink)
-                .frame(width: 44, height: 44)
-                .background(Palette.surface, in: Circle())
-                .overlay(Circle().strokeBorder(Palette.line, lineWidth: 1))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(SharedText.language(lang))
     }
 
     private func appButton(title: String, sub: String, hero: Bool, action: @escaping () -> Void) -> some View {

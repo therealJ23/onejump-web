@@ -21,18 +21,21 @@ struct BusinessSection: View {
     private var kpis: some View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
             ForEach(store.data.kpis) { kpi in
-                Button {
-                    switch kpi.target {
-                    case "payments": store.push(.payments)
-                    case "clients": store.go(.clients)
-                    case "checkins": store.openInbox(.checkIns)
-                    default: break
-                    }
-                } label: {
-                    StatTile(value: kpi.value, label: kpi.label(lang), note: kpi.note(lang), noteColor: kpi.noteMuted ? Palette.muted : Palette.good, labelFirst: true)
+                let tile = StatTile(value: kpi.value, label: kpi.label(lang), note: kpi.note(lang), noteColor: kpi.noteMuted ? Palette.muted : Palette.good, labelFirst: true)
+                if let target = kpi.target {
+                    Button {
+                        switch target {
+                        case "payments": store.push(.payments)
+                        case "clients": store.go(.clients)
+                        case "checkins": store.openInbox(.checkIns)
+                        default: break
+                        }
+                    } label: { tile }
+                    .buttonStyle(.plain)
+                } else {
+                    // Not tappable, but drawn at full strength (a disabled button looks greyed out).
+                    tile
                 }
-                .buttonStyle(.plain)
-                .disabled(kpi.target == nil)
             }
         }
     }

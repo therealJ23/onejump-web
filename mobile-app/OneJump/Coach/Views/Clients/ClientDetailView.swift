@@ -11,23 +11,33 @@ struct ClientDetailView: View {
         let client = store.client(clientID)
         let detail = store.detail(clientID)
 
-        ScreenScroll {
-            profile(client)
-            if client.kind == .risk, let score = detail.riskScore {
-                riskCard(score: score, why: detail.riskWhy.map { $0(lang) } ?? "")
-            }
-            actions(client)
-            SegmentedBar(options: tabOptions, selection: $store.clientDetailTab, compact: true)
+        ScrollViewReader { proxy in
+            ScreenScroll {
+                profile(client)
+                if client.kind == .risk, let score = detail.riskScore {
+                    riskCard(score: score, why: detail.riskWhy.map { $0(lang) } ?? "")
+                }
+                actions(client)
+                SegmentedBar(options: tabOptions, selection: $store.clientDetailTab, compact: true)
 
-            switch store.clientDetailTab {
-            case .overview: ClientOverviewTab(client: client)
-            case .program: ClientProgramTab(client: client)
-            case .food: ClientFoodTab(client: client)
-            case .progress: ClientProgressTab(client: client)
-            case .notes: ClientNotesTab(client: client)
+                switch store.clientDetailTab {
+                case .overview: ClientOverviewTab(client: client)
+                case .program: ClientProgramTab(client: client)
+                case .food: ClientFoodTab(client: client)
+                case .progress: ClientProgressTab(client: client)
+                case .notes: ClientNotesTab(client: client)
+                }
+            }
+            .refreshable { await store.loadDetail(clientID) }
+            // When Assist's nutrition plan arrives, bring it into view.
+            .onChange(of: store.planDrafts[clientID]?.draft) { _, draft in
+                guard draft != nil, store.clientDetailTab == .food else { return }
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 150_000_000)
+                    withAnimation(.snappy) { proxy.scrollTo(NutritionPlanBuilder.anchor, anchor: .top) }
+                }
             }
         }
-        .refreshable { await store.loadDetail(clientID) }
         .ojNavigationTitle(CT.client(lang))
     }
 
