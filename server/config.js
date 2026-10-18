@@ -1,7 +1,9 @@
 // Reads environment variables once. Everything secret stays on the server.
 import 'dotenv/config';
 
-const env = process.env;
+// Values pasted into a hosting dashboard often carry a stray space, tab or newline
+// ("\tresend"), which would silently switch a provider off. Trim every value once here.
+const env = Object.fromEntries(Object.entries(process.env).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v]));
 const isTest = env.NODE_ENV === 'test' || env.VITEST === 'true';
 const isProd = env.NODE_ENV === 'production';
 
