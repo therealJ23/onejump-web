@@ -3,6 +3,7 @@
 // can only ever see this business's data, and never writes SQL. Results carry first names and
 // numbers only: no emails, phone numbers or payment details go to a model.
 import { checkNutritionLanguage } from '../nutrition/language.js';
+import { businessInsights } from '../core/businessInsights.js';
 import { missingCheckinClients } from '../core/checkinStatus.js';
 import { revenueSummary } from '../core/money.js';
 import { buildToday } from '../core/queue.js';
@@ -91,12 +92,12 @@ export const TOOLS = {
     },
   },
   business_summary: {
-    description: 'A summary of the business this month: revenue, clients, risks, money and leads.',
+    description: 'A summary of the business this month: revenue, clients, risks, money and leads, plus a realistic forecast of what the month will end at (expected, low and high, built from renewals, scheduled and failed payments and the recent pace of new clients).',
     input: {},
     trace: ['Payments', 'Clients', 'Check-ins', 'Risk scores', 'Leads'],
     async run(db, _a, c) {
       const from = monthStart(c.now);
-      const [rev, clients, risk, unpaid, newLeads, consults, missing] = await Promise.all([
+      const [rev, clients, risk, unpaid, newLeads, consults, missing, insights] = await Promise.all([
         TOOLS.revenue.run(db, { month: 'this' }, c),
         db.client.findMany({ select: { status: true, startedAt: true, updatedAt: true } }),
         TOOLS.at_risk_clients.run(db, {}, c),
@@ -104,14 +105,17 @@ export const TOOLS = {
         db.lead.count({ where: { stage: 'new' } }),
         db.lead.findMany({ where: { stage: 'consult' }, select: { name: true } }),
         missingCheckinClients(db, c.now),
+        businessInsights(db, c.now).catch(() => null),
       ]);
       const active = clients.filter(x => ['NEW', 'ACTIVE'].includes(x.status));
+      const f = insights?.forecast;
       return {
         revenue: rev, activeClients: active.length, newThisMonth: clients.filter(x => new Date(x.startedAt) >= from).length,
         cancelledThisMonth: clients.filter(x => x.status === 'INACTIVE' && new Date(x.updatedAt) >= from).length,
         atRisk: risk.clients.slice(0, 3), atRiskCount: risk.count,
         failedCents: unpaid.failed.reduce((n, p) => n + p.amountCents, 0), failedNames: unpaid.failed.map(p => p.name),
         newLeads, consults: consults.map(l => l.name), missingCheckins: missing.length,
+        forecast: f ? { expectedCents: f.base.total, lowCents: f.low.total, highCents: f.high.total, collectedCents: f.collected, lastMonthCents: f.lastMonth.total, daysLeft: insights.month.daysLeft, collectionRatePct: f.collectionRate, activeClientsByMonthEnd: insights.clients.projectedActive, monthlyChurnPct: insights.clients.churnPct } : null,
       };
     },
   },

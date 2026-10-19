@@ -7,12 +7,15 @@ import { fillTemplate } from '../core/automationTemplates.js';
 import { missingCheckinClients } from '../core/checkinStatus.js';
 import { sendCheckinReminders } from '../core/reminders.js';
 import { businessCharts } from '../core/businessCharts.js';
+import { businessInsights } from '../core/businessInsights.js';
 
 export const router = Router();
 const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
 
 router.get('/', async (req, res) => res.json(await buildToday(req.db, { tz: await tzOf(req.db) })));
 router.get('/business', async (req, res) => res.json(await businessCharts(req.db)));
+/** The Business page: trends and a realistic forecast for this month. */
+router.get('/insights', async (req, res) => res.json(await businessInsights(req.db)));
 
 router.post('/remind-missing', body(z.object({ text: z.string().trim().max(1000).optional() })), async (req, res) => {
   const clients = await missingCheckinClients(req.db);

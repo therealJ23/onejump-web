@@ -95,3 +95,51 @@ test('Nutrition: Assist builds a plan from the client’s details; nothing is sa
   expect(after.updatedAt).not.toBe(before.updatedAt);
   done();
 });
+
+test('Business insights: forecast for the month, how it is built, and the trend charts', async ({ page }) => {
+  const done = watchErrors(page);
+  await coachLogin(page);
+  await page.getByRole('link', { name: 'Insights & forecast' }).click();
+  await page.waitForURL('**/app/business');
+  await expect(page.getByRole('heading', { level: 1, name: 'Business insights' })).toBeVisible();
+  for (const h of ['Expected this month', 'Collected so far', 'Monthly recurring', 'Monthly churn']) await expect(page.locator('.kpis').getByText(h)).toBeVisible();
+  for (const h of [/forecast$/, 'How the forecast is built', 'Revenue by month', 'Clients gained and lost', 'Revenue at risk', 'Client engagement', 'Client value', /^Leads/]) await expect(page.getByRole('heading', { level: 2, name: h })).toBeVisible();
+  await expect(page.getByText('What stands out')).toBeVisible();
+  // The table's expected total matches the headline number.
+  const headline = await page.locator('.kpis .kpi').first().locator('.big-num').textContent();
+  await expect(page.locator('.breakdown tfoot td.strong')).toHaveText(headline);
+  // Hovering a day on the forecast shows a tooltip.
+  const day = page.locator('#ins-forecast .day-g').last();
+  await day.locator('.hit').hover();
+  await expect(day.locator('.tip')).toHaveCSS('opacity', '1');
+  await expect(day.locator('.tip')).toContainText('Expected');
+  if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/business.png`, fullPage: true });
+  done();
+});
+
+test('Business insights on a phone @phone', async ({ page }) => {
+  const done = watchErrors(page);
+  await coachLogin(page);
+  await page.goto('/app/business');
+  await expect(page.getByRole('heading', { level: 1, name: 'Business insights' })).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/business-phone.png`, fullPage: true });
+  done();
+});
+
+test('HQ shows OneJump’s plan-revenue forecast and trends to the platform admin', async ({ page }) => {
+  const done = watchErrors(page);
+  await page.goto('/login');
+  await page.locator('body[data-ready="1"]').waitFor();
+  await page.getByLabel('Email', { exact: true }).fill('ops@onejumpfit.com');
+  await page.getByLabel('Password').fill('onejump-demo-2026');
+  await page.getByRole('button', { name: 'Log in' }).click();
+  await page.waitForURL(/\/(admin|app)/);
+  await page.goto('/admin');
+  await expect(page.getByRole('heading', { level: 1, name: 'Platform overview' })).toBeVisible();
+  await expect(page.locator('.kpis').getByText('Plan revenue this month')).toBeVisible();
+  for (const h of [/Plan revenue: .+ forecast/, 'How the forecast is built', 'MRR by month', 'Paying coaches gained and lost', /Sign-up funnel/, 'AI cost by month']) await expect(page.getByRole('heading', { level: 2, name: h })).toBeVisible();
+  await expect(page.getByText('Client names and details hidden')).toBeVisible();
+  done();
+});

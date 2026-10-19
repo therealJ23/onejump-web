@@ -3,6 +3,7 @@ import { api, setCsrf } from '../shared/api.js';
 import { esc, money, plural, rel, planName } from '../shared/format.js';
 import { icon, arc, wordmark } from '../shared/icons.js';
 import { errorState } from '../shared/components.js';
+import { hqInsights } from './insights.js';
 
 const app = document.getElementById('app');
 const HEALTH = { Healthy: 'good', 'Payment failed': 'crit', 'Trial ends soon': 'warn', 'Low usage': 'warn', 'Not onboarded': 'info' };
@@ -15,19 +16,23 @@ async function boot() {
   if (!me.isPlatformAdmin) { location.replace(me.role === 'CLIENT' ? '/client' : '/app'); return; }
   app.innerHTML = `<div class="pub"><header class="pub-nav"><span style="display:flex;align-items:center;gap:12px">${wordmark()}<span class="tiny" style="opacity:.7;letter-spacing:.08em;text-transform:uppercase">HQ</span></span><span style="display:flex;gap:6px">${me.business ? `<a class="btn ghost sm" style="color:var(--bone)" href="/app">Coach app</a>` : ''}<button class="btn ghost sm" style="color:var(--bone)" id="logout">${icon('logout')} Log out</button></span></header><main class="section"><div class="section-in" id="view" style="gap:20px"><div class="skel" style="height:120px"></div></div></main></div>`;
   document.getElementById('logout').addEventListener('click', async () => { await api.post('/api/auth/logout').catch(() => {}); location.href = '/login'; });
-  try { render(await api.get('/api/admin/overview')); } catch (e) { document.getElementById('view').innerHTML = errorState(e.message); }
+  try {
+    const [d, ins] = await Promise.all([api.get('/api/admin/overview'), api.get('/api/admin/insights').catch(() => null)]);
+    render(d, ins);
+  } catch (e) { document.getElementById('view').innerHTML = errorState(e.message); }
 }
 
-function render(d) {
+function render(d, ins) {
   const k = d.kpis, paying = Math.max(1, k.payingCoaches);
   document.getElementById('view').innerHTML = `
-    <div class="page-head"><div><div class="eyebrow">OneJump HQ</div><h1 class="h1" style="margin-top:6px">Platform overview</h1><p class="sub">Month to date · live data</p></div></div>
+    <div class="page-head"><div><div class="eyebrow">OneJump HQ</div><h1 class="h1" style="margin-top:6px">Platform overview</h1><p class="sub">Month to date · live data · forecast for the rest of the month</p></div></div>
     <section class="kpis">
       <div class="kpi"><span class="eyebrow">MRR</span><span class="big-num">${money(k.mrrCents)}</span><span class="tiny muted">${plural(k.payingCoaches, 'paying coach', 'paying coaches')}</span></div>
       <div class="kpi"><span class="eyebrow">Coaches</span><span class="big-num">${k.coaches}</span><span class="tiny muted">${k.trials} in trial · ${k.newThisMonth} new this month</span></div>
       <div class="kpi"><span class="eyebrow">Clients on platform</span><span class="big-num">${k.clients.toLocaleString()}</span><span class="tiny muted">${k.coaches ? Math.round(k.clients / k.coaches) : 0} per coach</span></div>
       <div class="kpi"><span class="eyebrow">Failed payments</span><span class="big-num" style="color:${k.failedPayments ? 'var(--crit)' : 'inherit'}">${k.failedPayments}</span><span class="tiny muted">${k.canceled} canceled</span></div>
     </section>
+    ${hqInsights(ins)}
     <section class="kpis">
       <div class="kpi"><span class="eyebrow">Assist calls</span><span class="big-num">${k.aiCalls.toLocaleString()}</span><span class="tiny muted">this month</span></div>
       <div class="kpi"><span class="eyebrow">AI cost</span><span class="big-num">$${k.aiCostUsd.toFixed(2)}</span><span class="tiny muted">${k.aiPctOfMrr}% of MRR</span></div>

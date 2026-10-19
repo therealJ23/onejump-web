@@ -20,6 +20,7 @@
   --shadow-2: 0 12px 32px -8px rgba(18,40,31,.18), 0 2px 6px rgba(18,40,31,.06);
   --scrim: rgba(10,22,17,.45);
   --chart-1: #2F5D4E; --chart-2: #9DB89F; --chart-grid: rgba(18,40,31,.08);
+  --chart-3: #3A7DB5; --chart-neg: #C2562B; --chart-ref: #8C9A92; --chart-tip: #12281F; --chart-tip-ink: #F4F6F1;
 
   --f-ui: 'Archivo', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
@@ -41,6 +42,7 @@
     --shadow-2: 0 16px 40px -8px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
     --scrim: rgba(0,0,0,.6);
     --chart-1: #D6FF3D; --chart-2: #4E6E5F; --chart-grid: rgba(230,236,227,.08);
+    --chart-3: #6FB4F2; --chart-neg: #F2935E; --chart-ref: #7E9488; --chart-tip: #E6ECE3; --chart-tip-ink: #0A1611;
     color-scheme: dark;
   }
 }
@@ -59,6 +61,7 @@
   --shadow-2: 0 16px 40px -8px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
   --scrim: rgba(0,0,0,.6);
   --chart-1: #D6FF3D; --chart-2: #4E6E5F; --chart-grid: rgba(230,236,227,.08);
+    --chart-3: #6FB4F2; --chart-neg: #F2935E; --chart-ref: #7E9488; --chart-tip: #E6ECE3; --chart-tip-ink: #0A1611;
   color-scheme: dark;
 }
 

@@ -16,6 +16,7 @@ const NAV = [
   ['library', '/app/library', 'list', 'Exercise library'],
   ['nutrition', '/app/nutrition', 'utensils', 'Nutrition'],
   ['-', 'Business'],
+  ['business', '/app/business', 'chart', 'Insights'],
   ['payments', '/app/payments', 'card', 'Payments'],
   ['leads', '/app/leads', 'funnel', 'Leads', null, 'PRO'],
   ['-', 'Assist'],

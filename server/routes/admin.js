@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { admin } from '../db/system.js';
 import { PLAN_PRICES } from '../payments/PaymentService.js';
 import { startOfMonthUtc } from '../lib/time.js';
+import { platformInsights } from '../core/platformInsights.js';
 
 export const router = Router();
 
@@ -34,3 +35,6 @@ router.get('/overview', async (_req, res) => {
     audit: auditRows,
   });
 });
+
+/** OneJump's own trends and a realistic forecast of this month's plan revenue. */
+router.get('/insights', async (_req, res) => res.json(await platformInsights()));

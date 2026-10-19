@@ -15,6 +15,7 @@ const ROUTES = [
   ['/app/builder', 'builder'], ['/app/builder/:id', 'builder'],
   ['/app/library', 'library'],
   ['/app/payments', 'payments'],
+  ['/app/business', 'business'],
   ['/app/automations', 'automations'],
   ['/app/leads', 'leads'],
   ['/app/settings', 'settings'], ['/app/settings/:tab', 'settings'],
@@ -26,7 +27,7 @@ const LOADERS = {
   today: () => import('./screens/today.js'), clients: () => import('./screens/clients.js'), client: () => import('./screens/client.js'),
   checkins: () => import('./screens/checkins.js'), inbox: () => import('./screens/inbox.js'), programs: () => import('./screens/programs.js'),
   program: () => import('./screens/program.js'), builder: () => import('./screens/builder.js'), library: () => import('./screens/library.js'),
-  payments: () => import('./screens/payments.js'), automations: () => import('./screens/automations.js'), leads: () => import('./screens/leads.js'),
+  payments: () => import('./screens/payments.js'), business: () => import('./screens/business.js'), automations: () => import('./screens/automations.js'), leads: () => import('./screens/leads.js'),
   settings: () => import('./screens/settings.js'), billing: () => import('./screens/billing.js'),
   assist: () => import('./screens/assist.js'), nutrition: () => import('./screens/nutrition.js'),
 };

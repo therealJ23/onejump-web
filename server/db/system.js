@@ -135,6 +135,19 @@ export const admin = {
   openSupport: () => db().supportRequest.findMany({ where: { status: 'open' }, select: { id: true, kind: true, createdAt: true, businessId: true }, orderBy: { createdAt: 'desc' }, take: 20 }),
   // Platform-level events only, without targets: they can hold client emails.
   recentAudit: () => db().auditLog.findMany({ where: { businessId: null }, orderBy: { at: 'desc' }, take: 30, select: { action: true, at: true } }),
+
+  // ---- HQ insights: OneJump's own business (coach plans), totals only ----
+  /** Every workspace's plan fields (no client data). */
+  planRows: () => db().business.findMany({
+    select: { id: true, name: true, plan: true, planStatus: true, trialEndsAt: true, planRenewsAt: true, cancelAtPeriodEnd: true, createdAt: true, updatedAt: true, onboardedAt: true,
+      members: { where: { role: 'OWNER' }, select: { user: { select: { lastLoginAt: true } } } } },
+  }),
+  /** Coach-plan billing events since a date (started, paid, failed, canceled). */
+  planEvents: since => db().auditLog.findMany({ where: { businessId: { not: null }, action: { in: ['plan_started', 'plan_paid', 'plan_payment_failed', 'plan_cancel'] }, at: { gte: since } }, select: { businessId: true, action: true, target: true, meta: true, at: true }, orderBy: { at: 'asc' } }),
+  /** AI spend between two dates, in micro-dollars. */
+  aiCostBetween: async (from, to) => (await db().aIUsage.aggregate({ where: { createdAt: { gte: from, lt: to } }, _sum: { costMicros: true } }))._sum.costMicros || 0,
+  /** Clients added across all workspaces between two dates (a count, nothing else). */
+  clientsAddedBetween: (from, to) => db().client.count({ where: { startedAt: { gte: from, lt: to } } }),
 };
 
 // ------------------------------------------------------------- global exercise library

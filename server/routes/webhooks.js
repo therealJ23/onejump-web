@@ -46,6 +46,17 @@ export async function handlePlatformEvent(event) {
       } });
       return deleted ? 'plan_canceled' : 'plan_updated';
     }
+    case 'invoice.paid': {
+      // A coach's OneJump plan was paid: kept for HQ's revenue and forecast.
+      const b = await byCustomer(); if (!b) return 'unknown_business';
+      if (!obj.amount_paid) return 'ignored';
+      const paidAt = ts(obj.status_transitions?.paid_at) || new Date();
+      audit({ businessId: b.id, action: 'plan_paid', target: obj.id, meta: { amountCents: obj.amount_paid, paidAt: paidAt.toISOString() } });
+      const bdb = dbForBusiness(b.id);
+      const cur = await bdb.business.findFirst({ select: { planStatus: true } });
+      if (cur?.planStatus === 'past_due') await bdb.business.update({ where: { id: b.id }, data: { planStatus: 'active' } }); // a retry went through
+      return 'plan_paid';
+    }
     case 'invoice.payment_failed': {
       const b = await byCustomer(); if (!b) return 'unknown_business';
       await dbForBusiness(b.id).business.update({ where: { id: b.id }, data: { planStatus: 'past_due' } });

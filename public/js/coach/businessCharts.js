@@ -40,6 +40,6 @@ export function clientsCard(b) {
 /** The whole section (Today). */
 export function businessSection(b) {
   if (!b) return '';
-  return `<section class="stack s12" aria-labelledby="biz-h"><div class="row between"><h2 class="h2" id="biz-h">Your business</h2><a class="btn ghost sm" href="/app/payments">Payments ${icon('chevR')}</a></div>
+  return `<section class="stack s12" aria-labelledby="biz-h"><div class="row between"><h2 class="h2" id="biz-h">Your business</h2><a class="btn ghost sm" href="/app/business">Insights & forecast ${icon('chevR')}</a></div>
     <div class="biz-grid">${revenueCard(b)}${adherenceCard(b)}${packagesCard(b)}${clientsCard(b)}</div></section>`;
 }
