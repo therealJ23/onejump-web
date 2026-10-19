@@ -2,7 +2,8 @@
 // one business never sees another's numbers).
 import { describe, it, expect, beforeAll } from 'vitest';
 import { forecastMonth, chargeDates, businessInsights, ASSUME } from '../server/core/businessInsights.js';
-import { fixtures, loginCoach, loginClient } from './helpers.js';
+import { fixtures, loginCoach, loginClient, browser, uniqueEmail } from './helpers.js';
+import { config } from '../server/config.js';
 
 const base = {
   today: '2026-10-18',
@@ -155,5 +156,23 @@ describe('HQ: OneJump’s own forecast', () => {
     const d = (await admin.get('/api/admin/insights')).body;
     expect(d.live).toBe(true);
     expect(d.forecast.collected).toBeGreaterThanOrEqual(9900);
+  });
+});
+
+describe('HQ access from HQ_ADMIN_EMAILS', () => {
+  it('a listed coach gets HQ when they log in; others don’t', async () => {
+    const email = uniqueEmail('owner');
+    const b = await browser();
+    expect((await b.post('/api/auth/signup', { name: 'Owner', email, password: 'a-long-password-1', businessName: 'Owner Fitness' })).status).toBe(201);
+    expect((await b.get('/api/admin/insights')).status).toBe(403);
+    const before = config.hqAdminEmails;
+    config.hqAdminEmails = [email.toUpperCase().toLowerCase()];
+    try {
+      const again = await loginCoach(email, 'a-long-password-1');
+      expect((await again.get('/api/admin/insights')).status).toBe(200);
+      expect((await again.get('/api/auth/me')).body.isPlatformAdmin).toBe(true);
+    } finally { config.hqAdminEmails = before; }
+    const dani = await loginCoach();
+    expect((await dani.get('/api/admin/insights')).status).toBe(403);
   });
 });

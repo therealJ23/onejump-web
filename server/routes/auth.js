@@ -36,6 +36,12 @@ function regenerate(req) {
 /** Starts a fresh session (prevents session fixation) for a user in one workspace. */
 export async function establish(req, user, membership, extra = {}) {
   await regenerate(req);
+  // HQ access for the owner's own account, named in HQ_ADMIN_EMAILS (hosting dashboard only).
+  if (!user.isPlatformAdmin && membership?.role !== 'CLIENT' && user.email && config.hqAdminEmails.includes(String(user.email).toLowerCase())) {
+    await users.update(user.id, { isPlatformAdmin: true });
+    user = { ...user, isPlatformAdmin: true };
+    audit({ actorUserId: user.id, action: 'hq_admin_granted', target: 'HQ_ADMIN_EMAILS' });
+  }
   req.session.userId = user.id;
   req.session.isPlatformAdmin = !!user.isPlatformAdmin;
   if (membership) {
