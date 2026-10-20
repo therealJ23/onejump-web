@@ -5,8 +5,19 @@ struct ProgramsView: View {
     @Environment(CoachStore.self) private var store
     @Environment(\.lang) private var lang
 
+    @State private var deleting: ProgramSummary?
+
     var body: some View {
+        @Bindable var store = store
         ScreenScroll {
+            if store.live {
+                Button {
+                    store.showNewProgram = true
+                } label: {
+                    Label(TT.newProgram(lang), systemImage: "plus")
+                }
+                .buttonStyle(.oj(.primary, fullWidth: true))
+            }
             Button {
                 store.send(store.live ? CL.buildProgramAsk(lang) : CoachData.suggestions[2](lang))
             } label: {
@@ -18,8 +29,8 @@ struct ProgramsView: View {
             }
             .buttonStyle(.oj(.volt, fullWidth: true))
 
-            if store.live {
-                SubText(CL.editOnWeb(lang))
+            if store.live && store.data.programs.isEmpty {
+                EmptyStateCard(systemImage: "square.stack.3d.up", title: TT.noPrograms(lang), message: TT.noProgramsBody(lang))
             }
             ForEach(store.data.programs) { program in
                 Button {
@@ -37,9 +48,47 @@ struct ProgramsView: View {
                     .card()
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    if store.live {
+                        Button(role: .destructive) {
+                            deleting = program
+                        } label: {
+                            Label(TT.deleteProgram(lang), systemImage: "trash")
+                        }
+                    }
+                }
             }
         }
         .ojNavigationTitle(CT.programs(lang))
+        .toolbar {
+            if store.live {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        store.showNewProgram = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel(TT.newProgram(lang))
+                }
+            }
+        }
+        .sheet(isPresented: $store.showNewProgram) {
+            NewProgramSheet().environment(store)
+        }
+        .confirmationDialog(TT.deleteProgramAsk(deleting.map { store.data.programName($0.id)(lang) } ?? "")(lang),
+                            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+                            titleVisibility: .visible) {
+            Button(TT.deleteProgram(lang), role: .destructive) {
+                if let p = deleting {
+                    let name = store.data.programName(p.id)(lang)
+                    Task { await store.deleteProgram(p.id, name: name) }
+                }
+                deleting = nil
+            }
+            Button(TT.cancel(lang), role: .cancel) { deleting = nil }
+        } message: {
+            Text(TT.deleteProgramBody(lang))
+        }
     }
 }
 
@@ -50,6 +99,15 @@ struct ProgramDetailView: View {
     @Environment(\.lang) private var lang
 
     var body: some View {
+        if store.live {
+            LiveProgramDetailView(programID: programID)
+        } else {
+            sample
+        }
+    }
+
+    @ViewBuilder
+    private var sample: some View {
         let program = store.data.programs.first { $0.id == programID } ?? store.data.programs.first ?? CoachData.programs[1]
         let clients = store.allClients.filter { $0.programID == program.id }
 

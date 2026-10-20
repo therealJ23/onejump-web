@@ -13,6 +13,8 @@ enum CoachRoute: Hashable {
     case payments, leads, programs, workoutBuilder, library, nutrition, automations, settings, billing
     case program(String)
     case exercise(String)
+    /// One workout of a program (live): its exercises, sets and reps.
+    case workout(String)
 }
 
 enum InboxSegment: Hashable { case messages, checkIns }
@@ -130,6 +132,14 @@ final class CoachStore {
     var librarySearch = ""
     var revenueSelection = 5
     var adherenceSelection = 7
+
+    // MARK: Programs and the exercise library (live)
+    var programDetails: [String: ProgramDetailDTO] = [:]
+    var workoutDetails: [String: WorkoutDTO] = [:]
+    var exerciseDetails: [String: ExerciseDetailDTO.Exercise] = [:]
+    var trainingBusy: Set<String> = []
+    var showNewProgram = false
+    var showAddExercise = false
 
     // MARK: Nutrition plans (Assist builds one for a client)
     var planRequests: [String: String] = [:]

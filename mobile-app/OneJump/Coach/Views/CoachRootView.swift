@@ -166,6 +166,7 @@ private struct CoachDestination: View {
         case .workoutBuilder: WorkoutBuilderView()
         case .library: ExerciseLibraryView()
         case .exercise(let id): ExerciseDetailView(exerciseID: id)
+        case .workout(let id): LiveWorkoutEditorView(workoutID: id)
         case .nutrition: NutritionView()
         case .automations: AutomationsView()
         case .settings: CoachSettingsView()

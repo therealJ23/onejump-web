@@ -10,7 +10,9 @@ struct BriefingDTO: Decodable {
 
 /// POST /api/assist/ask → Assist's answer, with anything it prepared for the coach to approve.
 struct AskResponse: Decodable {
-    struct Decided: Decodable { let id: String; let confirmed: Bool; let message: String? }
+    struct Decided: Decodable { let id: String; let confirmed: Bool; let message: String?; var navigate: Navigate? }
+    /// A screen Assist opened for the coach ("programs", or "client" with its id).
+    struct Navigate: Decodable { let screen: String; var id: String? }
     var answerText: String?
     var answerHtml: String?
     var spokenText: String?
@@ -21,6 +23,10 @@ struct AskResponse: Decodable {
     /// Set when the question was a yes/no to a proposal: what happened.
     var decided: Decided?
     var action: String?
+    /// Open this screen (the coach can keep talking).
+    var navigate: Navigate?
+    /// "voice" or "text": the coach asked to switch how they talk to Assist.
+    var mode: String?
 }
 
 /// Something Assist prepared (a message, a reply, a note, a lead, reminders, a program, a nutrition plan).
@@ -43,6 +49,12 @@ struct ProposalDTO: Decodable {
         var scopeReminder: String?
         var draft: NutritionDraft?
         var checkinId: String?
+        /// For everything else Assist can do (programs, exercises, clients…): the card's lines,
+        /// its button, whether it deletes something, and what Assist says out loud.
+        var lines: [String]?
+        var button: String?
+        var destructive: Bool?
+        var say: String?
     }
     let id: String
     let type: String

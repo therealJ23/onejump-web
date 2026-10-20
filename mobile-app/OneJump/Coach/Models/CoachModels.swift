@@ -315,6 +315,10 @@ struct LibraryExercise: Identifiable {
     /// How-to cues and swap-ready alternatives (live data; the sample uses its group's).
     var howTo: [Loc]?
     var alternatives: [Loc]?
+    /// The coach's own exercise (it can be edited and deleted; OneJump's are only removed from their library).
+    var custom = false
+    /// "image" or "video" when the coach added their own photo or video.
+    var mediaType: String?
 }
 
 // MARK: - Nutrition, automations, settings

@@ -4,6 +4,7 @@ import SwiftUI
 struct ExerciseLibraryView: View {
     @Environment(CoachStore.self) private var store
     @Environment(\.lang) private var lang
+    @State private var deleting: LibraryExercise?
 
     var body: some View {
         @Bindable var store = store
@@ -16,19 +17,37 @@ struct ExerciseLibraryView: View {
                     }
                 }
             }
+            if store.live {
+                Button {
+                    store.showAddExercise = true
+                } label: {
+                    Label(TT.addOwnExercise(lang), systemImage: "plus")
+                }
+                .buttonStyle(.oj(.primary, fullWidth: true))
+            }
             ListCard {
                 DividedRows(filtered) { exercise in
                     Button {
                         store.push(.exercise(exercise.id))
                     } label: {
                         HStack(spacing: 12) {
-                            IconTile(systemName: "play.rectangle")
+                            IconTile(systemName: exercise.mediaType == "video" ? "play.rectangle.fill" : exercise.mediaType == "image" ? "photo" : "play.rectangle")
                             TitleSub(exercise.name(lang), sub: "\(exercise.group.label(lang)) · \(exercise.equipment(lang))")
+                            if exercise.custom { Pill(TT.yours(lang), tone: .good) }
                             Image(systemName: "chevron.right").foregroundStyle(Palette.muted)
                         }
                         .rowPadding()
                     }
                     .buttonStyle(.row)
+                    .contextMenu {
+                        if store.live {
+                            Button(role: .destructive) {
+                                deleting = exercise
+                            } label: {
+                                Label(TT.deleteExercise(lang), systemImage: "trash")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -36,12 +55,26 @@ struct ExerciseLibraryView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    store.toast.show(CT.toastPickExercise(lang))
+                    if store.live { store.showAddExercise = true } else { store.toast.show(CT.toastPickExercise(lang)) }
                 } label: {
                     Image(systemName: "plus")
                 }
                 .accessibilityLabel(CT.addOwnExercise(lang))
             }
+        }
+        .sheet(isPresented: $store.showAddExercise) {
+            AddExerciseSheet().environment(store)
+        }
+        .confirmationDialog(TT.deleteExerciseAsk(deleting?.name(lang) ?? "")(lang),
+                            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+                            titleVisibility: .visible) {
+            Button(TT.deleteExercise(lang), role: .destructive) {
+                if let e = deleting { Task { await store.deleteExercise(e.id) } }
+                deleting = nil
+            }
+            Button(TT.cancel(lang), role: .cancel) { deleting = nil }
+        } message: {
+            Text(deleting?.custom == true ? TT.deleteOwnBody(lang) : TT.deleteSharedBody(lang))
         }
     }
 
@@ -61,6 +94,15 @@ struct ExerciseDetailView: View {
     @Environment(\.lang) private var lang
 
     var body: some View {
+        if store.live {
+            LiveExerciseDetailView(exerciseID: exerciseID)
+        } else {
+            sample
+        }
+    }
+
+    @ViewBuilder
+    private var sample: some View {
         let exercise = store.data.library.first { $0.id == exerciseID } ?? store.data.library.first ?? CoachData.library[0]
         let cues = exercise.howTo ?? CoachData.cues[exercise.group] ?? []
         let alternatives = exercise.alternatives ?? (CoachData.alternatives[exercise.group] ?? []).filter { $0 != exercise.name }

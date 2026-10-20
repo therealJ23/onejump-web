@@ -36,8 +36,10 @@
 		82C56AC200F4CF7DD7C46F19 /* CoachModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED03DD979FB06EBAC9ABBBD3 /* CoachModels.swift */; };
 		B38652C3A31F14D22012A054 /* CoachStore+Assist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10952EE91AC17512C00E1330 /* CoachStore+Assist.swift */; };
 		992187FE463C4682CC132EB3 /* CoachStore+Live.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A1ED3984352C09786FB7ECF /* CoachStore+Live.swift */; };
+		E37014DF191204D0ABE947E8 /* CoachStore+Training.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF84CD47A7C060BF3E25C07B /* CoachStore+Training.swift */; };
 		2A0693D81F0482032DBB87D2 /* CoachStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC6BEB4C82EE574E6B2E162E /* CoachStore.swift */; };
 		715BFB984BFFE93FA3F0CA84 /* CoachLiveText.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4468FE7B87ACBBABAE423BC /* CoachLiveText.swift */; };
+		47399E544E8C0D31F9E5AACB /* TrainingText.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDA3593FA8640DDD11A28B3F /* TrainingText.swift */; };
 		F7D1A8BAA7FB8F9E1CB62C00 /* CoachText.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2C920BFC2B09CF8F5E43C2 /* CoachText.swift */; };
 		40783ECDB8E4F933FE4D251A /* CoachSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E282C99C8A1E48F543A58AE4 /* CoachSettingsView.swift */; };
 		54B906C1E38F0093EA35764D /* AssistMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E11892BC1F47419026ED1EF /* AssistMessageView.swift */; };
@@ -50,6 +52,7 @@
 		F7A123632617EDC91D9EB326 /* ClientsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22B24F39FCCA7A2F45355A15 /* ClientsView.swift */; };
 		D3BC4C6C32AC299ADF9A3674 /* NutritionPlanBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3270849039023134B8137A12 /* NutritionPlanBuilder.swift */; };
 		1D4C346B78DBD7DBD740AC03 /* ExerciseLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D7342C32069F5F41EC87D7 /* ExerciseLibraryView.swift */; };
+		C2247C60164DD8DF84301907 /* LiveTrainingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BD4F6C81E90346A83008071 /* LiveTrainingViews.swift */; };
 		9C13853AC997658AD4B3DA6E /* NutritionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB922EBB659839BADB5A80AA /* NutritionView.swift */; };
 		0ED956AC814318214DF47E36 /* ProgramsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DE0B9D50E101FF8ED75FC33 /* ProgramsView.swift */; };
 		070FEB5E6822FDBF15BA3ACC /* CheckInReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4573E9A6D1FDA3850465AB78 /* CheckInReviewView.swift */; };
@@ -123,8 +126,10 @@
 		ED03DD979FB06EBAC9ABBBD3 /* CoachModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachModels.swift; sourceTree = "<group>"; };
 		10952EE91AC17512C00E1330 /* CoachStore+Assist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoachStore+Assist.swift"; sourceTree = "<group>"; };
 		3A1ED3984352C09786FB7ECF /* CoachStore+Live.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoachStore+Live.swift"; sourceTree = "<group>"; };
+		DF84CD47A7C060BF3E25C07B /* CoachStore+Training.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoachStore+Training.swift"; sourceTree = "<group>"; };
 		BC6BEB4C82EE574E6B2E162E /* CoachStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachStore.swift; sourceTree = "<group>"; };
 		F4468FE7B87ACBBABAE423BC /* CoachLiveText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachLiveText.swift; sourceTree = "<group>"; };
+		BDA3593FA8640DDD11A28B3F /* TrainingText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingText.swift; sourceTree = "<group>"; };
 		FE2C920BFC2B09CF8F5E43C2 /* CoachText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachText.swift; sourceTree = "<group>"; };
 		E282C99C8A1E48F543A58AE4 /* CoachSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSettingsView.swift; sourceTree = "<group>"; };
 		8E11892BC1F47419026ED1EF /* AssistMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistMessageView.swift; sourceTree = "<group>"; };
@@ -137,6 +142,7 @@
 		22B24F39FCCA7A2F45355A15 /* ClientsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientsView.swift; sourceTree = "<group>"; };
 		3270849039023134B8137A12 /* NutritionPlanBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionPlanBuilder.swift; sourceTree = "<group>"; };
 		C6D7342C32069F5F41EC87D7 /* ExerciseLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibraryView.swift; sourceTree = "<group>"; };
+		4BD4F6C81E90346A83008071 /* LiveTrainingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTrainingViews.swift; sourceTree = "<group>"; };
 		CB922EBB659839BADB5A80AA /* NutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionView.swift; sourceTree = "<group>"; };
 		2DE0B9D50E101FF8ED75FC33 /* ProgramsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgramsView.swift; sourceTree = "<group>"; };
 		4573E9A6D1FDA3850465AB78 /* CheckInReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInReviewView.swift; sourceTree = "<group>"; };
@@ -402,6 +408,7 @@
 			children = (
 				10952EE91AC17512C00E1330 /* CoachStore+Assist.swift */,
 				3A1ED3984352C09786FB7ECF /* CoachStore+Live.swift */,
+				DF84CD47A7C060BF3E25C07B /* CoachStore+Training.swift */,
 				BC6BEB4C82EE574E6B2E162E /* CoachStore.swift */,
 			);
 			path = Store;
@@ -411,6 +418,7 @@
 			isa = PBXGroup;
 			children = (
 				F4468FE7B87ACBBABAE423BC /* CoachLiveText.swift */,
+				BDA3593FA8640DDD11A28B3F /* TrainingText.swift */,
 				FE2C920BFC2B09CF8F5E43C2 /* CoachText.swift */,
 			);
 			path = Text;
@@ -474,6 +482,7 @@
 			isa = PBXGroup;
 			children = (
 				C6D7342C32069F5F41EC87D7 /* ExerciseLibraryView.swift */,
+				4BD4F6C81E90346A83008071 /* LiveTrainingViews.swift */,
 				CB922EBB659839BADB5A80AA /* NutritionView.swift */,
 				2DE0B9D50E101FF8ED75FC33 /* ProgramsView.swift */,
 			);
@@ -714,8 +723,10 @@
 				82C56AC200F4CF7DD7C46F19 /* CoachModels.swift in Sources */,
 				B38652C3A31F14D22012A054 /* CoachStore+Assist.swift in Sources */,
 				992187FE463C4682CC132EB3 /* CoachStore+Live.swift in Sources */,
+				E37014DF191204D0ABE947E8 /* CoachStore+Training.swift in Sources */,
 				2A0693D81F0482032DBB87D2 /* CoachStore.swift in Sources */,
 				715BFB984BFFE93FA3F0CA84 /* CoachLiveText.swift in Sources */,
+				47399E544E8C0D31F9E5AACB /* TrainingText.swift in Sources */,
 				F7D1A8BAA7FB8F9E1CB62C00 /* CoachText.swift in Sources */,
 				40783ECDB8E4F933FE4D251A /* CoachSettingsView.swift in Sources */,
 				54B906C1E38F0093EA35764D /* AssistMessageView.swift in Sources */,
@@ -728,6 +739,7 @@
 				F7A123632617EDC91D9EB326 /* ClientsView.swift in Sources */,
 				D3BC4C6C32AC299ADF9A3674 /* NutritionPlanBuilder.swift in Sources */,
 				1D4C346B78DBD7DBD740AC03 /* ExerciseLibraryView.swift in Sources */,
+				C2247C60164DD8DF84301907 /* LiveTrainingViews.swift in Sources */,
 				9C13853AC997658AD4B3DA6E /* NutritionView.swift in Sources */,
 				0ED956AC814318214DF47E36 /* ProgramsView.swift in Sources */,
 				070FEB5E6822FDBF15BA3ACC /* CheckInReviewView.swift in Sources */,

@@ -89,6 +89,52 @@ final class APIClient {
         return status == 204 || data.isEmpty ? nil : data
     }
 
+    /// Sends one file (a photo or a video) as multipart form data. Videos can take a while.
+    func upload<T: Decodable>(_ path: String, field: String, file: Data, filename: String, mimeType: String, as type: T.Type = T.self, timeout: TimeInterval = 180) async throws -> T {
+        if Fixtures.isOn { return try decode(T.self, Fixtures.answer("POST", path)) }
+        if csrfToken == nil { try await refreshCSRF() }
+        let boundary = "OneJump-\(UUID().uuidString)"
+        var body = Data()
+        body.append(Data("--\(boundary)\r\n".utf8))
+        body.append(Data("Content-Disposition: form-data; name=\"\(field)\"; filename=\"\(filename)\"\r\n".utf8))
+        body.append(Data("Content-Type: \(mimeType)\r\n\r\n".utf8))
+        body.append(file)
+        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+
+        func attempt(retry: Bool) async throws -> Data {
+            guard let url = URL(string: path, relativeTo: baseURL) else { throw APIError(status: 0, message: "Bad address.") }
+            var request = URLRequest(url: url, timeoutInterval: timeout)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+            request.setValue("OneJump-iOS", forHTTPHeaderField: "X-Client")
+            request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            if let csrfToken { request.setValue(csrfToken, forHTTPHeaderField: "X-CSRF-Token") }
+            let data: Data
+            let response: URLResponse
+            do {
+                (data, response) = try await session.upload(for: request, from: body)
+            } catch let error as URLError {
+                throw APIError(status: 0, message: error.code == .timedOut ? "The upload took too long. Try a shorter video." : "Couldn’t reach OneJump. Try again.")
+            }
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if (200..<300).contains(status) { return data }
+            let errorBody = try? JSONDecoder().decode(ErrorBody.self, from: data)
+            if status == 403, errorBody?.code == "csrf", retry {
+                try await refreshCSRF()
+                return try await attempt(retry: false)
+            }
+            if status == 401 { await MainActor.run { NotificationCenter.default.post(name: .ojLoggedOut, object: nil) } }
+            throw APIError(status: status, message: errorBody?.error ?? (status == 413 ? "That file is too large." : "The upload didn’t work. Try again."), code: errorBody?.code)
+        }
+        return try decode(T.self, try await attempt(retry: true))
+    }
+
+    /// A full address for a path the server sent (signed file links start with "/files/").
+    func absoluteURL(_ path: String) -> URL? {
+        if path.hasPrefix("http://") || path.hasPrefix("https://") { return URL(string: path) }
+        return URL(string: path, relativeTo: baseURL)?.absoluteURL
+    }
+
     private func decode<T: Decodable>(_ type: T.Type, _ data: Data) throws -> T {
         do {
             return try JSONDecoder().decode(T.self, from: data.isEmpty ? Data("{}".utf8) : data)

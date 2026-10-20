@@ -84,7 +84,7 @@ struct LiveCoachDTO: Decodable {
         let items: [Item]; let runs: [Run]
     }
     struct Assist: Decodable { let requests: String; let approvedAsIs: String; let timeSaved: String }
-    struct Exercise: Decodable { let id: String; let name: LocDTO; let group: String; let equipment: LocDTO; let howTo: [LocDTO]; let alternatives: [LocDTO] }
+    struct Exercise: Decodable { let id: String; let name: LocDTO; let group: String; let equipment: LocDTO; let howTo: [LocDTO]; let alternatives: [LocDTO]; var custom: Bool?; var mediaType: String? }
 
     let me: Me
     let today: Today
@@ -195,7 +195,7 @@ extension CoachSnapshot {
         }
         library = d.library.map {
             LibraryExercise(id: $0.id, name: $0.name.loc, group: MuscleGroup(rawValue: $0.group) ?? .core, equipment: $0.equipment.loc,
-                            howTo: $0.howTo.map(\.loc), alternatives: $0.alternatives.map(\.loc))
+                            howTo: $0.howTo.map(\.loc), alternatives: $0.alternatives.map(\.loc), custom: $0.custom ?? false, mediaType: $0.mediaType)
         }
         nutritionStats = d.nutrition.stats.map { KPI(value: $0.value, label: $0.label.loc, note: "") }
         nutritionSummary = d.nutrition.summary.loc
