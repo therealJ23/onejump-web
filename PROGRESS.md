@@ -1,6 +1,6 @@
 # Progress
 
-_Last updated: October 15, 2026_
+_Last updated: October 20, 2026_
 
 ## Now building: Voice + Nutrition (approved Oct 8)
 
@@ -24,7 +24,11 @@ Spec: `03-voice-and-nutrition-spec.md`. Everything runs on mock voice, AI and fo
 - [x] **Business insights and forecasts (Oct 18):** coach Business insights page (Insights in the menu; linked from Today): expected revenue this month with a likely range and a table of how it's built, revenue by month, clients gained and lost, revenue at risk, client engagement, leads funnel and sources, client value (churn, stay, lifetime value) and plain-words takeaways; English/Spanish, light/dark, phone. HQ (`/admin`): OneJump's plan-revenue forecast, MRR by month, paying coaches gained and lost, sign-up funnel, AI cost by month, clients added; records Stripe's paid plan invoices.
 - [x] **iPhone coach app on the real account (Oct 16):** login (email, password, two-step code), the coach's own business on every screen, approve drafts, reply to messages and check-ins, notes, invites, leads, payment reminders, automations; Ask Assist on the server with spoken yes/no approvals and the Elise voice; Assist nutrition plans on the client's Food tab; business charts. Ready for TestFlight (steps in `mobile-app/README.md` on the `ios-app` branch); waiting on Jansell's Apple Developer account.
 
-**Tests:** `npm test` → lint passes, **190 API tests pass** (including the month forecast's arithmetic, HQ admin-only and no client details, the iPhone app's snapshot API, nutrition plans, spoken yes/no approvals, health details never approved by voice, other coaches’ proposals ignored, prompt caching). `npm run test:e2e` → **40 browser tests pass** (desktop + phone), including the Business insights page and HQ forecast, business charts, the nutrition plan builder, typed yes/no approvals, dictation, denied mic, Ask Assist, set by voice + Undo, voice notes, voice food logging and the briefing.
+- [x] **Assist does anything inside OneJump (Oct 20):** programs and workouts (built from the exercise library), exercises, clients, group messages, check-ins, payment reminders, leads, automations and settings, each confirmed by a tap or a spoken yes; opens screens, switches voice/text, plays the briefing, answers “how do I…”. Founder named by first name only.
+- [x] **Exercise library photos and videos (Oct 20):** coaches add their own exercises with a photo or video, delete their own, and remove shared ones from their library (and bring them back).
+- [x] **iPhone build 2 (Oct 20, `ios-app` branch):** create and delete programs, add and edit workouts, add exercises with a photo or video, delete exercises; Assist voice mode (always listening, talk over it to interrupt, glowing logo, keeps working on every screen with glowing edges) and a silent text mode; faster morning briefing with a fixed-size card that shows one line at a time.
+
+**Tests:** `npm test` → lint passes, **204 API tests pass** (including the month forecast's arithmetic, HQ admin-only and no client details, the iPhone app's snapshot API, nutrition plans, spoken yes/no approvals, health details never approved by voice, other coaches’ proposals ignored, prompt caching). `npm run test:e2e` → **40 browser tests pass** (desktop + phone), including the Business insights page and HQ forecast, business charts, the nutrition plan builder, typed yes/no approvals, dictation, denied mic, Ask Assist, set by voice + Undo, voice notes, voice food logging and the briefing.
 
 ## MVP: built ✅
 
