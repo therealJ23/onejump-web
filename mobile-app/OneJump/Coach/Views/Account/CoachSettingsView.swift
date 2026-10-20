@@ -69,9 +69,6 @@ struct CoachSettingsView: View {
                         .buttonStyle(.oj(.ghost, size: .small))
                 }
                 .rowPadding()
-                RowDivider()
-                OJToggle(title: CT.talkConfirm(lang), subtitle: CT.talkConfirmSub(lang), isOn: voiceBinding)
-                    .rowPadding()
             }
 
             // Usage
@@ -210,13 +207,6 @@ struct CoachSettingsView: View {
                 }
                 store.toast.show(CT.toneToast(label(lang).lowercased())(lang))
             }
-        )
-    }
-
-    private var voiceBinding: Binding<Bool> {
-        Binding(
-            get: { store.voiceOn },
-            set: { on in if on != store.voiceOn { store.toggleVoice() } }
         )
     }
 

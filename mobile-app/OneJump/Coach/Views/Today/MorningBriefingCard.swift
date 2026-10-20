@@ -116,27 +116,40 @@ private struct GlowingPlayButton: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 30, paused: !active)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let pulse = active ? 0.5 + 0.5 * sin(t * 4) : 0
-            ZStack {
-                if active {
-                    Circle()
-                        .fill(Palette.volt.opacity(0.35 + 0.25 * pulse))
-                        .frame(width: 52 + 18 * pulse, height: 52 + 18 * pulse)
-                        .blur(radius: 8)
-                    Circle()
-                        .stroke(Palette.volt.opacity(0.7 - 0.4 * pulse), lineWidth: 2)
-                        .frame(width: 58 + 10 * pulse, height: 58 + 10 * pulse)
-                }
-                Image(systemName: playing ? "pause.fill" : "play.fill")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Palette.deep)
-                    .frame(width: 52, height: 52)
-                    .background(Palette.volt, in: Circle())
-                    .shadow(color: Palette.volt.opacity(active ? 0.95 : 0.5), radius: active ? 16 + 8 * pulse : 10, x: 0, y: active ? 0 : 4)
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .frame(width: 64, height: 64)
+            PlayButtonFrame(pulse: active ? CGFloat(0.5 + 0.5 * sin(timeline.date.timeIntervalSinceReferenceDate * 4)) : 0, active: active, playing: playing)
         }
+    }
+}
+
+private struct PlayButtonFrame: View {
+    let pulse: CGFloat
+    let active: Bool
+    let playing: Bool
+
+    var body: some View {
+        let haloSize: CGFloat = 52 + 18 * pulse
+        let ringSize: CGFloat = 58 + 10 * pulse
+        let shadowRadius: CGFloat = active ? 16 + 8 * pulse : 10
+        let halo: Double = 0.35 + 0.25 * Double(pulse)
+        let ring: Double = 0.7 - 0.4 * Double(pulse)
+        return ZStack {
+            if active {
+                Circle()
+                    .fill(Palette.volt.opacity(halo))
+                    .frame(width: haloSize, height: haloSize)
+                    .blur(radius: 8)
+                Circle()
+                    .stroke(Palette.volt.opacity(ring), lineWidth: 2)
+                    .frame(width: ringSize, height: ringSize)
+            }
+            Image(systemName: playing ? "pause.fill" : "play.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(Palette.deep)
+                .frame(width: 52, height: 52)
+                .background(Palette.volt, in: Circle())
+                .shadow(color: Palette.volt.opacity(active ? 0.95 : 0.5), radius: shadowRadius, x: 0, y: active ? 0 : 4)
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .frame(width: 64, height: 64)
     }
 }

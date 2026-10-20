@@ -212,39 +212,78 @@ struct GlowingAssistLogo: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 30)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let voice = CGFloat(level)
-            let breathe = 1 + 0.035 * sin(t * 2.2)
-            let swell = 1 + voice * 0.18 + (speaking ? 0.05 * abs(sin(t * 7)) : 0)
-            ZStack {
-                ForEach(0..<3, id: \.self) { i in
-                    let phase = (t * (speaking ? 0.9 : 0.5) + Double(i) / 3).truncatingRemainder(dividingBy: 1)
-                    Circle()
-                        .stroke(Palette.volt.opacity(0.45 * (1 - phase)), lineWidth: 2)
-                        .frame(width: 120 + 110 * phase, height: 120 + 110 * phase)
-                }
-                Circle()
-                    .fill(RadialGradient(colors: [Palette.volt.opacity(0.55 + voice * 0.3), Palette.volt.opacity(0)], center: .center, startRadius: 10, endRadius: 120))
-                    .frame(width: 240, height: 240)
-                    .blur(radius: 12)
-                Circle()
-                    .fill(RadialGradient(colors: [Color(hex: 0xF6FFC9), Palette.volt, Color(hex: 0x86AE0C)], center: UnitPoint(x: 0.34, y: 0.28), startRadius: 0, endRadius: 90))
-                    .frame(width: 118, height: 118)
-                    .shadow(color: Palette.volt.opacity(0.75), radius: 30 + voice * 30)
-                    .overlay {
-                        if thinking {
-                            Circle()
-                                .trim(from: 0, to: 0.28)
-                                .stroke(Color.white.opacity(0.85), style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                                .rotationEffect(.radians(t * 4))
-                                .frame(width: 132, height: 132)
-                        }
-                    }
-                AssistMark(size: 50, color: Palette.deep)
-            }
-            .scaleEffect(breathe * swell)
+            LogoFrame(t: timeline.date.timeIntervalSinceReferenceDate, voice: CGFloat(level), speaking: speaking, thinking: thinking)
         }
         .accessibilityHidden(true)
+    }
+}
+
+private struct LogoFrame: View {
+    let t: Double
+    let voice: CGFloat
+    let speaking: Bool
+    let thinking: Bool
+
+    private var scale: CGFloat {
+        let breathe: CGFloat = 1 + 0.035 * CGFloat(sin(t * 2.2))
+        let talk: CGFloat = speaking ? 0.05 * CGFloat(abs(sin(t * 7))) : 0
+        let swell: CGFloat = 1 + voice * 0.18 + talk
+        return breathe * swell
+    }
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<3, id: \.self) { i in
+                Ripple(t: t, index: i, speaking: speaking)
+            }
+            Circle()
+                .fill(haloGradient)
+                .frame(width: 240, height: 240)
+                .blur(radius: 12)
+            Circle()
+                .fill(orbGradient)
+                .frame(width: 118, height: 118)
+                .shadow(color: Palette.volt.opacity(0.75), radius: 30 + voice * 30)
+                .overlay { if thinking { Spinner(t: t) } }
+            AssistMark(size: 50, color: Palette.deep)
+        }
+        .scaleEffect(scale)
+    }
+
+    private var haloGradient: RadialGradient {
+        let strength: Double = 0.55 + Double(voice) * 0.3
+        return RadialGradient(colors: [Palette.volt.opacity(strength), Palette.volt.opacity(0)], center: .center, startRadius: 10, endRadius: 120)
+    }
+
+    private var orbGradient: RadialGradient {
+        RadialGradient(colors: [Color(hex: 0xF6FFC9), Palette.volt, Color(hex: 0x86AE0C)], center: UnitPoint(x: 0.34, y: 0.28), startRadius: 0, endRadius: 90)
+    }
+}
+
+private struct Ripple: View {
+    let t: Double
+    let index: Int
+    let speaking: Bool
+
+    var body: some View {
+        let speed: Double = speaking ? 0.9 : 0.5
+        let phase: Double = (t * speed + Double(index) / 3).truncatingRemainder(dividingBy: 1)
+        let size: CGFloat = 120 + 110 * CGFloat(phase)
+        return Circle()
+            .stroke(Palette.volt.opacity(0.45 * (1 - phase)), lineWidth: 2)
+            .frame(width: size, height: size)
+    }
+}
+
+private struct Spinner: View {
+    let t: Double
+
+    var body: some View {
+        Circle()
+            .trim(from: 0, to: 0.28)
+            .stroke(Color.white.opacity(0.85), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            .rotationEffect(.radians(t * 4))
+            .frame(width: 132, height: 132)
     }
 }
 
@@ -255,11 +294,21 @@ private struct AmbientGlow: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 20)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            RadialGradient(colors: [Palette.volt.opacity(0.16 + Double(level) * 0.2 + (speaking ? 0.05 * sin(t * 4) : 0)), .clear],
-                           center: UnitPoint(x: 0.5, y: 0.72), startRadius: 20, endRadius: 460)
+            AmbientFrame(t: timeline.date.timeIntervalSinceReferenceDate, level: Double(level), speaking: speaking)
         }
         .allowsHitTesting(false)
+    }
+}
+
+private struct AmbientFrame: View {
+    let t: Double
+    let level: Double
+    let speaking: Bool
+
+    var body: some View {
+        let wave: Double = speaking ? 0.05 * sin(t * 4) : 0
+        let strength: Double = 0.16 + level * 0.2 + wave
+        return RadialGradient(colors: [Palette.volt.opacity(strength), Color.clear], center: UnitPoint(x: 0.5, y: 0.72), startRadius: 20, endRadius: 460)
     }
 }
 
@@ -272,28 +321,7 @@ struct VoiceEdgeGlow: View {
     var body: some View {
         GeometryReader { geo in
             TimelineView(.animation(minimumInterval: 1 / 30)) { timeline in
-                let t = timeline.date.timeIntervalSinceReferenceDate
-                let pulse = 0.55 + 0.2 * sin(t * (thinking ? 5 : 2.2)) + Double(level) * 0.45 + (speaking ? 0.12 * abs(sin(t * 7)) : 0)
-                let glow = LinearGradient(colors: [Color(hex: 0x63C68C), Palette.volt, Color(hex: 0x2C7A4B), Palette.volt],
-                                          startPoint: .topLeading, endPoint: .bottomTrailing)
-                ZStack {
-                    RoundedRectangle(cornerRadius: 50, style: .continuous)
-                        .strokeBorder(glow, lineWidth: 5)
-                        .blur(radius: 6)
-                    RoundedRectangle(cornerRadius: 50, style: .continuous)
-                        .strokeBorder(glow, lineWidth: 14)
-                        .blur(radius: 22)
-                        .opacity(0.8)
-                    ForEach(0..<4, id: \.self) { i in
-                        let x = i % 2 == 0 ? 0 : geo.size.width
-                        let y = i < 2 ? 0 : geo.size.height
-                        Circle()
-                            .fill(RadialGradient(colors: [Color(hex: 0x7BE495).opacity(0.75), Palette.volt.opacity(0.25), .clear], center: .center, startRadius: 0, endRadius: 110))
-                            .frame(width: 220, height: 220)
-                            .position(x: x, y: y)
-                    }
-                }
-                .opacity(min(1, pulse))
+                EdgeFrame(t: timeline.date.timeIntervalSinceReferenceDate, size: geo.size, level: Double(level), speaking: speaking, thinking: thinking)
             }
         }
         .ignoresSafeArea()
@@ -302,10 +330,60 @@ struct VoiceEdgeGlow: View {
     }
 }
 
+private struct EdgeFrame: View {
+    let t: Double
+    let size: CGSize
+    let level: Double
+    let speaking: Bool
+    let thinking: Bool
+
+    private var pulse: Double {
+        let speed: Double = thinking ? 5 : 2.2
+        let talk: Double = speaking ? 0.12 * abs(sin(t * 7)) : 0
+        return min(1, 0.55 + 0.2 * sin(t * speed) + level * 0.45 + talk)
+    }
+
+    private var glow: LinearGradient {
+        LinearGradient(colors: [Color(hex: 0x63C68C), Palette.volt, Color(hex: 0x2C7A4B), Palette.volt], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 50, style: .continuous)
+                .strokeBorder(glow, lineWidth: 5)
+                .blur(radius: 6)
+            RoundedRectangle(cornerRadius: 50, style: .continuous)
+                .strokeBorder(glow, lineWidth: 14)
+                .blur(radius: 22)
+                .opacity(0.8)
+            CornerGlow().position(x: 0, y: 0)
+            CornerGlow().position(x: size.width, y: 0)
+            CornerGlow().position(x: 0, y: size.height)
+            CornerGlow().position(x: size.width, y: size.height)
+        }
+        .opacity(pulse)
+    }
+}
+
+private struct CornerGlow: View {
+    var body: some View {
+        Circle()
+            .fill(RadialGradient(colors: [Color(hex: 0x7BE495).opacity(0.75), Palette.volt.opacity(0.25), Color.clear], center: .center, startRadius: 0, endRadius: 110))
+            .frame(width: 220, height: 220)
+    }
+}
+
 /// A small pill above the tab bar while Assist listens on another screen: tap to go back, × to end.
 struct VoiceStatusPill: View {
     @Environment(CoachStore.self) private var store
     @Environment(\.lang) private var lang
+
+    private var pillText: String {
+        if store.thinking { return AVT.assistThinking(lang) }
+        if store.voice.isSpeaking { return AVT.assistSpeaking(lang) }
+        let heard = store.voice.heard
+        return heard.isEmpty ? AVT.assistListening(lang) : "“" + heard + "”"
+    }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -324,7 +402,7 @@ struct VoiceStatusPill: View {
                         }
                         .frame(width: 12, height: 12)
                     }
-                    Text(store.thinking ? AVT.assistThinking(lang) : store.voice.isSpeaking ? AVT.assistSpeaking(lang) : (store.voice.heard.isEmpty ? AVT.assistListening(lang) : "“\(store.voice.heard)”"))
+                    Text(pillText)
                         .font(.archivo(13, .semibold))
                         .foregroundStyle(Palette.deep)
                         .lineLimit(1)
