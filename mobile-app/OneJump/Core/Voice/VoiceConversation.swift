@@ -183,10 +183,11 @@ final class VoiceConversation {
 
     /// Words the coach said that Assist didn't just say (echo that slipped past cancellation).
     private func isCoachTalking(_ text: String) -> Bool {
-        let words = Self.words(text)
-        let stopWords: Set<String> = ["stop", "wait", "hold", "para", "espera", "alto", "pause", "pausa", "assist"]
-        if words.contains(where: stopWords.contains) { return true }
-        let fresh = words.filter { !spokenWords.contains($0) }
+        let fresh = Self.words(text).filter { !spokenWords.contains($0) }
+        // A short "stop", "wait", "yes" or "no" is enough to cut in.
+        let triggers: Set<String> = ["stop", "wait", "hold", "pause", "assist", "yes", "yeah", "yep", "no", "nope", "okay", "ok",
+                                     "para", "espera", "alto", "pausa", "si", "dale", "claro"]
+        if fresh.contains(where: triggers.contains) { return true }
         return fresh.count >= (echoCancellation ? 2 : 3)
     }
 

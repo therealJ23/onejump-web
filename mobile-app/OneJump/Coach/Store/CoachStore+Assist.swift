@@ -30,6 +30,8 @@ extension CoachStore {
         }, onBargeIn: { [weak self] in
             Haptics.tick()
             self?.hint = ""
+            // Talking over the morning briefing stops it.
+            self?.stopBriefing()
         }, done: { [weak self] ok in
             guard let self else { return }
             if !ok {
