@@ -23,6 +23,10 @@ enum ClientDetailTab: Hashable { case overview, program, food, progress, notes }
 
 enum ListenMode { case question, confirm, dictation }
 
+/// How the coach talks to Assist: typing (answers are read, never spoken) or voice
+/// (hands-free: always listening, answers spoken, works on every screen).
+enum AssistMode { case text, voice }
+
 /// Is the coach's real business on screen yet?
 enum LoadState: Equatable { case loading, ready, failed(String) }
 
@@ -87,6 +91,8 @@ final class CoachStore {
     var briefingLine = -1
     var briefingLoading = false
     @ObservationIgnored var briefingToken = 0
+    @ObservationIgnored var briefingCancelled = false
+    @ObservationIgnored var briefingDay: Date?
 
     // MARK: Assist
     var assistMessages: [AssistMessage] = []
@@ -94,8 +100,10 @@ final class CoachStore {
     var thinking = false
     var pendingIndex: Int?
     var hint = ""
-    var voiceOn = true
+    var assistMode: AssistMode = .text
     var listenMode: ListenMode?
+    /// Answers that arrive after a newer question was asked are dropped.
+    @ObservationIgnored var askToken = 0
     @ObservationIgnored var reviewSkip: Set<String> = []
     @ObservationIgnored var sampleIndex = 0
 
@@ -335,6 +343,7 @@ final class CoachStore {
         }
         guard language != lang else { return }
         stopBriefing()
+        endVoiceMode()
         voice.stopSpeaking()
         voice.stopListening()
         listenMode = nil
@@ -420,8 +429,29 @@ final class CoachStore {
 
     // MARK: - Morning briefing (spoken in Assist's voice)
 
+    /// What Assist says for one line (the sample adds its own hello and goodbye).
+    func briefingSpoken(_ index: Int) -> String {
+        let lines = data.briefing
+        guard let line = lines[safe: index] else { return "" }
+        var text = line(lang)
+        // The live briefing already starts with "Good morning" and ends with "Have a great day."
+        if !live {
+            if index == 0 { text = CT.briefIntro(lang) + text }
+            if index == lines.count - 1 { text += CT.briefOutro(lang) }
+        }
+        return text
+    }
+
+    /// Gets today's briefing and its voice ready ahead of time, so play starts right away.
+    @MainActor
+    func prepareBriefing() async {
+        if live && data.briefing.isEmpty { await loadBriefing(quiet: true) }
+        guard !data.briefing.isEmpty else { return }
+        voice.prefetch((0..<data.briefing.count).map(briefingSpoken))
+    }
+
     func toggleBriefing() {
-        if briefingPlaying {
+        if briefingPlaying || briefingLoading {
             stopBriefing()
             return
         }
@@ -429,17 +459,20 @@ final class CoachStore {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 await self.loadBriefing()
-                if !self.data.briefing.isEmpty { self.toggleBriefing() }
+                if !self.data.briefing.isEmpty && !self.briefingCancelled { self.toggleBriefing() }
             }
             return
         }
         guard !data.briefing.isEmpty else { return }
-        voice.stopListening()
+        if assistMode == .text { voice.stopListening() }
+        briefingCancelled = false
         briefingToken += 1
         let token = briefingToken
         let total = data.briefing.count
         let start = (briefingLine < 0 || briefingLine >= total) ? 0 : briefingLine
-        briefingPlaying = true
+        // Every line's voice starts downloading now; each plays as soon as the previous one ends.
+        voice.prefetch((start..<total).map(briefingSpoken))
+        withAnimation(.snappy) { briefingPlaying = true }
         playBriefingLine(start, token: token)
     }
 
@@ -447,27 +480,25 @@ final class CoachStore {
         guard token == briefingToken else { return }
         let lines = data.briefing
         guard index < lines.count else {
-            briefingPlaying = false
-            briefingLine = lines.count
+            withAnimation(.snappy) {
+                briefingPlaying = false
+                briefingLine = lines.count
+            }
+            if live { Task { let _: APIClient.Empty? = try? await APIClient.shared.post("/api/briefing/today/played") } }
             return
         }
-        withAnimation(.easeOut(duration: 0.2)) { briefingLine = index }
-        var text = lines[index](lang)
-        // The live briefing already starts with "Good morning" and ends with "Have a great day."
-        if !live {
-            if index == 0 { text = CT.briefIntro(lang) + text }
-            if index == lines.count - 1 { text += CT.briefOutro(lang) }
-        }
-        voice.speak(text) { [weak self] in
-            after(0.25) { self?.playBriefingLine(index + 1, token: token) }
+        withAnimation(.spring(duration: 0.45, bounce: 0.12)) { briefingLine = index }
+        voice.speak(briefingSpoken(index)) { [weak self] in
+            after(0.08) { self?.playBriefingLine(index + 1, token: token) }
         }
     }
 
     func stopBriefing() {
+        briefingCancelled = true
         guard briefingPlaying else { return }
         briefingToken += 1
         voice.stopSpeaking()
-        briefingPlaying = false
+        withAnimation(.snappy) { briefingPlaying = false }
     }
 
     // MARK: - Messages
@@ -535,6 +566,8 @@ final class CoachStore {
 
     /// Listens once and hands back what was said (empty if nothing).
     func dictate(into deliver: @escaping (String) -> Void) {
+        // Dictating into a box needs the microphone to itself.
+        if assistMode == .voice { endVoiceMode() }
         if voice.isListening, listenMode == .dictation {
             voice.stopListening()
             listenMode = nil

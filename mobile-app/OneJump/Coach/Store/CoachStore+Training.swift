@@ -127,7 +127,7 @@ extension Array where Element == EditableBlock {
                 "items": b.items.map { it -> [String: Any] in
                     let set: [String: Any] = ["reps": it.reps, "load": "", "rpe": "", "rest": it.rest]
                     return ["id": it.id, "exerciseId": it.exerciseID, "tempo": it.tempo, "notes": it.notes,
-                            "sets": Array(repeating: set, count: Swift.max(1, Swift.min(12, it.setCount)))]
+                            "sets": [[String: Any]](repeating: set, count: Swift.max(1, Swift.min(12, it.setCount)))]
                 }
             ]
         }

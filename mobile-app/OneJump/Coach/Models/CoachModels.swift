@@ -571,6 +571,8 @@ struct ActionCard {
     var voiceOK = true
     /// Extra lines to show on the card (a nutrition plan's numbers, a program's details…).
     var details: [String] = []
+    /// It deletes something (the button is red).
+    var destructive = false
 
     var isOpen: Bool { !done && !dismissed }
 }

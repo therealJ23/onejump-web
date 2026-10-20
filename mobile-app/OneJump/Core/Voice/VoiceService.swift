@@ -28,6 +28,16 @@ final class VoiceService {
     /// When signed in, Assist speaks with the server's voice (Deepgram, e.g. Elise): this returns
     /// the audio for some text, or nil (then the device's own voice is used).
     @ObservationIgnored var remoteVoice: ((String, AppLanguage) async -> Data?)?
+
+    /// Assist's voice mode: always listening, Assist's voice can be interrupted (see VoiceConversation).
+    private(set) var isConversing = false
+    /// How loud the coach is right now (0…1), while conversing.
+    private(set) var inputLevel: Float = 0
+    @ObservationIgnored private let conversation = VoiceConversation()
+    /// Spoken audio fetched ahead of time (the morning briefing), by language and text.
+    @ObservationIgnored private var audioCache: [String: Data] = [:]
+    @ObservationIgnored private var audioCacheOrder: [String] = []
+    @ObservationIgnored private var inflight: [String: Task<Data?, Never>] = [:]
     @ObservationIgnored private var player: AVAudioPlayer?
     @ObservationIgnored private let playerDelegate = PlayerDelegate()
     @ObservationIgnored private var speakToken = 0
@@ -71,9 +81,13 @@ final class VoiceService {
             if let completion { DispatchQueue.main.async { completion() } }
             return
         }
+        if isConversing {
+            speakInConversation(clean, completion: completion)
+            return
+        }
         speakCompletion = completion
         configureAudioSession()
-        guard let remoteVoice else {
+        guard remoteVoice != nil else {
             speakOnDevice(clean)
             return
         }
@@ -82,16 +96,16 @@ final class VoiceService {
         let token = speakToken
         isSpeaking = true
         let parts = Self.splitForSpeech(clean)
-        let language = self.language
         Task { @MainActor [weak self] in
-            let first = Task { await remoteVoice(parts[0], language) }
-            let rest = parts.count > 1 ? Task { await remoteVoice(parts[1], language) } : nil
+            guard let self else { return }
+            let first = Task { await self.audio(for: parts[0]) }
+            let rest = parts.count > 1 ? Task { await self.audio(for: parts[1]) } : nil
             guard let firstAudio = await first.value else {
-                guard let self, token == self.speakToken else { return }
+                guard token == self.speakToken else { return }
                 self.speakOnDevice(clean)
                 return
             }
-            guard let self, token == self.speakToken else { return }
+            guard token == self.speakToken else { return }
             self.play(firstAudio, token: token) { [weak self] in
                 guard let self, token == self.speakToken else { return }
                 guard let rest else { self.finishRemote(token); return }
@@ -164,6 +178,7 @@ final class VoiceService {
 
     func stopSpeaking() {
         speakToken += 1
+        if isConversing { conversation.stopSpeaking() }
         player?.stop()
         player = nil
         currentUtterance = nil
@@ -210,11 +225,114 @@ final class VoiceService {
         return voices.max(by: { score($0) < score($1) }) ?? AVSpeechSynthesisVoice(language: preferredRegion)
     }
 
+    // MARK: - Conversation (Assist voice mode)
+
+    /// Opens the microphone for a hands-free conversation. `onUtterance` gets each sentence the
+    /// coach says. `done` says whether it started (false: no microphone or speech permission).
+    func startConversation(onUtterance: @escaping (String) -> Void, onBargeIn: (() -> Void)? = nil, done: @escaping (Bool) -> Void) {
+        stopListening()
+        stopSpeaking()
+        conversation.onUtterance = { text in onUtterance(text) }
+        conversation.onPartial = { [weak self] text in self?.heard = text }
+        conversation.onLevel = { [weak self] level in self?.inputLevel = level }
+        conversation.onSpeaking = { [weak self] speaking in self?.isSpeaking = speaking }
+        conversation.onBargeIn = { onBargeIn?() }
+        requestPermissions { [weak self] granted in
+            guard let self else { return }
+            let ok = granted && self.conversation.start(language: self.language)
+            self.isConversing = ok
+            self.isListening = ok
+            self.heard = ""
+            done(ok)
+        }
+    }
+
+    func stopConversation() {
+        guard isConversing || conversation.isRunning else { return }
+        conversation.stop()
+        isConversing = false
+        isListening = false
+        isSpeaking = false
+        inputLevel = 0
+        heard = ""
+        // Hand the audio back to normal playback.
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    private func speakInConversation(_ text: String, completion: (() -> Void)?) {
+        speakToken += 1
+        let token = speakToken
+        conversation.stopSpeaking()
+        guard remoteVoice != nil else {
+            conversation.speakOnDevice(text, voice: Self.bestVoice(for: language), completion: completion)
+            return
+        }
+        let parts = Self.splitForSpeech(text)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let first = Task { await self.audio(for: parts[0]) }
+            let rest = parts.count > 1 ? Task { await self.audio(for: parts[1]) } : nil
+            let firstAudio = await first.value
+            guard token == self.speakToken, self.isConversing else { return }
+            guard let firstAudio, self.conversation.play(firstAudio, text: text, moreComing: rest != nil, completion: completion) else {
+                self.conversation.speakOnDevice(text, voice: Self.bestVoice(for: self.language), completion: completion)
+                return
+            }
+            if let rest {
+                let more = await rest.value
+                guard token == self.speakToken else { return }
+                self.conversation.playMore(more)
+            }
+        }
+    }
+
+    // MARK: - Speaking ahead of time
+
+    private func cacheKey(_ text: String) -> String { language.rawValue + "|" + text }
+
+    /// Fetches the server voice for these lines now, so they play without waiting later.
+    func prefetch(_ texts: [String]) {
+        guard remoteVoice != nil else { return }
+        for text in texts {
+            let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !clean.isEmpty else { continue }
+            let key = cacheKey(clean)
+            guard audioCache[key] == nil, inflight[key] == nil else { continue }
+            inflight[key] = Task { @MainActor [weak self] in
+                guard let self, let remoteVoice = self.remoteVoice else { return nil }
+                let data = await remoteVoice(clean, self.language)
+                self.inflight[key] = nil
+                if let data { self.remember(data, for: key) }
+                return data
+            }
+        }
+    }
+
+    private func remember(_ data: Data, for key: String) {
+        audioCache[key] = data
+        audioCacheOrder.removeAll { $0 == key }
+        audioCacheOrder.append(key)
+        while audioCacheOrder.count > 40 { audioCache[audioCacheOrder.removeFirst()] = nil }
+    }
+
+    /// The server voice for some text: from the cache, a fetch already running, or a new fetch.
+    @MainActor
+    private func audio(for text: String) async -> Data? {
+        let key = cacheKey(text)
+        if let data = audioCache[key] { return data }
+        if let running = inflight[key] { return await running.value }
+        guard let remoteVoice else { return nil }
+        let data = await remoteVoice(text, language)
+        if let data { remember(data, for: key) }
+        return data
+    }
+
     // MARK: - Listening
 
     /// Listens for one sentence. `fallback` is used when the device can't listen.
     /// `onFinish` gets the final text (empty if nothing was heard).
     func listen(fallback: String, onFinish: @escaping (String) -> Void) {
+        if isConversing { stopConversation() }
         stopListening()
         stopSpeaking()
         listenToken += 1

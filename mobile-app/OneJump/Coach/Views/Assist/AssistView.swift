@@ -1,8 +1,23 @@
 import SwiftUI
 
-/// Talk to Assist. It answers out loud, and when it drafts something it asks for a
-/// spoken "yes" before sending (or you can tap).
+/// Assist. Text mode: a chat you type into (answers aren't read aloud). Voice mode: the
+/// glowing logo, always listening (AssistVoiceView). The mic button switches to voice.
 struct AssistView: View {
+    @Environment(CoachStore.self) private var store
+
+    var body: some View {
+        if store.assistMode == .voice {
+            AssistVoiceView()
+                .transition(.opacity)
+        } else {
+            AssistTextView()
+                .transition(.opacity)
+        }
+    }
+}
+
+/// Typing to Assist.
+struct AssistTextView: View {
     @Environment(CoachStore.self) private var store
     @Environment(\.lang) private var lang
     @FocusState private var focused: Bool
@@ -59,10 +74,10 @@ struct AssistView: View {
             Button {
                 store.tapOrb()
             } label: {
-                VoiceOrb(active: store.voice.isListening || store.voice.isSpeaking)
+                VoiceOrb(active: false)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(CT.talkToAssist(lang))
+            .accessibilityLabel(AVT.startVoice(lang))
             .padding(.top, 24)
 
             Text(orbTitle)
@@ -72,7 +87,7 @@ struct AssistView: View {
                 .foregroundStyle(Palette.ink)
                 .padding(.top, 8)
                 .contentTransition(.opacity)
-            SubText(store.voice.isListening ? CT.orbSubListen(lang) : CT.orbSubIdle(lang))
+            SubText(AVT.startVoice(lang))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 320)
             if !store.hint.isEmpty { hintText }
@@ -111,11 +126,7 @@ struct AssistView: View {
     }
 
     private var orbTitle: String {
-        if store.voice.isListening {
-            return store.voice.heard.isEmpty ? CT.listening(lang) : store.voice.heard
-        }
-        if store.voice.isSpeaking { return CT.speaking(lang) }
-        return store.live ? CL.helloName(store.me.first)(lang) : CT.orbHello(lang)
+        store.live ? CL.helloName(store.me.first)(lang) : CT.orbHello(lang)
     }
 
     private var hintText: some View {
@@ -133,7 +144,7 @@ struct AssistView: View {
             Button {
                 store.tapOrb()
             } label: {
-                VoiceOrb(active: store.voice.isListening || store.voice.isSpeaking, size: 40)
+                VoiceOrb(active: false, size: 40)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(CT.talkToAssist(lang))
@@ -142,11 +153,9 @@ struct AssistView: View {
                 SubText(voiceStatus)
             }
             Spacer()
-            CircleIconButton(
-                systemName: store.voiceOn ? "speaker.wave.2" : "speaker.slash",
-                label: store.voiceOn ? CT.voiceOff(lang) : CT.voiceOn(lang)
-            ) {
-                store.toggleVoice()
+            CircleIconButton(systemName: "waveform", label: AVT.startVoice(lang), style: .volt) {
+                focused = false
+                store.startVoiceMode()
             }
             LinkButton(CT.newChat(lang)) { store.newChat() }
         }
@@ -154,10 +163,7 @@ struct AssistView: View {
     }
 
     private var voiceStatus: String {
-        if !store.voiceOn { return CT.voiceOffSub(lang) }
-        if store.voice.isSpeaking { return CT.speaking(lang) }
-        if store.voice.isListening { return CT.listening(lang) }
-        return CT.voiceOnSub(lang)
+        AVT.textMode(lang)
     }
 
     // MARK: Composer
@@ -173,13 +179,9 @@ struct AssistView: View {
                 .submitLabel(.send)
                 .onSubmit { store.send(store.askText) }
         } buttons: {
-            ComposerButton(
-                systemName: store.voice.isListening ? "stop.fill" : "mic",
-                label: CT.talkToAssist(lang),
-                style: store.voice.isListening ? .recording : .plain
-            ) {
+            ComposerButton(systemName: "mic", label: AVT.startVoice(lang), style: .plain) {
                 focused = false
-                store.tapOrb()
+                store.startVoiceMode()
             }
             ComposerButton(systemName: "arrow.up", label: CT.send(lang), style: .send) {
                 store.send(store.askText)

@@ -39,11 +39,13 @@
 		E37014DF191204D0ABE947E8 /* CoachStore+Training.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF84CD47A7C060BF3E25C07B /* CoachStore+Training.swift */; };
 		2A0693D81F0482032DBB87D2 /* CoachStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC6BEB4C82EE574E6B2E162E /* CoachStore.swift */; };
 		715BFB984BFFE93FA3F0CA84 /* CoachLiveText.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4468FE7B87ACBBABAE423BC /* CoachLiveText.swift */; };
+		2F8A358AE56F0A7331ACB3CD /* AssistVoiceText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E919A2DD7CD0B3E7FC3B5439 /* AssistVoiceText.swift */; };
 		47399E544E8C0D31F9E5AACB /* TrainingText.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDA3593FA8640DDD11A28B3F /* TrainingText.swift */; };
 		F7D1A8BAA7FB8F9E1CB62C00 /* CoachText.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2C920BFC2B09CF8F5E43C2 /* CoachText.swift */; };
 		40783ECDB8E4F933FE4D251A /* CoachSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E282C99C8A1E48F543A58AE4 /* CoachSettingsView.swift */; };
 		54B906C1E38F0093EA35764D /* AssistMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E11892BC1F47419026ED1EF /* AssistMessageView.swift */; };
 		F631D71E76B583DE25164BDD /* AssistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 341955E14C6A98049F35E32D /* AssistView.swift */; };
+		CC81BBC63CF2E010509948C3 /* AssistVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA67B004ED0615F1191EF7D1 /* AssistVoiceView.swift */; };
 		0229441D7EC4226BA30F11C6 /* LeadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D614D13FBE9DDE34B07C110C /* LeadsView.swift */; };
 		1964B1673F49A335345F60A0 /* PaymentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D9222C56F2D71EDD87E4380 /* PaymentsView.swift */; };
 		32727138670F7660A0A26DBA /* AddClientSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2654622510EF801D9FD44AB /* AddClientSheet.swift */; };
@@ -85,6 +87,7 @@
 		60AF6B5D721171612B2BF5C7 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71AB49DB7816568D2442A530 /* APIClient.swift */; };
 		0A2A7C50A245B65821FB92B0 /* Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26E4712CD64936AFD783C2EC /* Helpers.swift */; };
 		B00758071F2ABD646246BBF4 /* VoiceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3D9C8A253B4FF98F70F83F /* VoiceService.swift */; };
+		7B87F02663BB92C8DD7E12BC /* VoiceConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A2E23D8D407E1CAFC2FDA9 /* VoiceConversation.swift */; };
 		D056563C0B8DA99AA1881F61 /* Archivo-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E46DA93D0A58E0594C3EFAC9 /* Archivo-Bold.ttf */; };
 		C901E7B4E6B25409ED9B801E /* Archivo-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8E39D2BE4DF9EF00482CC9F5 /* Archivo-ExtraBold.ttf */; };
 		C8CAEB1EA56E06930A743A84 /* Archivo-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 15B636A2362A3DD4F5921948 /* Archivo-Medium.ttf */; };
@@ -129,11 +132,13 @@
 		DF84CD47A7C060BF3E25C07B /* CoachStore+Training.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoachStore+Training.swift"; sourceTree = "<group>"; };
 		BC6BEB4C82EE574E6B2E162E /* CoachStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachStore.swift; sourceTree = "<group>"; };
 		F4468FE7B87ACBBABAE423BC /* CoachLiveText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachLiveText.swift; sourceTree = "<group>"; };
+		E919A2DD7CD0B3E7FC3B5439 /* AssistVoiceText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistVoiceText.swift; sourceTree = "<group>"; };
 		BDA3593FA8640DDD11A28B3F /* TrainingText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingText.swift; sourceTree = "<group>"; };
 		FE2C920BFC2B09CF8F5E43C2 /* CoachText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachText.swift; sourceTree = "<group>"; };
 		E282C99C8A1E48F543A58AE4 /* CoachSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSettingsView.swift; sourceTree = "<group>"; };
 		8E11892BC1F47419026ED1EF /* AssistMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistMessageView.swift; sourceTree = "<group>"; };
 		341955E14C6A98049F35E32D /* AssistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistView.swift; sourceTree = "<group>"; };
+		BA67B004ED0615F1191EF7D1 /* AssistVoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistVoiceView.swift; sourceTree = "<group>"; };
 		D614D13FBE9DDE34B07C110C /* LeadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeadsView.swift; sourceTree = "<group>"; };
 		3D9222C56F2D71EDD87E4380 /* PaymentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentsView.swift; sourceTree = "<group>"; };
 		F2654622510EF801D9FD44AB /* AddClientSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddClientSheet.swift; sourceTree = "<group>"; };
@@ -175,6 +180,7 @@
 		71AB49DB7816568D2442A530 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		26E4712CD64936AFD783C2EC /* Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Helpers.swift; sourceTree = "<group>"; };
 		9F3D9C8A253B4FF98F70F83F /* VoiceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceService.swift; sourceTree = "<group>"; };
+		C9A2E23D8D407E1CAFC2FDA9 /* VoiceConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceConversation.swift; sourceTree = "<group>"; };
 		E46DA93D0A58E0594C3EFAC9 /* Archivo-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Archivo-Bold.ttf"; sourceTree = "<group>"; };
 		8E39D2BE4DF9EF00482CC9F5 /* Archivo-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Archivo-ExtraBold.ttf"; sourceTree = "<group>"; };
 		15B636A2362A3DD4F5921948 /* Archivo-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Archivo-Medium.ttf"; sourceTree = "<group>"; };
@@ -418,6 +424,7 @@
 			isa = PBXGroup;
 			children = (
 				F4468FE7B87ACBBABAE423BC /* CoachLiveText.swift */,
+				E919A2DD7CD0B3E7FC3B5439 /* AssistVoiceText.swift */,
 				BDA3593FA8640DDD11A28B3F /* TrainingText.swift */,
 				FE2C920BFC2B09CF8F5E43C2 /* CoachText.swift */,
 			);
@@ -453,6 +460,7 @@
 			children = (
 				8E11892BC1F47419026ED1EF /* AssistMessageView.swift */,
 				341955E14C6A98049F35E32D /* AssistView.swift */,
+				BA67B004ED0615F1191EF7D1 /* AssistVoiceView.swift */,
 			);
 			path = Assist;
 			sourceTree = "<group>";
@@ -590,6 +598,7 @@
 			isa = PBXGroup;
 			children = (
 				9F3D9C8A253B4FF98F70F83F /* VoiceService.swift */,
+				C9A2E23D8D407E1CAFC2FDA9 /* VoiceConversation.swift */,
 			);
 			path = Voice;
 			sourceTree = "<group>";
@@ -726,11 +735,13 @@
 				E37014DF191204D0ABE947E8 /* CoachStore+Training.swift in Sources */,
 				2A0693D81F0482032DBB87D2 /* CoachStore.swift in Sources */,
 				715BFB984BFFE93FA3F0CA84 /* CoachLiveText.swift in Sources */,
+				2F8A358AE56F0A7331ACB3CD /* AssistVoiceText.swift in Sources */,
 				47399E544E8C0D31F9E5AACB /* TrainingText.swift in Sources */,
 				F7D1A8BAA7FB8F9E1CB62C00 /* CoachText.swift in Sources */,
 				40783ECDB8E4F933FE4D251A /* CoachSettingsView.swift in Sources */,
 				54B906C1E38F0093EA35764D /* AssistMessageView.swift in Sources */,
 				F631D71E76B583DE25164BDD /* AssistView.swift in Sources */,
+				CC81BBC63CF2E010509948C3 /* AssistVoiceView.swift in Sources */,
 				0229441D7EC4226BA30F11C6 /* LeadsView.swift in Sources */,
 				1964B1673F49A335345F60A0 /* PaymentsView.swift in Sources */,
 				32727138670F7660A0A26DBA /* AddClientSheet.swift in Sources */,
@@ -772,6 +783,7 @@
 				60AF6B5D721171612B2BF5C7 /* APIClient.swift in Sources */,
 				0A2A7C50A245B65821FB92B0 /* Helpers.swift in Sources */,
 				B00758071F2ABD646246BBF4 /* VoiceService.swift in Sources */,
+				7B87F02663BB92C8DD7E12BC /* VoiceConversation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

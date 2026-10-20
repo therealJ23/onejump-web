@@ -31,8 +31,18 @@ struct CoachRootView: View {
             if store.live && store.loadState == .loading { await store.refresh() }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await store.refreshIfStale() } }
+            if phase == .active {
+                Task { await store.refreshIfStale() }
+                store.resumeVoiceModeIfNeeded()
+            } else if phase == .background {
+                store.pauseVoiceMode()
+            }
         }
+    }
+
+    /// Voice mode is on and the coach is on another screen.
+    private var voiceAway: Bool {
+        store.assistMode == .voice && !(store.tab == .assist && store.assistPath.isEmpty)
     }
 
     private var tabs: some View {
@@ -75,13 +85,29 @@ struct CoachRootView: View {
             .tabItem { Label(CT.more(lang), systemImage: "square.grid.2x2") }
             .tag(CoachTab.more)
         }
+        .overlay {
+            // Voice mode on another screen: the edges glow while Assist listens.
+            if voiceAway {
+                VoiceEdgeGlow(level: store.voice.inputLevel, speaking: store.voice.isSpeaking, thinking: store.thinking)
+                    .transition(.opacity)
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if voiceAway {
+                VoiceStatusPill()
+                    .padding(.bottom, 58)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.35), value: voiceAway)
         .toastOverlay(store.toast)
         .sheet(isPresented: $store.showAddClient) {
             AddClientSheet()
                 .environment(store)
         }
         .onChange(of: store.tab) { _, newTab in
-            if newTab != .assist, store.listenMode != nil {
+            // Typing mode: leaving Assist stops a one-off listen. Voice mode keeps listening everywhere.
+            if newTab != .assist, store.assistMode == .text, store.listenMode != nil {
                 store.voice.stopListening()
                 store.listenMode = nil
             }

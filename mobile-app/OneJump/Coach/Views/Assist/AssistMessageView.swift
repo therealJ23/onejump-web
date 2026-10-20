@@ -105,7 +105,6 @@ struct AssistMessageView: View {
                     tapAlternative(prefix: CT.cantTalk(lang), yes: CT.yes(lang), no: CT.no(lang))
                 } else {
                     Button {
-                        store.voice.stopSpeaking()
                         store.askListen(index, force: true)
                     } label: {
                         Label(CT.answerByVoice(lang), systemImage: "mic.fill")
@@ -116,7 +115,7 @@ struct AssistMessageView: View {
             } else {
                 HStack(spacing: 8) {
                     Button(card.button) { store.confirmCard(index) }
-                        .buttonStyle(.oj(.primary, size: .small, fullWidth: true))
+                        .buttonStyle(.oj(card.destructive ? .danger : .primary, size: .small, fullWidth: true))
                     Button(CT.notNow(lang)) { store.dismissCard(index) }
                         .buttonStyle(.oj(.ghost, size: .small))
                 }
@@ -129,7 +128,7 @@ struct AssistMessageView: View {
     }
 
     private var listenText: String {
-        if store.listenMode == .confirm {
+        if store.voice.isConversing && !store.voice.isSpeaking {
             return store.voice.heard.isEmpty ? CT.listenYesNo(lang) : "“\(store.voice.heard)”"
         }
         return CT.assistAsking(lang)

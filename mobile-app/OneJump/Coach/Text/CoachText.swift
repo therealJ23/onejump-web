@@ -201,7 +201,7 @@ enum CT {
     static let canSee = Loc("What Assist can see", "Lo que Assist puede ver")
     static let canSeeBody = Loc("Your clients, workouts, check-ins, food logs, messages, payments and leads. Never another coach’s data.", "Tus clientes, entrenamientos, revisiones, comidas, mensajes, pagos y prospectos. Nunca los datos de otro coach.")
     static let wontDo = Loc("What it won’t do", "Lo que no hará")
-    static let wontDoBody = Loc("Send anything without your yes, give medical advice, or post for you.", "Enviar algo sin tu sí, dar consejos médicos ni publicar por ti.")
+    static let wontDoBody = Loc("Change or send anything without your yes, give medical advice, move money, or do things outside OneJump. Inside OneJump it can do almost anything you ask: build programs, add exercises, manage clients, message, open screens.", "Cambiar o enviar algo sin tu sí, dar consejos médicos, mover dinero o hacer cosas fuera de OneJump. Dentro de OneJump puede hacer casi todo lo que pidas: crear programas, agregar ejercicios, manejar clientes, enviar mensajes, abrir pantallas.")
     static let newChat = Loc("New chat", "Nuevo chat")
     static let cantTalk = Loc("Can’t talk right now?", "¿No puedes hablar ahora?")
     static let yes = Loc("Yes", "Sí")

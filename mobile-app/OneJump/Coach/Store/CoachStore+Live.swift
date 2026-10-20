@@ -15,7 +15,9 @@ extension CoachStore {
         guard live else { return }
         do {
             let dto: LiveCoachDTO = try await api.get("/api/mobile/coach", timeout: 45)
-            let snapshot = CoachSnapshot(live: dto, keepingSuggestions: CoachSnapshot.liveSuggestions)
+            var snapshot = CoachSnapshot(live: dto, keepingSuggestions: CoachSnapshot.liveSuggestions)
+            // Today's briefing (loaded separately) stays; a new day starts fresh.
+            if let day = briefingDay, Calendar.current.isDateInToday(day) { snapshot.briefing = data.briefing }
             withAnimation(.snappy) {
                 data = snapshot
                 resetLocalState()
@@ -30,6 +32,8 @@ extension CoachStore {
                 pendingLink = nil
                 open(link: link)
             }
+            // The briefing and its voice get ready in the background, so play starts right away.
+            Task { @MainActor [weak self] in await self?.prepareBriefing() }
         } catch {
             if (error as? APIClient.APIError)?.isLoggedOut == true { return }
             if loadState == .ready {
@@ -84,15 +88,16 @@ extension CoachStore {
     }
 
     @MainActor
-    func loadBriefing() async {
+    func loadBriefing(quiet: Bool = false) async {
         guard live, !briefingLoading else { return }
-        briefingLoading = true
-        defer { briefingLoading = false }
+        if !quiet { withAnimation(.snappy) { briefingLoading = true } }
+        defer { withAnimation(.snappy) { briefingLoading = false } }
         do {
             let dto: BriefingDTO = try await api.get("/api/briefing/today", timeout: 60)
             data.briefing = dto.briefing.lines.map { Loc(same: $0) }
+            briefingDay = Date()
         } catch {
-            showError(error)
+            if !quiet { showError(error) }
         }
     }
 
@@ -290,6 +295,7 @@ extension CoachStore {
 
     @MainActor
     func logOut() async {
+        endVoiceMode()
         voice.stopSpeaking()
         voice.stopListening()
         await api.logOut()
