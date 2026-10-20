@@ -19,6 +19,7 @@ import { users, memberships } from '../db/system.js';
 import { effectivePlan, isPro } from '../auth/middleware.js';
 import { config } from '../config.js';
 import { HOWTO } from '../seed/exercises.js';
+import { hiddenExerciseIds } from '../routes/exercises.js';
 import { todayKey, weekStart, addDays, startOfMonthUtc, DAY } from '../lib/time.js';
 import { L, day, time, weekday, when, ago, since, money, plural, firstOf, initials, avatar, spark, signed } from './format.js';
 import { voiceFields } from '../voice/voiceNotes.js';
@@ -341,10 +342,13 @@ async function assistStats(db, minutesSaved) {
 
 const GROUP = { squat: 'legs', hinge: 'legs', lunge: 'legs', jump: 'legs', push: 'push', pull: 'pull', core: 'core', carry: 'core', cardio: 'core', iso: 'core' };
 async function libraryList(db) {
-  const list = await db.exercise.findMany({ orderBy: { name: 'asc' }, take: 400 });
-  const byId = new Map(list.map(e => [e.id, e]));
+  const [all, hidden] = await Promise.all([db.exercise.findMany({ orderBy: { name: 'asc' } }), hiddenExerciseIds(db)]);
+  const byId = new Map(all.map(e => [e.id, e]));
+  // The coach's own exercises first in mind: never cut them off by the 400 limit.
+  const list = [...all.filter(e => e.businessId && !hidden.has(e.id)), ...all.filter(e => !e.businessId && !hidden.has(e.id))].slice(0, 600).sort((a, b) => a.name.localeCompare(b.name));
   return list.map(e => ({
     id: e.id, name: L(e.name), group: GROUP[e.pattern] || 'core', equipment: L(e.equipment || '—'),
+    custom: !!e.businessId, mediaType: e.mediaKey ? e.mediaType : null, level: e.level || null, pattern: e.pattern,
     howTo: (Array.isArray(e.howTo) ? e.howTo : e.howTo ? String(e.howTo).split(/\n+/) : HOWTO[e.pattern] || HOWTO.iso || []).map(x => L(x)),
     alternatives: (Array.isArray(e.altIds) ? e.altIds : []).map(id => byId.get(id)).filter(Boolean).slice(0, 4).map(a => L(a.name)),
   }));

@@ -58,9 +58,11 @@ export const StorageService = {
     if (!key || !exp || exp < Date.now() / 1000 || !safeEqual(sig, hmac(`${key}|${exp}`, 'file'))) return res.status(403).send('Link expired');
     const p = localPath(key);
     if (!existsSync(p)) return res.status(404).send('Not found');
-    res.set('Content-Type', existsSync(p + '.type') ? readFileSync(p + '.type', 'utf8') : 'application/octet-stream');
-    res.set('Cache-Control', 'private, max-age=300');
-    res.send(readFileSync(p));
+    // sendFile answers Range requests, which video players (iPhone, Safari) need to play a file.
+    const type = existsSync(p + '.type') ? readFileSync(p + '.type', 'utf8') : 'application/octet-stream';
+    res.sendFile(p, { headers: { 'Content-Type': type, 'Cache-Control': 'private, max-age=300' }, dotfiles: 'allow' }, err => {
+      if (err && !res.headersSent) res.status(err.status || 500).send('Not found');
+    });
   },
 
   async remove(key) {
@@ -113,6 +115,15 @@ export function stripJpegMetadata(buf) {
     i += 2 + len;
   }
   return Buffer.concat(out);
+}
+
+/** MP4 and QuickTime (MOV) videos, the formats iPhones and most cameras save. */
+export function sniffVideo(buf) {
+  if (!buf || buf.length < 12 || buf.subarray(4, 8).toString() !== 'ftyp') return null;
+  const brand = buf.subarray(8, 12).toString();
+  if (/^(heic|heix|hevc|mif1|msf1|avif)/.test(brand)) return null; // still images in the same container
+  if (/^M4A /.test(brand)) return null; // audio only
+  return brand === 'qt  ' ? 'video/quicktime' : 'video/mp4';
 }
 
 /** Recognizes the audio formats browsers record (WebM/Opus, MP4/AAC, Ogg, WAV). */

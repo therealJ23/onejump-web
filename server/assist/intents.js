@@ -35,6 +35,24 @@ export async function route(db, question) {
 
   if (/\b(start|play|read)\b.{0,20}\bbriefing\b|^(morning )?briefing\b/.test(s)) return { kind: 'briefing' };
 
+  // ----- about OneJump, switching voice/text, opening screens
+  if (/\b(who|quien|quién)\b.{0,40}\b(found(ed)?|creat(ed|or)|made|built|owns?|fund[oó]|cre[oó]|hizo|due[ñn]o)\b|\bfounder\b|\bfundador/.test(s) && /one ?jump|this app|the app|esta app|la app/.test(s)) return { kind: 'founder' };
+  if (/\b(switch|change|go|turn)\b.{0,12}\b(to )?voice\b|\bvoice mode\b|\btalk to me\b|\blet'?s talk\b|\buse (the )?voice\b|\bmodo (de )?voz\b|\bh[aá]blame\b|\bhablemos\b/.test(s)) return { kind: 'mode', mode: 'voice' };
+  if (/\b(switch|change|go back|turn)\b.{0,12}\b(to )?(text|typing|chat)\b|\btext mode\b|\bstop talking\b|\bmodo (de )?texto\b|\bvoy a escribir\b/.test(s)) return { kind: 'mode', mode: 'text' };
+  const open = q.match(/^(?:hey assist,?\s+)?(?:please\s+|can you\s+)?(?:open|show me|go to|take me to|pull up|abre|ve a|mu[eé]strame|ll[eé]vame a)\s+(?:the\s+|my\s+|el\s+|la\s+|los\s+|las\s+|mis\s+|mi\s+)?(.+?)[.!?]*$/i);
+  if (open && !/\b(who|what|how|which|why|quien|qui[eé]n|qu[eé]|c[oó]mo|cu[aá]l)\b/i.test(open[1])) {
+    const t = open[1].toLowerCase();
+    const SCREEN_WORDS = [[/program/, 'programs'], [/librar|exercis|ejercicio|biblioteca/, 'library'], [/payment|pago/, 'payments'], [/lead|prospect/, 'leads'], [/automat/, 'automations'], [/setting|ajuste|configuraci/, 'settings'], [/nutri/, 'nutrition'], [/check-?in/, 'checkins'], [/message|inbox|mensaje|bandeja/, 'messages'], [/billing|plan & billing|factura/, 'billing'], [/today|home|hoy|inicio/, 'today'], [/client/, 'clients']];
+    const named = await findClientsIn(db, t);
+    if (named.length === 1 && !/program|exercise/.test(t)) return { kind: 'open', screen: 'client', name: named[0].name };
+    const hit = SCREEN_WORDS.find(([re]) => re.test(t));
+    if (hit) return { kind: 'open', screen: hit[1] };
+  }
+  let del = q.match(/^(?:please\s+)?(?:delete|remove|borra|elimina)\s+(?:the\s+|my\s+|el\s+)?(?:program\s+|programa\s+)?(.+?)\s+(?:program|programa)?[.!]*$/i);
+  if (del && /\bprogram/i.test(q)) return { kind: 'propose', type: 'delete_program', args: { program_name: del[1].replace(/\s+program$/i, '') } };
+  del = q.match(/^(?:please\s+)?(?:delete|remove|borra|elimina|quita)\s+(?:the\s+|el\s+)?(?:exercise\s+|ejercicio\s+)?(.+?)(?:\s+exercise)?\s+(?:from|de)\s+(?:my\s+|the\s+|mi\s+|la\s+)?(?:exercise\s+)?(?:library|biblioteca)[.!]*$/i);
+  if (del) return { kind: 'propose', type: 'delete_exercise', args: { exercise_name: del[1] } };
+
   // ----- commands that become proposals (checked first so "remind everyone" isn't refused)
   if (/\b(remind|nudge)\b.{0,30}\b(every(one|body)|all|them|clients)\b|\bsend\b.{0,20}\b(check-?in )?reminders?\b|\b(draft|write)\b.{0,20}\bmessage\b.{0,30}\bhaven.?t\b.{0,15}\bcheck/.test(s)) return { kind: 'propose', type: 'send_reminders', args: {} };
   let n = q.match(/\b(?:build|make|create|draft|write|put together|do|set up)\b.{0,30}\b(?:nutrition|meal|diet|eating)\s*plan\b.{0,12}?\bfor\s+([a-z][a-z' -]{0,40}?)(?=[,.!?]|\s+(?:with|that|who|to|and|so|she|he|they)\b|$)/i);

@@ -14,8 +14,14 @@ import { route } from './intents.js';
 import { MORE_TOOLS, moreToolDefinitions } from './moreTools.js';
 import { config } from '../config.js';
 import { decidePending, readBack, voiceApprovable } from './approvals.js';
+import { ACTION_READ_TOOLS, actionReadToolDefinitions, uiToolDefinitions, runUiTool } from './actions.js';
 
-const ALL_TOOLS = { ...TOOLS, ...MORE_TOOLS };
+const ALL_TOOLS = { ...TOOLS, ...MORE_TOOLS, ...ACTION_READ_TOOLS };
+const UI_TOOLS = new Set(uiToolDefinitions().map(t => t.name));
+
+/** OneJump's founder is named by first name only: never his full name. */
+export const FOUNDER = 'Jansell';
+const scrubFounder = s => (typeof s === 'string' ? s.replace(/\bJansell(?:\s+Hiraldo)?(?:\s+Zapata)\b|\bJansell\s+Hiraldo\b/g, FOUNDER) : s);
 
 const MAX_STEPS = 6;
 const firstOf = n => String(n || '').split(' ')[0];
@@ -40,6 +46,19 @@ async function askMock(db, auth, question, c, source) {
   if (intent.kind === 'propose') { const r = await propose(db, auth, intent.type, intent.args, source, c.lang); return { answerHtml: r.html, spokenText: r.spoken, proposals: r.proposals, trace: [], followups: [], tools: [`propose_${intent.type}`] }; }
   if (intent.kind === 'refuse') { const r = refusal(intent.screen); return { answerHtml: r.html, spokenText: r.spoken, proposals: [], trace: [], followups: [] }; }
   if (intent.kind === 'briefing') return { answerHtml: '<p>Starting your morning briefing.</p>', spokenText: '', action: 'briefing', proposals: [], trace: [], followups: [] };
+  if (intent.kind === 'mode') {
+    const line = intent.mode === 'voice' ? (c.lang === 'es' ? 'Listo, te escucho.' : 'Sure, I’m listening.') : (c.lang === 'es' ? 'Listo, escríbeme cuando quieras.' : 'Got it, type away.');
+    return { answerHtml: `<p>${esc(line)}</p>`, answerText: line, spokenText: line, mode: intent.mode, proposals: [], trace: [], followups: [] };
+  }
+  if (intent.kind === 'open') {
+    const r = await runUiTool(db, 'open_screen', { screen: intent.screen, name: intent.name }, c);
+    const line = r.out.error || (c.lang === 'es' ? 'Listo, ya está abierto.' : 'Done, it’s open.');
+    return { answerHtml: `<p>${esc(line)}</p>`, answerText: line, spokenText: line, ...(r.ui?.navigate ? { navigate: r.ui.navigate } : {}), proposals: [], trace: [], followups: [] };
+  }
+  if (intent.kind === 'founder') {
+    const line = c.lang === 'es' ? `OneJump lo fundó ${FOUNDER}.` : `OneJump was founded by ${FOUNDER}.`;
+    return { answerHtml: `<p>${esc(line)}</p>`, answerText: line, spokenText: line, proposals: [], trace: [], followups: [] };
+  }
   if (intent.kind === 'medical') {
     const k = intent.clients.length === 1 ? await TOOLS.client_checkin.run(db, { name: intent.clients[0].name }, c) : null;
     return { answerHtml: `<p>${esc(MEDICAL)}</p>${k?.checkin ? `<div><a class="btn sm" href="/app/checkins/${esc(k.checkin.id)}">Open ${esc(firstOf(k.name))}’s check-in</a></div>` : ''}`, spokenText: 'I can’t assess pain or injuries. I’ve put what you need on screen.', proposals: [], trace: [], followups: [] };
@@ -49,26 +68,28 @@ async function askMock(db, auth, question, c, source) {
   return { answerHtml: `<p>${esc(line)}</p>`, answerText: line, spokenText: line, proposals: [], trace: [], followups: HELP_SUGGESTIONS.slice(0, 4) };
 }
 
-const SCREENS = 'Today (what needs the coach, Assist drafts to approve), Clients (each client’s profile: Overview, Program, Nutrition, Check-ins, Progress, Messages, Notes, Payments), Check-ins, Messages, Programs, Workout builder, Exercise library, Nutrition, Payments, Leads, Automations, Settings (profile, language, reminders) and Plan & billing.';
+const SCREENS = 'Today (what needs the coach, Assist drafts to approve, the morning briefing, business charts), Clients (each client’s profile: Overview, Program, Food, Progress, Notes, Messages), Assist, Inbox (Messages and Check-ins), and More: Programs (and each program’s workouts), Exercise library, Nutrition, Payments, Leads, Automations, Settings (profile, language, voice, reminders) and Plan & billing.';
 
 function systemPrompt(coach, { voice, lang, now, tz }) {
   const today = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(now);
   const first = String(coach.name || '').split(' ')[0];
   return [
-    `You are Assist, the copilot inside OneJump, coaching software for personal trainers and online coaches. You work alongside ${coach.name}, who runs ${coach.business}. Today is ${today} (${tz}).`,
+    `You are Assist, the copilot inside OneJump, coaching software for personal trainers and online coaches. You work alongside ${first || 'the coach'}, who runs ${coach.business}. Today is ${today} (${tz}).`,
     lang === 'es' ? 'Always reply in Spanish (neutral Latin American Spanish, using "tú"), even if the data is in English. Client names stay as they are.' : 'Reply in English.',
     // Personality: a person, not a bot.
     `Talk like a real person on ${first}’s team: warm, relaxed, quick, a little playful when it fits. Use contractions and everyday words. Vary how you start and phrase things; never open two answers the same way. Use ${first}’s name once in a while, not every time. React like a human would ("Oh nice, Sarah crushed it this week."). Never say you are an AI or a language model, never say "Certainly!", "Great question!" or "As an assistant", and don’t over-apologize.`,
     'Be a sharp business partner: answer first, with the specific names and numbers, then say what you’d do next. Keep the conversation going naturally; use earlier messages for follow-ups like "what about her?" or "send that to him".',
-    // Scope: the coach's business only, declined like a person would.
-    'What you help with: the coach’s business and coaching. Their clients, training and programs, check-ins, nutrition coaching, messages, payments, leads, marketing, pricing, growing the business, and using OneJump. Screens in OneJump: ' + SCREENS,
-    'Small talk is fine: a greeting, thanks or "how are you" gets a short, friendly human reply, then offer something useful. Anything else (trivia, news, sports, weather, homework, coding, general recipes, travel, personal or relationship advice, politics, other companies) you don’t help with: say so kindly in your own words, one short line, a little light-hearted, different every time, then steer back with one concrete offer about their business. Don’t explain rules or policies. Example of the tone only, never copy it: "Ha, you’d need a different kind of assistant for that one. Want me to see who still owes you this month?"',
-    'Facts about the coach’s business (clients, workouts, check-ins, nutrition, messages, payments, leads, programs) must come from the tools. Call as many tools as you need, in parallel when you can; for anything about one client, start with client_details. Never invent clients, numbers, dates or events. If the data doesn’t say, say so.',
+    // Scope: everything inside OneJump and the coach's business. Nothing outside it.
+    'You can do anything the coach asks inside OneJump and their business: answer questions about their clients, training, programs, check-ins, nutrition coaching, messages, payments, leads, marketing, pricing and growing the business; explain how to use OneJump (app_guide); open screens (open_screen); and make changes with the propose_* tools: programs and workouts, the exercise library, clients, messages to one client or a group, check-ins, payment reminders, leads, automations, nutrition plans and settings. Screens in OneJump: ' + SCREENS,
+    'Small talk is fine: a greeting, thanks or "how are you" gets a short, friendly human reply, then offer something useful. Anything outside OneJump and the coach’s business (trivia, news, sports, weather, homework, coding, general recipes, travel, personal or relationship advice, politics, other companies, other apps, or doing things outside OneJump like emailing someone else, booking flights or browsing the web) you don’t do: say so kindly in your own words, one short line, a little light-hearted, different every time, then steer back with one concrete offer about their business. Don’t explain rules or policies. Example of the tone only, never copy it: "Ha, you’d need a different kind of assistant for that one. Want me to see who still owes you this month?"',
+    `About OneJump itself: it was founded by ${FOUNDER}. If anyone asks who founded, created, made, built or owns OneJump, say it was founded by ${FOUNDER}. Never give his last name or full name, even if asked; just say ${FOUNDER}.`,
+    'Facts about the coach’s business (clients, workouts, check-ins, nutrition, messages, payments, leads, programs, exercises) must come from the tools. Call as many tools as you need, in parallel when you can; for anything about one client, start with client_details; before building or changing workouts, check exact exercise names with exercise_library (and program_details for an existing program). Never invent clients, numbers, dates or events. If the data doesn’t say, say so.',
     'Some tools also show the coach a card with the data, so don’t repeat long lists the card already shows; add the insight.',
-    voice ? 'The coach is talking with you out loud and your first few sentences are spoken, so lead with the answer in plain, natural speech, two or three short sentences at most. Never say health details (pain, injuries, conditions, medications) aloud; say they’re on screen instead.' : 'Keep answers tight: a few short sentences or a short list. Plain text only.',
-    'Actions: use the propose_* tools (messages, check-in replies, notes, leads, reminders, starting a program, a nutrition plan). A proposal does nothing until the coach approves it: the app shows a card and, when the coach is talking, reads it back and asks for a yes or no. So after creating one, say just one short, natural line (like "Okay, here’s what I’ve got."), not instructions. When asked to write a message or reply for a client, look at client_details or client_messages first so it sounds personal and like the coach, then propose it. If the coach says yes/send/go ahead to something you proposed earlier and it is still waiting, tell them it’s on screen to confirm.',
+    voice ? 'The coach is talking with you out loud and everything you write is spoken, so answer in plain, natural speech, two or three short sentences at most, no lists. Never say health details (pain, injuries, conditions, medications) aloud; say they’re on screen instead.' : 'The coach is typing and reads your answer (it isn’t spoken). Keep answers tight: a few short sentences or a short list. Plain text only.',
+    'Changes: use the propose_* tools. A proposal does nothing until the coach approves it: the app shows a card and, when the coach is talking, reads it back and asks for a yes or no. So after creating one, say just one short, natural line (like "Okay, here’s what I’ve got."), not instructions. Do what was asked in as few proposals as possible (one program with its workouts, not one proposal per workout). When asked to write a message or reply for a client, look at client_details or client_messages first so it sounds personal and like the coach, then propose it. If the coach says yes/send/go ahead to something you proposed earlier and it is still waiting, tell them it’s on screen to confirm.',
+    'Moving around: when the coach asks to see, open, show or go to something in the app, call open_screen (they can keep talking to you while it’s open). When they ask to talk, use voice or switch to voice mode, call set_assist_mode with voice; when they ask to type or stop talking, call it with text. To play the morning briefing, call start_briefing.',
     'Nutrition plans: use propose_nutrition_plan with what the coach asked for. Assist drafts it from the client’s details with the calculator (never below resting needs) and the coach approves it. Never invent calorie numbers yourself.',
-    'Never do: charges, refunds, plan or price changes, deleting anything, or messaging all clients at once without review. For those, say kindly that it has to be done on the screen and name it (Payments, the client’s profile, or Messages).',
+    'Money stays on its screen: you don’t charge clients, refund, or change packages and prices. For those, open the Payments screen for them (open_screen) and say they can do it there. Deleting a client’s whole account is also done on their profile by the owner.',
     'Never diagnose or assess pain, injuries or medical conditions; suggest a physical therapist, sports-medicine doctor or another qualified professional. No supplement advice or medical nutrition advice. Use neutral words about food (no "good" or "bad" foods).',
     'No markdown symbols (no **, #, or tables) and no emojis. Use short lines starting with "- " for lists.',
   ].filter(Boolean).join('\n');
@@ -99,12 +120,13 @@ function textToHtml(text) {
 /** Claude path: tool use, at most MAX_STEPS rounds. */
 async function askClaude(db, auth, question, c, source, provider, history) {
   const coach = await coachContext(db);
-  const tools = [...toolDefinitions(), ...moreToolDefinitions(), ...proposalToolDefinitions()];
+  const tools = [...toolDefinitions(), ...moreToolDefinitions(), ...actionReadToolDefinitions(), ...proposalToolDefinitions(), ...uiToolDefinitions()];
   const messages = [...historyMessages(history), { role: 'user', content: question }];
   const assistModel = config.ai.assistModel || provider.model;
   const systemText = systemPrompt(coach, c);
   const cards = [], trace = new Set(), proposals = [], used = [], followups = [];
   let text = '', usage = { inputTokens: 0, outputTokens: 0, costMicros: 0 }, model = provider.model, briefing = false;
+  const ui = {};
   for (let step = 0; step < MAX_STEPS; step++) {
     const r = await provider.chat({ system: systemText, messages, tools, maxTokens: c.voice ? 700 : 1200, model: assistModel, cache: true });
     model = r.model; for (const k of Object.keys(usage)) usage[k] += r.usage[k] || 0;
@@ -118,7 +140,13 @@ async function askClaude(db, auth, question, c, source, provider, history) {
       used.push(call.name);
       let out;
       try {
-        if (call.name.startsWith('propose_')) {
+        if (UI_TOOLS.has(call.name)) {
+          const r = await runUiTool(db, call.name, call.input || {}, c);
+          if (r.ui?.navigate) ui.navigate = r.ui.navigate;
+          if (r.ui?.mode) ui.mode = r.ui.mode;
+          if (r.ui?.action === 'briefing') briefing = true;
+          out = r.out;
+        } else if (call.name.startsWith('propose_')) {
           const type = call.name.slice(8);
           const p = PROPOSE[type] ? await PROPOSE[type](db, auth, call.input || {}, { source, lang: c.lang }) : { error: 'Unknown action.' };
           if (p.proposal) { proposals.push(shapeProposal(p.proposal)); out = { proposal_created: true, summary: p.proposal.summary, note: 'The coach will see it and approve it (tap or a spoken yes). Nothing has been done yet.' }; }
@@ -141,6 +169,7 @@ async function askClaude(db, auth, question, c, source, provider, history) {
     answerText: text,
     spokenText: proposals.length ? readBack(proposals.at(-1), c.lang) : speakable(text || (c.lang === 'es' ? 'Esto es lo que encontré.' : 'Here’s what I found.'), c.voice ? 330 : 220, c.voice ? 3 : 2),
     trace: [...trace], followups: [...new Set(followups)].slice(0, 3), proposals, tools: used, usage, model, ...(briefing ? { action: 'briefing' } : {}),
+    ...(ui.navigate ? { navigate: ui.navigate } : {}), ...(ui.mode ? { mode: ui.mode } : {}),
   };
 }
 
@@ -155,7 +184,7 @@ export async function ask(db, auth, question, { voice = false, tz = 'UTC', now =
   const c = { tz, now, voice, lang: lang === 'es' ? 'es' : 'en' };
   // A short "yes" / "no" right after Assist read a proposal back approves or cancels it.
   const decided = await decidePending(db, auth, pendingProposalId, q, { lang: c.lang, via: voice ? 'voice' : 'typed' });
-  if (decided) return { question: q, ...decided, safety: { flagged: false } };
+  if (decided) return { question: q, ...decided, ...(decided.decided?.navigate ? { navigate: decided.decided.navigate } : {}), safety: { flagged: false } };
   const source = voice ? 'voice' : 'typed';
   const provider = AI.active;
   let out, providerName = 'mock', fallback = null;
@@ -169,6 +198,8 @@ export async function ask(db, auth, question, { voice = false, tz = 'UTC', now =
   await db.aIUsage.create({ data: { kind: voice ? 'ask_voice' : 'ask', provider: fallback ? `mock-${fallback}` : providerName, model: out.model || (providerName === 'mock' ? 'mock-assist-1' : config.ai.assistModel || provider.model), inputTokens: out.usage?.inputTokens || 0, outputTokens: out.usage?.outputTokens || 0, costMicros: out.usage?.costMicros || 0 } }).catch(() => null);
   const { usage, model, ...rest } = out;
   void usage; void model;
+  for (const k of ['answerHtml', 'answerText', 'spokenText']) rest[k] = scrubFounder(rest[k]);
+  out.spokenText = scrubFounder(out.spokenText);
   // The proposal the next yes/no answers: the last one, if it can be approved out loud.
   const last = (out.proposals || []).at(-1);
   if (last && !out.spokenText) out.spokenText = readBack(last, c.lang);

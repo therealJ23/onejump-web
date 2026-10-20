@@ -3,7 +3,8 @@
 // talking to Assist) a spoken "yes" right after Assist has read the proposal back. Anything with
 // health details is never read aloud, so it needs the on-screen tap. Confirming runs the action
 // through the normal service functions with the coach's own tenant-scoped access.
-// Proposals expire after 10 minutes and can be confirmed once. Money and deleting are never proposed.
+// Proposals expire after 10 minutes and can be confirmed once. Money is never proposed; deleting
+// (programs, workouts, exercises) is, because the coach confirms it. More actions: ./actions.js.
 import { must, conflict, badRequest, HttpError } from '../lib/errors.js';
 import { audit } from '../db/system.js';
 import { sendMessage } from '../core/messaging.js';
@@ -19,6 +20,7 @@ import { assignProgram } from '../core/training.js';
 import { draftNutritionPlan, applyNutritionPlan, describeDraft } from '../nutrition/assistPlan.js';
 import { checkText } from '../ai/safety.js';
 import { checkNutritionLanguage } from '../nutrition/language.js';
+import { ACTION_PROPOSE, ACTION_EXECUTE, ACTION_SCREEN, actionToolDefinitions } from './actions.js';
 
 /** Can this text be read aloud (and so approved by voice)? Not if it touches health or worrying food talk. */
 export const speakableText = t => !checkText(t).flagged && !checkNutritionLanguage(t).flagged;
@@ -104,6 +106,7 @@ export const PROPOSE = {
   async book_appointment() {
     return { error: 'Scheduling isn’t set up in OneJump yet, so I can’t book sessions. Add it to your calendar for now.' };
   },
+  ...ACTION_PROPOSE,
 };
 
 /** Proposal tool definitions for the Anthropic Messages API. */
@@ -118,12 +121,13 @@ export function proposalToolDefinitions() {
     { name: 'propose_assign_program', description: 'Propose starting a client on one of the coach’s programs (call the programs tool first if unsure of the name). The coach must approve.', input_schema: { type: 'object', properties: { client_name: { type: 'string' }, program_name: { type: 'string' }, start_date: { type: 'string', description: 'YYYY-MM-DD, optional; default is the next Monday' } }, required: ['client_name', 'program_name'] } },
     { name: 'propose_nutrition_plan', description: 'Have Assist draft a starting nutrition plan for one client (targets from the calculator, never below resting needs, daily habits, an optional meal plan) using the client’s details. Pass what the coach asked for. The coach must approve before the client sees it.', input_schema: { type: 'object', properties: { client_name: { type: 'string' }, request: { type: 'string', description: 'What the coach asked for: goal, preferences, foods, meal plan or not, number of days' } }, required: ['client_name'] } },
     { name: 'propose_book_appointment', description: 'Book a session with a client.', input_schema: { type: 'object', properties: { client_name: { type: 'string' }, when: { type: 'string' } }, required: ['client_name'] } },
+    ...actionToolDefinitions(),
   ];
 }
 
 // ---------------------------------------------------------------- confirm / cancel
 
-const SCREEN = { send_message: 'Messages', create_lead: 'Leads', send_reminders: 'Check-ins', add_note: 'the client’s profile', reply_checkin: 'Check-ins', assign_program: 'the client’s Program tab', nutrition_plan: 'the client’s Nutrition tab' };
+const SCREEN = { send_message: 'Messages', create_lead: 'Leads', send_reminders: 'Check-ins', add_note: 'the client’s profile', reply_checkin: 'Check-ins', assign_program: 'the client’s Program tab', nutrition_plan: 'the client’s Nutrition tab', ...ACTION_SCREEN };
 
 const EXECUTE = {
   async send_message(db, auth, p, { text }) {
@@ -175,6 +179,7 @@ const EXECUTE = {
     const r = await applyNutritionPlan(db, auth, client, p.draft, { pro: true });
     return { message: r.message };
   },
+  ...ACTION_EXECUTE,
 };
 
 export async function confirmProposal(db, auth, id, { text, via = 'tap' } = {}) {
@@ -186,7 +191,7 @@ export async function confirmProposal(db, auth, id, { text, via = 'tap' } = {}) 
   }
   if (p.status !== 'pending') throw conflict(p.status === 'confirmed' ? 'That was already done.' : p.status === 'cancelled' ? 'That was cancelled.' : 'That expired, so nothing was done.');
   if (p.userId !== auth.userId) throw conflict('Only the coach who asked can confirm this.');
-  if (text != null && !String(text).trim() && ['send_message', 'add_note', 'reply_checkin'].includes(p.type)) throw badRequest(p.type === 'add_note' ? 'The note is empty.' : 'The message is empty.');
+  if (text != null && !String(text).trim() && ['send_message', 'add_note', 'reply_checkin', 'message_clients'].includes(p.type)) throw badRequest(p.type === 'add_note' ? 'The note is empty.' : 'The message is empty.');
   if (!EXECUTE[p.type]) throw conflict('That can’t be done from here.');
   if (via === 'voice' && p.payload?.voiceOk === false) throw conflict('This one has health details, so it needs a tap on Confirm after you read it.');
   // Claim it atomically so a double tap (or two tabs) can only run it once.

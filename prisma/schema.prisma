@@ -206,6 +206,8 @@ model Exercise {
   kneeLoad   Boolean  @default(false)
   overhead   Boolean  @default(false)
   videoUrl   String?
+  mediaKey   String? // the coach's own photo or video (private storage)
+  mediaType  String? // image | video
   howTo      Json?
   altIds     Json?
   createdAt  DateTime @default(now())

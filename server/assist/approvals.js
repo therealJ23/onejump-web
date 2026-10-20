@@ -52,11 +52,14 @@ export function readBack(p, lang = 'en') {
       if (!d.voiceOk) return es ? `Hice un plan general para ${f}, pero sus notas mencionan un tema médico, así que un dietista debería guiarlo. Está en pantalla.` : `I drafted a general plan for ${f}, but their notes mention a medical topic, so a dietitian should guide it. It’s on screen.`;
       return es ? `${d.line} ¿Lo guardo en el plan de ${f}?` : `${d.line} Should I save it to ${f}’s plan?`;
     default:
+      // The actions in ./actions.js carry their own read-back in the coach's language.
+      if (d.say) return d.say;
+      if (d.voiceOk === false) return onScreen;
       return es ? 'Está en pantalla. ¿Lo hago?' : 'It’s on screen. Should I do it?';
   }
 }
 /** Can the coach answer this proposal out loud? */
-export const voiceApprovable = p => p.payload?.voiceOk !== false && !/health details/.test(readBack(p));
+export const voiceApprovable = p => p.payload?.voiceOk !== false && !/health details|temas de salud/.test(readBack(p));
 
 /**
  * If `text` is a clear yes/no to the pending proposal, approves or cancels it and returns the answer.
@@ -74,7 +77,7 @@ export async function decidePending(db, auth, pendingId, text, { lang = 'en', vi
     if (answer === 'yes') {
       const r = await confirmProposal(db, auth, p.id, { via });
       const msg = es ? `Listo. ${r.message ? translateDone(r.message) : ''}`.trim() : `Done. ${r.message || ''}`.trim();
-      return reply(msg, { decided: { id: p.id, confirmed: true, message: r.message } });
+      return reply(msg, { decided: { id: p.id, confirmed: true, message: r.message, ...(r.navigate ? { navigate: r.navigate } : {}) } });
     }
     const r = await cancelProposal(db, auth, p.id);
     const msg = es ? 'Está bien, no lo haré.' : 'Okay, I won’t do that.';
@@ -93,5 +96,14 @@ function translateDone(m) {
     .replace(/^(.+) is in your new leads\.$/, '$1 está en tus nuevos prospectos.')
     .replace(/^Sent (\d+) reminders?\.$/, 'Envié $1 recordatorio(s).')
     .replace(/^(.+) is on (.+)\.$/, '$1 ya está en $2.')
-    .replace(/^(.+)’s nutrition plan is saved\.$/, 'El plan de nutrición de $1 está guardado.');
+    .replace(/^(.+)’s nutrition plan is saved\.$/, 'El plan de nutrición de $1 está guardado.')
+    .replace(/^(.+) is ready in your programs\.$/, '$1 ya está en tus programas.')
+    .replace(/^(.+) is in your programs\.$/, '$1 ya está en tus programas.')
+    .replace(/^(.+) is (?:updated|deleted)\.$/, (m, a) => `${a} ${/deleted/.test(m) ? 'está borrado' : 'está actualizado'}.`)
+    .replace(/^(.+) is in your library\.$/, '$1 ya está en tu biblioteca.')
+    .replace(/^(.+) is out of your library\.$/, '$1 ya no está en tu biblioteca.')
+    .replace(/^(.+) is back in your library\.$/, '$1 regresó a tu biblioteca.')
+    .replace(/^Sent to (\d+) clients?\.$/, 'Enviado a $1 cliente(s).')
+    .replace(/^(.+) is now a client\.$/, '$1 ya es cliente.')
+    .replace(/^Your settings are saved\.$/, 'Tu configuración está guardada.');
 }

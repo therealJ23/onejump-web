@@ -42,6 +42,12 @@ function nutritionPlanBody(d) {
     ${x.coachNote ? `<div class="tiny"><span class="faint">Note for ${esc(first(d.clientName))}:</span> <span data-no-translate>“${esc(x.coachNote)}”</span></div>` : ''}`;
 }
 
+/** Where "open …" from Assist goes in the web app. */
+export function screenPath({ screen, id } = {}) {
+  const P = { today: '/app', clients: '/app/clients', client: id ? `/app/clients/${id}` : '/app/clients', messages: id ? `/app/inbox/${id}` : '/app/inbox', inbox: '/app/inbox', checkins: '/app/checkins', programs: '/app/programs', program: id ? `/app/programs/${id}` : '/app/programs', library: '/app/library', exercise: '/app/library', nutrition: '/app/nutrition', payments: '/app/payments', leads: '/app/leads', automations: '/app/automations', settings: '/app/settings', billing: '/app/billing', assist: '/app/assist', more: '/app' };
+  return P[screen] || null;
+}
+
 export function proposalCard(p) {
   const done = decided.get(p.id);
   if (done) return `<div class="proposal" data-proposal="${esc(p.id)}">${doneHtml(done)}</div>`;
@@ -77,6 +83,15 @@ export function proposalCard(p) {
       ${foot('Start program')}`;
   } else if (p.type === 'nutrition_plan') {
     body = `${nutritionPlanBody(d)}${foot(`${icon('check')} Use this plan`, `<a class="btn ghost sm" href="/app/clients/${esc(d.clientId)}/nutrition">Open Nutrition tab</a>`)}`;
+  } else {
+    // Everything else Assist can do (programs, workouts, exercises, clients, group messages, leads,
+    // automations, settings) arrives with its own title, detail lines and button text.
+    const lines = Array.isArray(d.lines) ? d.lines.filter(Boolean) : [];
+    const editable = p.type === 'message_clients';
+    body = `<div class="strong small">${esc(p.summary)}</div>
+      ${lines.length ? `<div class="stack s4 small">${lines.map(l => `<div${editable ? '' : ' data-no-translate'}>${esc(l)}</div>`).join('')}</div>` : ''}
+      ${editable ? `<div class="q-draft" id="pt-${id}" data-no-translate>${esc(d.text)}</div>` : ''}
+      ${foot(`${d.destructive ? icon('trash') : icon('check')} ${esc(d.button || 'Confirm')}`, editable ? `<button class="btn sm" data-act="proposalEdit" data-id="${id}">${icon('edit')} Edit</button>` : '')}`;
   }
   return `<div class="proposal" data-proposal="${id}" role="group" aria-label="${esc(p.summary)}">${body}<div class="tiny faint">${d.voiceOk === false ? 'Has health details, so it’s on screen only: tap to confirm. Expires in 10 minutes.' : 'Nothing happens until you confirm or say yes. Expires in 10 minutes.'}</div></div>`;
 }
@@ -137,7 +152,11 @@ export async function chatAsk(key, q) {
   const a = { role: 'a', pending: true }; msgs.push(a);
   refreshChat(key);
   const history = msgs.slice(0, -2).filter(m => m.role === 'q' ? m.text : m.r).slice(-12).map(m => ({ role: m.role === 'q' ? 'user' : 'assistant', text: m.role === 'q' ? m.text : (m.r.answerText || m.r.spokenText || '') })).filter(m => m.text);
-  try { a.r = await api.post('/api/assist/ask', { question: q, history, lang: getLang() }); if (a.r.action === 'briefing') import('./voice.js').then(m => m.openBriefing()); }
+  try {
+    a.r = await api.post('/api/assist/ask', { question: q, history, lang: getLang() });
+    if (a.r.action === 'briefing') import('./voice.js').then(m => m.openBriefing());
+    if (a.r.navigate) import('./router.js').then(m => { const path = screenPath(a.r.navigate); if (path) setTimeout(() => m.navigate(path), 600); });
+  }
   catch (e) { a.error = e.message; }
   a.pending = false;
   refreshChat(key);
