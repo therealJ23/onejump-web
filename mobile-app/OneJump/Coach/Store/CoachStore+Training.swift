@@ -134,22 +134,18 @@ extension Array where Element == EditableBlock {
     }
 }
 
-// MARK: - A photo or video the coach picked
+// MARK: - A demo video the coach picked or recorded
 
+/// Exercises take videos only (Oct 25): coaches show the movement.
 enum PickedMedia {
-    case image(UIImage)
     case video(URL)
 
-    var isVideo: Bool { if case .video = self { return true } else { return false } }
+    var isVideo: Bool { true }
 
-    /// The bytes to upload: a JPEG (at most 1600 px), or the video re-encoded as MP4
-    /// (medium quality, at most 90 seconds) so it uploads quickly.
+    /// The bytes to upload: the video re-encoded as MP4 (medium quality, at most 90 seconds) so it
+    /// uploads quickly.
     func prepared() async throws -> (data: Data, filename: String, mime: String) {
         switch self {
-        case .image(let image):
-            let scaled = image.scaledDown(maxSide: 1600)
-            guard let data = scaled.jpegData(compressionQuality: 0.82) else { throw MediaError.unreadable }
-            return (data, "photo.jpg", "image/jpeg")
         case .video(let url):
             let out = FileManager.default.temporaryDirectory.appendingPathComponent("oj-\(UUID().uuidString).mp4")
             let asset = AVURLAsset(url: url)
@@ -321,7 +317,7 @@ extension CoachStore {
         }
     }
 
-    /// Adds the coach's own exercise, then uploads its photo or video (if they picked one).
+    /// Adds the coach's own exercise, then uploads its demo video (if they picked or recorded one).
     @MainActor
     func createExercise(name: String, group: MuscleGroup, equipment: String, level: String, instructions: String, media: PickedMedia?) async -> Bool {
         let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -358,7 +354,7 @@ extension CoachStore {
         }
     }
 
-    /// Uploads (or replaces) the photo or video of one of the coach's exercises.
+    /// Uploads (or replaces) the demo video of one of the coach's exercises.
     @MainActor
     @discardableResult
     func uploadMedia(_ media: PickedMedia, to exerciseID: String) async -> ExerciseDetailDTO.Exercise? {

@@ -178,6 +178,8 @@ final class VoiceService {
 
     func stopSpeaking() {
         speakToken += 1
+        sentenceQueue?.finish()
+        sentenceQueue = nil
         if isConversing { conversation.stopSpeaking() }
         player?.stop()
         player = nil
@@ -284,6 +286,54 @@ final class VoiceService {
                 self.conversation.playMore(more)
             }
         }
+    }
+
+    // MARK: - Speaking an answer while it's still arriving
+
+    @ObservationIgnored private var sentenceQueue: AsyncStream<(String, Task<Data?, Never>?)>.Continuation?
+
+    /// Starts speaking an answer that arrives sentence by sentence (`speakNext`, then
+    /// `endStreamedSpeech`). Each sentence's audio is fetched as soon as it arrives and played in
+    /// order, so Assist starts talking after the first sentence instead of the whole answer.
+    func beginStreamedSpeech() {
+        stopSpeaking()
+        guard isConversing else { return }
+        let token = speakToken
+        conversation.beginAnswer()
+        let (stream, continuation) = AsyncStream.makeStream(of: (String, Task<Data?, Never>?).self)
+        sentenceQueue = continuation
+        Task { @MainActor [weak self] in
+            for await (text, fetch) in stream {
+                guard let self, token == self.speakToken, self.isConversing, self.conversation.acceptsMore else { return }
+                if let fetch, let audio = await fetch.value {
+                    guard token == self.speakToken else { return }
+                    if self.conversation.appendAudio(audio, text: text) { continue }
+                }
+                // No server voice (or it failed): the phone's own voice for this sentence.
+                let buffers = await self.conversation.synthesize(text, voice: Self.bestVoice(for: self.language))
+                guard token == self.speakToken else { return }
+                self.conversation.appendBuffers(buffers, text: text)
+            }
+            guard let self, token == self.speakToken else { return }
+            self.conversation.finishAnswer()
+        }
+    }
+
+    /// The next sentence of the answer being spoken.
+    func speakNext(_ text: String) {
+        let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty, let queue = sentenceQueue else { return }
+        let fetch: Task<Data?, Never>? = remoteVoice == nil ? nil : Task { @MainActor [weak self] in await self?.audio(for: clean) }
+        queue.yield((clean, fetch))
+    }
+
+    /// Whether an answer is being spoken sentence by sentence right now.
+    var isStreamingSpeech: Bool { sentenceQueue != nil }
+
+    /// The answer is complete: Assist finishes saying what's queued.
+    func endStreamedSpeech() {
+        sentenceQueue?.finish()
+        sentenceQueue = nil
     }
 
     // MARK: - Speaking ahead of time
@@ -405,6 +455,8 @@ final class VoiceService {
 
             let request = SFSpeechAudioBufferRecognitionRequest()
             request.shouldReportPartialResults = true
+            request.contextualStrings = SpeechHints.current
+            if #available(iOS 16, *) { request.addsPunctuation = true }
             recognitionRequest = request
 
             if tapInstalled { input.removeTap(onBus: 0) }
@@ -536,5 +588,231 @@ enum YesNo: Equatable {
         if noPhrases.contains(where: { padded.contains(" \($0) ") }) { return .no }
         if yesPhrases.contains(where: { padded.contains(" \($0) ") }) { return .yes }
         return nil
+    }
+}
+
+// MARK: - Voice messages
+
+/// Records a voice message (coach ↔ client chat): real audio saved as an .m4a file, up to a
+/// minute, with a live transcript while recording when speech recognition is allowed.
+@Observable
+final class VoiceNoteRecorder {
+    static let shared = VoiceNoteRecorder()
+    static let maxSeconds: Double = 60
+
+    struct Recording {
+        let url: URL
+        let seconds: Double
+        let transcript: String
+    }
+
+    private(set) var isRecording = false
+    private(set) var elapsed: Double = 0
+    /// How loud the voice is right now (0…1), for the recording bar.
+    private(set) var level: Float = 0
+    private(set) var transcript = ""
+
+    /// Called when the minute runs out (the recording is finished, not discarded).
+    @ObservationIgnored var onLimit: ((Recording?) -> Void)?
+
+    @ObservationIgnored private let engine = AVAudioEngine()
+    @ObservationIgnored private var file: AVAudioFile?
+    @ObservationIgnored private var url: URL?
+    @ObservationIgnored private var started = Date()
+    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var request: SFSpeechAudioBufferRecognitionRequest?
+    @ObservationIgnored private var task: SFSpeechRecognitionTask?
+    @ObservationIgnored private let lock = NSLock()
+
+    /// Asks for the microphone (and speech recognition for the live transcript), then records.
+    /// Returns false if the microphone isn't allowed or can't start.
+    @MainActor
+    func start(language: AppLanguage) async -> Bool {
+        if isRecording { return true }
+        let micOK = await withCheckedContinuation { (done: CheckedContinuation<Bool, Never>) in
+            AVAudioApplication.requestRecordPermission { done.resume(returning: $0) }
+        }
+        guard micOK else { return false }
+        let speechOK = await withCheckedContinuation { (done: CheckedContinuation<Bool, Never>) in
+            SFSpeechRecognizer.requestAuthorization { done.resume(returning: $0 == .authorized) }
+        }
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try session.setActive(true, options: [])
+            let input = engine.inputNode
+            let format = input.outputFormat(forBus: 0)
+            guard format.sampleRate > 0, format.channelCount > 0 else { return false }
+            let out = FileManager.default.temporaryDirectory.appendingPathComponent("oj-note-\(UUID().uuidString).m4a")
+            let settings: [String: Any] = [
+                AVFormatIDKey: kAudioFormatMPEG4AAC,
+                AVSampleRateKey: format.sampleRate,
+                AVNumberOfChannelsKey: min(2, Int(format.channelCount)),
+                AVEncoderBitRateKey: 64_000,
+            ]
+            let file = try AVAudioFile(forWriting: out, settings: settings, commonFormat: format.commonFormat, interleaved: format.isInterleaved)
+            self.file = file
+            self.url = out
+
+            if speechOK, let recognizer = SFSpeechRecognizer(locale: language.locale), recognizer.isAvailable {
+                let request = SFSpeechAudioBufferRecognitionRequest()
+                request.shouldReportPartialResults = true
+                request.contextualStrings = SpeechHints.current
+                if #available(iOS 16, *) { request.addsPunctuation = true }
+                self.request = request
+                task = recognizer.recognitionTask(with: request) { [weak self] result, _ in
+                    guard let text = result?.bestTranscription.formattedString, !text.isEmpty else { return }
+                    DispatchQueue.main.async { self?.transcript = text }
+                }
+            }
+
+            input.removeTap(onBus: 0)
+            input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+                guard let self else { return }
+                self.lock.lock()
+                try? self.file?.write(from: buffer)
+                let req = self.request
+                self.lock.unlock()
+                req?.append(buffer)
+                self.meter(buffer)
+            }
+            engine.prepare()
+            try engine.start()
+        } catch {
+            teardown()
+            if let url { try? FileManager.default.removeItem(at: url) }
+            return false
+        }
+        transcript = ""
+        elapsed = 0
+        started = Date()
+        isRecording = true
+        Haptics.tap()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            self.elapsed = Date().timeIntervalSince(self.started)
+            if self.elapsed >= Self.maxSeconds {
+                let r = self.stop()
+                self.onLimit?(r)
+            }
+        }
+        return true
+    }
+
+    /// Stops and returns the recording (nil if it was too short to be a message).
+    @discardableResult
+    func stop() -> Recording? {
+        guard isRecording else { return nil }
+        let seconds = Date().timeIntervalSince(started)
+        let text = transcript
+        teardown()
+        guard let url else { return nil }
+        self.url = nil
+        if seconds < 0.8 {
+            try? FileManager.default.removeItem(at: url)
+            return nil
+        }
+        return Recording(url: url, seconds: min(seconds, Self.maxSeconds), transcript: text)
+    }
+
+    /// Stops and throws the recording away.
+    func cancel() {
+        guard isRecording else { return }
+        teardown()
+        if let url { try? FileManager.default.removeItem(at: url) }
+        url = nil
+    }
+
+    private func teardown() {
+        timer?.invalidate()
+        timer = nil
+        if engine.isRunning { engine.stop() }
+        engine.inputNode.removeTap(onBus: 0)
+        lock.lock()
+        file = nil // closes the file
+        request?.endAudio()
+        request = nil
+        lock.unlock()
+        task?.finish()
+        task = nil
+        isRecording = false
+        level = 0
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
+
+    private func meter(_ buffer: AVAudioPCMBuffer) {
+        guard let channel = buffer.floatChannelData?[0], buffer.frameLength > 0 else { return }
+        let n = Int(buffer.frameLength)
+        var sum: Float = 0
+        for i in stride(from: 0, to: n, by: 4) { sum += channel[i] * channel[i] }
+        let rms = sqrt(sum / Float(max(1, n / 4)))
+        let value = min(1, max(0, (20 * log10(max(rms, 0.000_01)) + 50) / 40))
+        DispatchQueue.main.async { [weak self] in self?.level = value }
+    }
+}
+
+/// Plays voice messages, one at a time (a local file or a link from the server).
+@Observable
+final class VoiceNotePlayer {
+    static let shared = VoiceNotePlayer()
+
+    /// The message playing now.
+    private(set) var playingID: String?
+    /// The message whose audio is being fetched.
+    private(set) var loadingID: String?
+    /// 0…1 through the message playing now.
+    private(set) var progress: Double = 0
+
+    @ObservationIgnored private var player: AVPlayer?
+    @ObservationIgnored private var timeObserver: Any?
+    @ObservationIgnored private var endObserver: NSObjectProtocol?
+
+    /// Plays the message, or pauses it if it's the one playing. `url` is called only when needed
+    /// (a server link is fetched on the first tap). Call on the main thread.
+    func toggle(id: String, url: @escaping () async -> URL?) {
+        if playingID == id {
+            stop()
+            return
+        }
+        stop()
+        loadingID = id
+        Task { @MainActor [weak self] in
+            let link = await url()
+            guard let self, self.loadingID == id else { return }
+            self.loadingID = nil
+            guard let link else { return }
+            self.play(id: id, url: link)
+        }
+    }
+
+    private func play(id: String, url: URL) {
+        let session = AVAudioSession.sharedInstance()
+        try? session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+        try? session.setActive(true, options: [])
+        let item = AVPlayerItem(url: url)
+        let p = AVPlayer(playerItem: item)
+        player = p
+        playingID = id
+        progress = 0
+        timeObserver = p.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.1, preferredTimescale: 600), queue: .main) { [weak self, weak item] time in
+            guard let self, let duration = item?.duration.seconds, duration.isFinite, duration > 0 else { return }
+            self.progress = min(1, time.seconds / duration)
+        }
+        endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
+            self?.stop()
+        }
+        p.play()
+    }
+
+    func stop() {
+        if let timeObserver, let player { player.removeTimeObserver(timeObserver) }
+        timeObserver = nil
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        endObserver = nil
+        player?.pause()
+        player = nil
+        playingID = nil
+        loadingID = nil
+        progress = 0
     }
 }

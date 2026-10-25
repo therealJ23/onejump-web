@@ -587,26 +587,57 @@ final class ClientStore {
     }
 
     /// Records a voice note (with a written transcript) for the coach.
-    func toggleVoiceNote() {
-        if listenMode == .voiceNote {
-            stopListening()
-            toast.show(CLT.voiceNoteDiscarded(lang))
+    // MARK: Voice messages
+
+    /// Whether a voice message is recording now.
+    var recordingVoiceMessage: Bool { VoiceNoteRecorder.shared.isRecording }
+
+    /// Starts recording a voice message to the coach (real audio, with a transcript).
+    func startVoiceMessage() {
+        let recorder = VoiceNoteRecorder.shared
+        guard !recorder.isRecording else { return }
+        stopListening()
+        voice.stopSpeaking()
+        VoiceNotePlayer.shared.stop()
+        recorder.onLimit = { [weak self] recording in
+            guard let self else { return }
+            self.toast.show(SharedText.voiceMessageLimit(self.lang))
+            if let recording { self.deliverVoiceMessage(recording) }
+        }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            if !(await recorder.start(language: self.lang)) { self.toast.show(SharedText.micNeeded(self.lang)) }
+        }
+    }
+
+    func sendVoiceMessage() {
+        guard let recording = VoiceNoteRecorder.shared.stop() else {
+            toast.show(SharedText.voiceMessageTooShort(lang))
             return
         }
-        listen(.voiceNote, fallback: ClientData.sayVoiceNote(lang)) { [weak self] text in
-            guard let self else { return }
-            guard !text.isEmpty else {
-                self.toast.show(CLT.nothingRecorded(self.lang))
-                return
-            }
-            let seconds = max(3, Int((Double(text.split(separator: " ").count) / 2.4).rounded()))
-            let time = self.lang == .english ? CLT.delivered : CLT.deliveredInEnglish
-            withAnimation(.snappy) {
-                self.chatExtra.append(ChatMessage(fromMe: true, text: Loc(same: text), time: time, isVoice: true,
-                                                  duration: "0:" + String(format: "%02d", seconds)))
-            }
-            self.toast.show(CLT.voiceNoteSent(self.lang))
-        }
+        deliverVoiceMessage(recording)
+    }
+
+    func cancelVoiceMessage() {
+        VoiceNoteRecorder.shared.cancel()
+        toast.show(SharedText.voiceMessageDiscarded(lang))
+    }
+
+    private func deliverVoiceMessage(_ recording: VoiceNoteRecorder.Recording) {
+        let seconds = max(1, Int(recording.seconds.rounded()))
+        let time = lang == .english ? CLT.delivered : CLT.deliveredInEnglish
+        var message = ChatMessage(fromMe: true, text: Loc(same: recording.transcript), time: time, isVoice: true,
+                                  duration: VoiceMessageRow.clock(seconds))
+        message.audioURL = recording.url
+        message.seconds = seconds
+        withAnimation(.snappy) { chatExtra.append(message) }
+        Haptics.tap()
+        toast.show(CLT.voiceNoteSent(lang))
+    }
+
+    /// The quick-log button and older callers: record, or send what's recording.
+    func toggleVoiceNote() {
+        if recordingVoiceMessage { sendVoiceMessage() } else { startVoiceMessage() }
     }
 
     func startVoiceNoteFromQuickLog() {

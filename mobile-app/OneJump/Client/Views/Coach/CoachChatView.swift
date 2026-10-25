@@ -31,9 +31,9 @@ struct CoachChatView: View {
                         bubble(message)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    if store.listenMode == .voiceNote {
+                    if store.recordingVoiceMessage, !VoiceNoteRecorder.shared.transcript.isEmpty {
                         ChatBubble(fromMe: true, faded: true) {
-                            Text(store.voice.heard.isEmpty ? CLT.listening(lang) : "“\(store.voice.heard)”")
+                            Text("“\(VoiceNoteRecorder.shared.transcript)”")
                         }
                     }
                     SubText(CLT.realPerson(lang))
@@ -71,8 +71,14 @@ struct CoachChatView: View {
         let showingOriginal = store.showOriginal.contains(message.id)
         return ChatBubble(fromMe: message.fromMe) {
             if message.isVoice {
-                VoiceNoteRow(label: message.duration ?? "0:10")
-                Text("“\(message.text(lang))”").font(.archivo(13)).opacity(0.85).fixedSize(horizontal: false, vertical: true)
+                if let url = message.audioURL {
+                    VoiceMessageRow(id: message.id.uuidString, seconds: message.seconds ?? 0, fromMe: message.fromMe) { url }
+                } else {
+                    VoiceNoteRow(label: message.duration ?? "0:10")
+                }
+                if !message.text(lang).isEmpty {
+                    Text("“\(message.text(lang))”").font(.archivo(13)).opacity(0.85).fixedSize(horizontal: false, vertical: true)
+                }
             } else {
                 Text(message.text(lang)).fixedSize(horizontal: false, vertical: true)
             }
@@ -113,14 +119,11 @@ struct CoachChatView: View {
 
     private var composer: some View {
         @Bindable var store = store
-        let recording = store.listenMode == .voiceNote
+        let recording = store.recordingVoiceMessage
+        let hasText = !store.chatInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return ComposerBar {
             if recording {
-                Text(CLT.recordingTapStop(lang))
-                    .font(.archivo(14, .semibold))
-                    .foregroundStyle(Palette.crit)
-                    .lineLimit(1)
-                    .padding(.horizontal, 10)
+                RecordingStrip()
             } else {
                 TextField(CLT.messageAlex(lang), text: $store.chatInput)
                     .font(.archivo(15))
@@ -131,17 +134,26 @@ struct CoachChatView: View {
                     .onSubmit { store.sendChat() }
             }
         } buttons: {
-            ComposerButton(
-                systemName: recording ? "stop.fill" : "mic",
-                label: recording ? CLT.stopRecording(lang) : CLT.recordVoiceNote(lang),
-                style: recording ? .recording : .plain
-            ) {
-                focused = false
-                store.toggleVoiceNote()
+            if recording {
+                ComposerButton(systemName: "trash", label: SharedText.cancelVoiceMessage(lang), style: .plain) {
+                    store.cancelVoiceMessage()
+                }
+                ComposerButton(systemName: "arrow.up", label: SharedText.sendVoiceMessage(lang), style: .send) {
+                    store.sendVoiceMessage()
+                }
+            } else if hasText {
+                ComposerButton(systemName: "arrow.up", label: CLT.send(lang), style: .send) {
+                    store.sendChat()
+                }
+            } else {
+                ComposerButton(systemName: "mic.fill", label: SharedText.recordVoiceMessage(lang), style: .send) {
+                    focused = false
+                    store.startVoiceMessage()
+                }
             }
-            ComposerButton(systemName: "arrow.up", label: CLT.send(lang), style: .send) {
-                store.sendChat()
-            }
+        }
+        .onDisappear {
+            if store.recordingVoiceMessage { store.cancelVoiceMessage() }
         }
     }
 }

@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 
 // Programs, workouts and the exercise library for the coach's real business:
 // create and delete programs, add workouts and fill them from the library, add your own
-// exercises with a photo or video, and delete exercises.
+// exercises with a demo video (picked or recorded), and delete exercises.
 
 // MARK: - New program
 
@@ -442,7 +442,7 @@ struct ExercisePickerSheet: View {
     }
 }
 
-// MARK: - Photos and videos
+// MARK: - Demo videos
 
 /// A video from the photo library, copied somewhere the app can read it.
 struct PickedMovie: Transferable {
@@ -461,14 +461,49 @@ struct PickedMovie: Transferable {
 }
 
 extension PhotosPickerItem {
-    /// The photo or video the coach picked.
+    /// The video the coach picked (exercises take videos only).
     func loadMedia() async -> PickedMedia? {
-        if supportedContentTypes.contains(where: { $0.conforms(to: .movie) || $0.conforms(to: .video) }) {
-            if let movie = try? await loadTransferable(type: PickedMovie.self) { return .video(movie.url) }
-            return nil
-        }
-        if let data = try? await loadTransferable(type: Data.self), let image = UIImage(data: data) { return .image(image) }
+        if let movie = try? await loadTransferable(type: PickedMovie.self) { return .video(movie.url) }
         return nil
+    }
+}
+
+/// Records a demo video with the camera (up to 90 seconds).
+struct VideoRecorder: UIViewControllerRepresentable {
+    let onDone: (URL?) -> Void
+
+    static var isAvailable: Bool {
+        UIImagePickerController.isSourceTypeAvailable(.camera)
+            && (UIImagePickerController.availableMediaTypes(for: .camera) ?? []).contains(UTType.movie.identifier)
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(onDone: onDone) }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.mediaTypes = [UTType.movie.identifier]
+        picker.cameraCaptureMode = .video
+        picker.videoMaximumDuration = 90
+        picker.videoQuality = .typeHigh
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ controller: UIImagePickerController, context: Context) {}
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let onDone: (URL?) -> Void
+        init(onDone: @escaping (URL?) -> Void) { self.onDone = onDone }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            guard let recorded = info[.mediaURL] as? URL else { onDone(nil); return }
+            // The camera's file is temporary: keep a copy the app can read later.
+            let copy = FileManager.default.temporaryDirectory.appendingPathComponent("oj-rec-\(UUID().uuidString).\(recorded.pathExtension.isEmpty ? "mov" : recorded.pathExtension)")
+            do { try FileManager.default.copyItem(at: recorded, to: copy); onDone(copy) } catch { onDone(recorded) }
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { onDone(nil) }
     }
 }
 
@@ -504,25 +539,55 @@ struct ExerciseMediaView: View {
     }
 }
 
-/// A local preview of the photo or video picked before uploading.
+/// A local preview of the video picked or recorded before uploading.
 struct PickedMediaPreview: View {
     let media: PickedMedia
-    @Environment(\.lang) private var lang
 
     var body: some View {
         switch media {
-        case .image(let image):
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity)
-                .frame(height: 190)
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         case .video(let url):
             VideoPlayer(player: AVPlayer(url: url))
                 .frame(maxWidth: .infinity)
                 .frame(height: 190)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+    }
+}
+
+/// "Record a video" and "Pick a video" side by side (exercises take videos only).
+struct VideoChoiceButtons: View {
+    @Binding var pickerItem: PhotosPickerItem?
+    let hasVideo: Bool
+    let busy: Bool
+    var small = false
+    let onRecorded: (URL) -> Void
+    @Environment(\.lang) private var lang
+    @State private var recording = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if VideoRecorder.isAvailable {
+                Button {
+                    recording = true
+                } label: {
+                    Label(TT.recordVideo(lang), systemImage: "video.fill")
+                }
+                .buttonStyle(.oj(.ghost, size: small ? .small : .regular, fullWidth: true))
+                .disabled(busy)
+            }
+            PhotosPicker(selection: $pickerItem, matching: .videos) {
+                Label(busy ? TT.uploading(lang) : (hasVideo ? TT.changePhotoOrVideo(lang) : TT.addPhotoOrVideo(lang)),
+                      systemImage: hasVideo ? "arrow.triangle.2.circlepath" : "film")
+            }
+            .buttonStyle(.oj(.ghost, size: small ? .small : .regular, fullWidth: true))
+            .disabled(busy)
+        }
+        .fullScreenCover(isPresented: $recording) {
+            VideoRecorder { url in
+                recording = false
+                if let url { onRecorded(url) }
+            }
+            .ignoresSafeArea()
         }
     }
 }
@@ -559,13 +624,12 @@ struct AddExerciseSheet: View {
                     Eyebrow(TT.photoOrVideo(lang))
                     if let media {
                         PickedMediaPreview(media: media)
+                    } else {
+                        SubText(TT.videoOnlyNote(lang))
                     }
-                    PhotosPicker(selection: $pickerItem, matching: .any(of: [.images, .videos])) {
-                        Label(loadingMedia ? (CL.loadingPage(lang)) : (media == nil ? TT.addPhotoOrVideo(lang) : TT.changePhotoOrVideo(lang)),
-                              systemImage: media == nil ? "photo.badge.plus" : "arrow.triangle.2.circlepath")
+                    VideoChoiceButtons(pickerItem: $pickerItem, hasVideo: media != nil, busy: loadingMedia) { url in
+                        withAnimation(.snappy) { media = .video(url) }
                     }
-                    .buttonStyle(.oj(.ghost, fullWidth: true))
-                    .disabled(loadingMedia)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -660,18 +724,18 @@ struct LiveExerciseDetailView: View {
                         .allowsHitTesting(false)
                 }
             } else if custom {
-                EmptyStateCard(systemImage: "photo.on.rectangle", title: TT.noMedia(lang), message: nil)
+                EmptyStateCard(systemImage: "video", title: TT.noMedia(lang), message: TT.videoOnlyNote(lang))
             } else {
                 VideoPlaceholder(label: CT.playDemo(lang)) { store.toast.show(CT.toastDemo(lang)) }
             }
 
             if custom {
                 HStack(spacing: 8) {
-                    PhotosPicker(selection: $pickerItem, matching: .any(of: [.images, .videos])) {
-                        Label(uploading ? TT.uploading(lang) : (detail?.mediaType == nil ? TT.addPhotoOrVideo(lang) : TT.changePhotoOrVideo(lang)), systemImage: "photo.badge.plus")
+                    VideoChoiceButtons(pickerItem: $pickerItem, hasVideo: detail?.mediaType == "video", busy: uploading, small: true) { url in
+                        Task {
+                            if await store.uploadMedia(.video(url), to: exerciseID) != nil { store.toast.show(TT.mediaSaved(lang)) }
+                        }
                     }
-                    .buttonStyle(.oj(.ghost, size: .small, fullWidth: true))
-                    .disabled(uploading)
                     if detail?.mediaType != nil {
                         Button {
                             Task { await store.removeMedia(from: exerciseID) }

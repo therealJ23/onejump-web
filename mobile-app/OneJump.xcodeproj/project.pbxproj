@@ -915,7 +915,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = J575M856A5;
 				ENABLE_PREVIEWS = YES;
@@ -923,8 +923,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = OneJump;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSCameraUsageDescription = "OneJump uses the camera to scan food barcodes, so you can log packaged food in seconds.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "OneJump uses the microphone so you can talk to Assist, log sets and meals by voice, and record voice notes.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "OneJump uses the camera to record exercise demo videos and to scan food barcodes.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "OneJump uses the microphone so you can talk to Assist, send voice messages, log sets and meals by voice, and record exercise videos with sound.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "OneJump turns what you say into text so Assist can understand you and you can log by voice.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -952,7 +952,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = J575M856A5;
@@ -961,8 +961,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = OneJump;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSCameraUsageDescription = "OneJump uses the camera to scan food barcodes, so you can log packaged food in seconds.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "OneJump uses the microphone so you can talk to Assist, log sets and meals by voice, and record voice notes.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "OneJump uses the camera to record exercise demo videos and to scan food barcodes.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "OneJump uses the microphone so you can talk to Assist, send voice messages, log sets and meals by voice, and record exercise videos with sound.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "OneJump turns what you say into text so Assist can understand you and you can log by voice.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

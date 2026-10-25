@@ -175,6 +175,16 @@ struct ThreadMessage: Identifiable {
     var sentInTheirLanguage = false
     /// What the client actually received (translated).
     var outgoingTranslation: String?
+    /// The message's id on the server (live data).
+    var serverID: String?
+    /// Voice messages: length in seconds, the audio on this phone (just recorded), Assist's
+    /// one-line summary and a health flag (client voice messages, coach only).
+    var seconds: Int?
+    var audioURL: URL?
+    var summary: String?
+    var flag: String?
+    /// Still being sent.
+    var pending = false
 }
 
 struct CoachThread {

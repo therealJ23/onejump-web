@@ -122,3 +122,85 @@ struct ComposerBar<Field: View, Buttons: View>: View {
         .padding(.bottom, 8)
     }
 }
+
+/// A playable voice message inside a bubble: play/pause, a waveform that fills as it plays,
+/// and its length. `audio` gives the file or link when it's first played.
+struct VoiceMessageRow: View {
+    let id: String
+    let seconds: Int
+    let fromMe: Bool
+    let audio: () async -> URL?
+    @Environment(\.lang) private var lang
+    private let heights: [CGFloat] = [6, 12, 18, 9, 15, 7, 13, 17, 8, 11, 16, 6, 10, 14, 7, 12]
+
+    var body: some View {
+        let player = VoiceNotePlayer.shared
+        let playing = player.playingID == id
+        let loading = player.loadingID == id
+        let progress = playing ? player.progress : 0
+        Button {
+            Haptics.tick()
+            player.toggle(id: id, url: audio)
+        } label: {
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle().fill(fromMe ? Palette.onPrimary.opacity(0.18) : Palette.surface2)
+                    if loading {
+                        ProgressView().controlSize(.small).tint(fromMe ? Palette.onPrimary : Palette.ink)
+                    } else {
+                        Image(systemName: playing ? "pause.fill" : "play.fill").font(.system(size: 13, weight: .bold))
+                    }
+                }
+                .frame(width: 34, height: 34)
+                HStack(spacing: 2) {
+                    ForEach(Array(heights.enumerated()), id: \.offset) { pair in
+                        Capsule()
+                            .frame(width: 3, height: pair.element)
+                            .opacity(Double(pair.offset) / Double(heights.count) < progress ? 1 : 0.45)
+                    }
+                }
+                Text(VoiceMessageRow.clock(playing ? Int((Double(seconds) * progress).rounded()) : seconds))
+                    .font(.archivo(13, .semibold))
+                    .monospacedDigit()
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(playing ? SharedText.pauseVoiceMessage(lang) : SharedText.playVoiceMessage(VoiceMessageRow.clock(seconds))(lang))
+    }
+
+    static func clock(_ s: Int) -> String { "\(max(0, s) / 60):" + String(format: "%02d", max(0, s) % 60) }
+}
+
+/// The composer while a voice message is recording: a red dot, the time and a live level bar.
+struct RecordingStrip: View {
+    @Environment(\.lang) private var lang
+
+    var body: some View {
+        let recorder = VoiceNoteRecorder.shared
+        HStack(spacing: 8) {
+            ListeningDot()
+            Text(VoiceMessageRow.clock(Int(recorder.elapsed)))
+                .font(.archivo(15, .bold))
+                .monospacedDigit()
+                .foregroundStyle(Palette.crit)
+            GeometryReader { geo in
+                Capsule().fill(Palette.surface2)
+                    .overlay(alignment: .leading) {
+                        Capsule().fill(Palette.crit.opacity(0.7))
+                            .frame(width: max(6, geo.size.width * CGFloat(recorder.level)))
+                    }
+            }
+            .frame(height: 6)
+            .animation(.linear(duration: 0.1), value: recorder.level)
+            Text(recorder.transcript.isEmpty ? SharedText.recordingHint(lang) : recorder.transcript)
+                .font(.archivo(12))
+                .foregroundStyle(Palette.muted)
+                .lineLimit(1)
+                .frame(maxWidth: 140, alignment: .leading)
+        }
+        .padding(.horizontal, 10)
+        .frame(minHeight: 44)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(SharedText.recordingVoiceMessage(lang))
+    }
+}

@@ -29,10 +29,14 @@ struct CoachRootView: View {
         .environment(store)
         .task {
             if store.live && store.loadState == .loading { await store.refresh() }
+            if !store.live { store.updateSpeechHints() }
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                Task { await store.refreshIfStale() }
+                Task {
+                    await store.refreshIfStale()
+                    await store.warmAssist()
+                }
                 store.resumeVoiceModeIfNeeded()
             } else if phase == .background {
                 store.pauseVoiceMode()

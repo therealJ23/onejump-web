@@ -104,6 +104,9 @@ final class CoachStore {
     var listenMode: ListenMode?
     /// Answers that arrive after a newer question was asked are dropped.
     @ObservationIgnored var askToken = 0
+    /// The server doesn't stream answers (an older version): ask the one-shot way.
+    @ObservationIgnored var streamUnavailable = false
+    @ObservationIgnored var lastAssistWarm = Date.distantPast
     @ObservationIgnored var reviewSkip: Set<String> = []
     @ObservationIgnored var sampleIndex = 0
 
@@ -545,22 +548,79 @@ final class CoachStore {
         }
     }
 
-    /// Demo: records a pretend voice note. Live: the mic dictates into the message box instead.
-    func toggleVoiceNote(in id: String) {
-        if live {
-            dictate(into: { [weak self] text in
-                guard let self else { return }
-                self.threadReply = [self.threadReply, text].filter { !$0.isEmpty }.joined(separator: " ")
-            })
+    // MARK: Voice messages
+
+    /// Starts recording a voice message to this client (the microphone is used for it alone).
+    func startVoiceMessage(in id: String) {
+        let recorder = VoiceNoteRecorder.shared
+        guard !recorder.isRecording else { return }
+        if assistMode == .voice { endVoiceMode() }
+        voice.stopSpeaking()
+        voice.stopListening()
+        listenMode = nil
+        stopBriefing()
+        VoiceNotePlayer.shared.stop()
+        // At the 1-minute limit it's sent as it is.
+        recorder.onLimit = { [weak self] recording in
+            guard let self else { return }
+            withAnimation(.snappy) { self.recordingVoiceNote = false }
+            self.toast.show(SharedText.voiceMessageLimit(self.lang))
+            if let recording { self.deliverVoiceMessage(recording, to: id) }
+        }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let ok = await recorder.start(language: self.lang)
+            withAnimation(.snappy) { self.recordingVoiceNote = ok }
+            if !ok { self.toast.show(SharedText.micNeeded(self.lang)) }
+        }
+    }
+
+    /// Stops recording and sends the voice message.
+    func sendVoiceMessage(in id: String) {
+        let recording = VoiceNoteRecorder.shared.stop()
+        withAnimation(.snappy) { recordingVoiceNote = false }
+        guard let recording else {
+            toast.show(SharedText.voiceMessageTooShort(lang))
             return
         }
-        if recordingVoiceNote {
-            recordingVoiceNote = false
-            let note = ThreadMessage(fromMe: true, text: CT.voiceNote, time: CT.now, isVoice: true)
-            withAnimation(.snappy) { extraThreadMessages[id, default: []].append(note) }
-            toast.show(CT.voiceNoteSent(lang))
-        } else {
-            recordingVoiceNote = true
+        deliverVoiceMessage(recording, to: id)
+    }
+
+    /// Stops recording and throws it away.
+    func cancelVoiceMessage() {
+        VoiceNoteRecorder.shared.cancel()
+        withAnimation(.snappy) { recordingVoiceNote = false }
+        toast.show(SharedText.voiceMessageDiscarded(lang))
+    }
+
+    private func deliverVoiceMessage(_ recording: VoiceNoteRecorder.Recording, to id: String) {
+        var message = ThreadMessage(fromMe: true, text: Loc(same: recording.transcript), time: CT.now, isVoice: true)
+        message.seconds = max(1, Int(recording.seconds.rounded()))
+        message.audioURL = recording.url
+        message.pending = live
+        withAnimation(.snappy) { extraThreadMessages[id, default: []].append(message) }
+        Haptics.tap()
+        guard live else {
+            toast.show(SharedText.voiceMessageSent(lang))
+            return
+        }
+        let localID = message.id
+        Task { @MainActor [weak self] in await self?.uploadVoiceMessage(recording, to: id, localID: localID) }
+    }
+
+    /// A playable link for a voice message in a thread: the file on this phone, or a short-lived
+    /// link from the server.
+    @MainActor
+    func voiceMessageURL(_ message: ThreadMessage, in clientID: String) async -> URL? {
+        if let local = message.audioURL, FileManager.default.fileExists(atPath: local.path) { return local }
+        guard live, let serverID = message.serverID else { return nil }
+        struct Link: Decodable { let url: String }
+        do {
+            let link: Link = try await APIClient.shared.get("/api/threads/\(clientID)/messages/\(serverID)/audio")
+            return APIClient.shared.absoluteURL(link.url)
+        } catch {
+            showError(error)
+            return nil
         }
     }
 

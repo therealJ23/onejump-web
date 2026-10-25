@@ -90,11 +90,15 @@ final class APIClient {
     }
 
     /// Sends one file (a photo or a video) as multipart form data. Videos can take a while.
-    func upload<T: Decodable>(_ path: String, field: String, file: Data, filename: String, mimeType: String, as type: T.Type = T.self, timeout: TimeInterval = 180) async throws -> T {
+    func upload<T: Decodable>(_ path: String, field: String, file: Data, filename: String, mimeType: String, fields: [String: String] = [:], as type: T.Type = T.self, timeout: TimeInterval = 180) async throws -> T {
         if Fixtures.isOn { return try decode(T.self, Fixtures.answer("POST", path)) }
         if csrfToken == nil { try await refreshCSRF() }
         let boundary = "OneJump-\(UUID().uuidString)"
         var body = Data()
+        // Plain fields first (multer reads them before the file).
+        for (name, value) in fields.sorted(by: { $0.key < $1.key }) {
+            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
+        }
         body.append(Data("--\(boundary)\r\n".utf8))
         body.append(Data("Content-Disposition: form-data; name=\"\(field)\"; filename=\"\(filename)\"\r\n".utf8))
         body.append(Data("Content-Type: \(mimeType)\r\n\r\n".utf8))
@@ -127,6 +131,79 @@ final class APIClient {
             throw APIError(status: status, message: errorBody?.error ?? (status == 413 ? "That file is too large." : "The upload didn’t work. Try again."), code: errorBody?.code)
         }
         return try decode(T.self, try await attempt(retry: true))
+    }
+
+    // MARK: - Streamed answers (server-sent events)
+
+    /// One event from a streamed answer: `type` ("delta", "reset", "say", "done", "error"),
+    /// its text, and for "done" the full answer as JSON.
+    struct StreamEvent: Sendable {
+        let type: String
+        var text: String?
+        var message: String?
+        var status: Int?
+        var answer: Data?
+    }
+
+    /// POSTs JSON and hands back the server's events as they arrive (Ask Assist streams its
+    /// answer this way, so it shows and speaks while it's still being written).
+    func eventStream(_ path: String, _ json: [String: Any], timeout: TimeInterval = 60) -> AsyncThrowingStream<StreamEvent, Error> {
+        let body = (try? JSONSerialization.data(withJSONObject: json)) ?? Data("{}".utf8)
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    try await self.streamEvents(path, body: body, timeout: timeout, retryCSRF: true) { continuation.yield($0) }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private func streamEvents(_ path: String, body: Data, timeout: TimeInterval, retryCSRF: Bool, yield: (StreamEvent) -> Void) async throws {
+        if csrfToken == nil { try await refreshCSRF() }
+        guard let url = URL(string: path, relativeTo: baseURL) else { throw APIError(status: 0, message: "Bad address.") }
+        var request = URLRequest(url: url, timeoutInterval: timeout)
+        request.httpMethod = "POST"
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        request.setValue("OneJump-iOS", forHTTPHeaderField: "X-Client")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let csrfToken { request.setValue(csrfToken, forHTTPHeaderField: "X-CSRF-Token") }
+        request.httpBody = body
+
+        let bytes: URLSession.AsyncBytes
+        let response: URLResponse
+        do {
+            (bytes, response) = try await session.bytes(for: request)
+        } catch let error as URLError {
+            throw APIError(status: 0, message: error.code == .notConnectedToInternet || error.code == .networkConnectionLost
+                ? "You’re offline. Check your connection and try again."
+                : error.code == .timedOut ? "The server took too long. Try again." : "Couldn’t reach OneJump. Try again.")
+        }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            var data = Data()
+            for try await byte in bytes { data.append(byte); if data.count > 64_000 { break } }
+            let errorBody = try? JSONDecoder().decode(ErrorBody.self, from: data)
+            if status == 403, errorBody?.code == "csrf", retryCSRF {
+                try await refreshCSRF()
+                return try await streamEvents(path, body: body, timeout: timeout, retryCSRF: false, yield: yield)
+            }
+            if status == 401 { await MainActor.run { NotificationCenter.default.post(name: .ojLoggedOut, object: nil) } }
+            throw APIError(status: status, message: errorBody?.error ?? (status >= 500 ? "Something went wrong on our side. Try again in a minute." : HTTPURLResponse.localizedString(forStatusCode: status)), code: errorBody?.code)
+        }
+        for try await line in bytes.lines {
+            guard line.hasPrefix("data:") else { continue } // comments (": ping") and blank lines
+            let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+            guard let data = payload.data(using: .utf8),
+                  let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let type = object["type"] as? String else { continue }
+            var event = StreamEvent(type: type, text: object["text"] as? String, message: object["message"] as? String, status: object["status"] as? Int)
+            if let answer = object["answer"] { event.answer = try? JSONSerialization.data(withJSONObject: answer) }
+            yield(event)
+        }
     }
 
     /// A full address for a path the server sent (signed file links start with "/files/").

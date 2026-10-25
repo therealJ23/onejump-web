@@ -269,11 +269,21 @@ struct LiveClientDetailDTO: Decodable {
 
 /// One conversation.
 struct LiveThreadDTO: Decodable {
-    struct Message: Decodable { let id: String; let fromMe: Bool; let text: String; let time: LocDTO; let isVoice: Bool }
+    struct Message: Decodable {
+        let id: String; let fromMe: Bool; let text: String; let time: LocDTO; let isVoice: Bool
+        var durationS: Int?; var summary: String?; var flag: String?
+    }
     let id: String
     let messages: [Message]
 
     var messagesForApp: [ThreadMessage] {
-        messages.map { ThreadMessage(fromMe: $0.fromMe, text: Loc(same: $0.text), time: $0.time.loc, isVoice: $0.isVoice) }
+        messages.map { m in
+            var t = ThreadMessage(fromMe: m.fromMe, text: Loc(same: m.text), time: m.time.loc, isVoice: m.isVoice)
+            t.serverID = m.id
+            t.seconds = m.durationS
+            t.summary = m.summary
+            t.flag = m.flag
+            return t
+        }
     }
 }

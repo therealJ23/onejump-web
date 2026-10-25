@@ -128,6 +128,9 @@ final class VoiceConversation {
         request.shouldReportPartialResults = true
         request.taskHint = .dictation
         if #available(iOS 16, *) { request.addsPunctuation = true }
+        // Names and words the coach is likely to say, so they're heard right even when said fast,
+        // with an accent or a little off (client names, exercises, OneJump words).
+        request.contextualStrings = SpeechHints.current
         box.set(request)
         lastPartial = ""
         bargedIn = false
@@ -167,7 +170,17 @@ final class VoiceConversation {
         silenceWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.finish(token: token) }
         silenceWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.1, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.pause(after: clean), execute: work)
+    }
+
+    /// How long a pause ends what the coach is saying: shorter after a finished question or
+    /// sentence ("Who hasn't checked in?"), a little longer mid-thought ("Send Marcus…").
+    static func pause(after text: String) -> Double {
+        let t = text.trimmingCharacters(in: .whitespaces)
+        let words = t.split(separator: " ").count
+        if let last = t.last, "?.!".contains(last), words >= 3 { return 0.7 }
+        if words <= 2 { return 1.0 } // "Um…", "And Maya…": wait for the rest
+        return 0.9
     }
 
     /// The sentence is over: hand it on and start listening for the next one.
@@ -256,6 +269,75 @@ final class VoiceConversation {
         }
     }
 
+    // MARK: Answers that arrive in pieces (streamed)
+
+    /// An answer is being spoken piece by piece (until `finishAnswer`, or until interrupted).
+    private var answerActive = false
+    /// More sentences of the current answer can still be played (false once the coach talked over it).
+    var acceptsMore: Bool { isRunning && answerActive }
+
+    /// Starts a spoken answer whose sentences will arrive one by one (`appendAudio`).
+    func beginAnswer() {
+        stopSpeaking()
+        answerActive = true
+        moreComing = true
+    }
+
+    /// The next sentence's audio, played right after what's already queued. Returns false if it
+    /// can't be played (then the caller can use the device's voice for it).
+    @discardableResult
+    func appendAudio(_ audio: Data, text: String) -> Bool {
+        guard isRunning, answerActive, let buffer = Self.decode(audio, to: playFormat) else { return false }
+        appendBuffers([buffer], text: text)
+        return true
+    }
+
+    /// Buffers for the next sentence (from the server's voice or the device's).
+    func appendBuffers(_ buffers: [AVAudioPCMBuffer], text: String) {
+        guard isRunning, answerActive, !buffers.isEmpty else { return }
+        if isSpeaking {
+            spokenWords.formUnion(Self.words(text))
+        } else {
+            startSpeaking(text)
+        }
+        let token = speakToken
+        for b in buffers { enqueue(b, token: token) }
+    }
+
+    /// No more pieces are coming: the answer ends when the queued audio has played.
+    func finishAnswer(completion: (() -> Void)? = nil) {
+        guard answerActive else { completion?(); return }
+        answerActive = false
+        moreComing = false
+        whenDone = completion
+        if scheduled == 0 {
+            if isSpeaking { finishSpeaking() } else { whenDone = nil; completion?() }
+        }
+    }
+
+    /// The device's own voice for one sentence, as buffers in the player's format.
+    func synthesize(_ text: String, voice: AVSpeechSynthesisVoice?) async -> [AVAudioPCMBuffer] {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = voice
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * 1.02
+        let format = playFormat
+        let writer = AVSpeechSynthesizer()
+        return await withCheckedContinuation { (done: CheckedContinuation<[AVAudioPCMBuffer], Never>) in
+            var pending: [AVAudioPCMBuffer] = []
+            var finished = false
+            writer.write(utterance) { buffer in
+                guard !finished, let pcm = buffer as? AVAudioPCMBuffer else { return }
+                if pcm.frameLength > 0 {
+                    if let converted = VoiceConversation.convert(pcm, to: format) { pending.append(converted) }
+                    return
+                }
+                finished = true
+                _ = writer // keep the synthesizer alive until it's done
+                done.resume(returning: pending)
+            }
+        }
+    }
+
     /// The device's own voice (when the server voice isn't available), through the engine.
     func speakOnDevice(_ text: String, voice: AVSpeechSynthesisVoice?, completion: (() -> Void)?) {
         guard isRunning else { completion?(); return }
@@ -308,6 +390,7 @@ final class VoiceConversation {
         speakToken += 1
         scheduled = 0
         moreComing = false
+        answerActive = false
         whenDone = nil
         if synthesizer.isSpeaking { synthesizer.stopSpeaking(at: .immediate) }
         if engine.attachedNodes.contains(player) { player.stop() }
@@ -418,5 +501,36 @@ private final class RequestBox {
         let current = request
         lock.unlock()
         current?.append(buffer)
+    }
+}
+
+/// Words speech recognition should expect (client names, exercises, app words). The coach app
+/// fills it when the business loads; every listening session uses it.
+enum SpeechHints {
+    private static let lock = NSLock()
+    private static var words: [String] = SpeechHints.base
+
+    static let base = ["OneJump", "Assist", "check-in", "check-ins", "macros", "protein", "reps", "sets", "RPE", "deload",
+                       "superset", "program", "workout", "nutrition plan", "morning briefing", "leads", "payment reminder"]
+
+    static var current: [String] {
+        lock.lock(); defer { lock.unlock() }
+        return words
+    }
+
+    /// Sets the names to expect (first names and full names), plus the app's own words.
+    static func set(names: [String], extra: [String] = []) {
+        var seen = Set<String>()
+        var out: [String] = []
+        for w in names.flatMap({ name -> [String] in
+            let first = name.split(separator: " ").first.map(String.init) ?? name
+            return first == name ? [name] : [name, first]
+        }) + extra + base {
+            let clean = w.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard clean.count > 1, seen.insert(clean.lowercased()).inserted else { continue }
+            out.append(clean)
+            if out.count >= 100 { break } // Apple recommends at most about 100
+        }
+        lock.lock(); words = out; lock.unlock()
     }
 }

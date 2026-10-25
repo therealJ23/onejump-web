@@ -80,7 +80,7 @@ struct ThreadView: View {
 
         return ChatBubble(fromMe: m.fromMe) {
             if m.isVoice {
-                VoiceNoteRow(label: CT.voiceNote(lang))
+                voiceMessage(m)
             } else {
                 Text(m.text(lang)).fixedSize(horizontal: false, vertical: true)
             }
@@ -107,6 +107,33 @@ struct ThreadView: View {
         }
     }
 
+    /// A voice message: play it, what was said, and (from the client) Assist's summary and any health flag.
+    @ViewBuilder
+    private func voiceMessage(_ m: ThreadMessage) -> some View {
+        let transcript = m.text(lang).trimmingCharacters(in: .whitespacesAndNewlines)
+        let isPlaceholder = transcript.isEmpty || transcript.hasPrefix("Voice note (") || transcript == CT.voiceNote(lang)
+        VoiceMessageRow(id: m.serverID ?? m.id.uuidString, seconds: m.seconds ?? 0, fromMe: m.fromMe) {
+            await store.voiceMessageURL(m, in: threadID)
+        }
+        if m.pending {
+            Text(SharedText.transcribing(lang)).font(.archivo(12)).opacity(0.75)
+        } else if !isPlaceholder {
+            Text("“\(transcript)”").font(.archivo(13)).opacity(0.85).fixedSize(horizontal: false, vertical: true)
+        }
+        if let summary = m.summary, !summary.isEmpty {
+            HStack(alignment: .top, spacing: 6) {
+                AssistMark(size: 12)
+                Text(summary).font(.archivo(12, .semibold)).fixedSize(horizontal: false, vertical: true)
+            }
+            .opacity(0.85)
+        }
+        if let flag = m.flag, !flag.isEmpty {
+            Label(CL.mentionedFlag(flag)(lang), systemImage: "exclamationmark.triangle.fill")
+                .font(.archivo(12, .semibold))
+                .foregroundStyle(Palette.crit)
+        }
+    }
+
     private func suggestionCard(_ suggestion: Loc) -> some View {
         AssistCard(label: CT.suggestedReply(lang)) {
             DraftText(suggestion(lang))
@@ -129,25 +156,11 @@ struct ThreadView: View {
         let placeholder = (thread?.isForeign == true && store.autoTranslate)
             ? CT.messagePlaceholderTranslated(languageName)(lang)
             : CT.messagePlaceholder(lang)
-        let dictating = store.live && store.listenMode == .dictation && store.voice.isListening
+        let recording = store.recordingVoiceNote
+        let hasText = !store.threadReply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return ComposerBar {
-            if dictating {
-                HStack(spacing: 8) {
-                    ListeningDot()
-                    Text(store.voice.heard.isEmpty ? CT.listening(lang) : store.voice.heard)
-                        .font(.archivo(14, .semibold))
-                        .foregroundStyle(Palette.ink)
-                        .lineLimit(2)
-                }
-                .padding(.horizontal, 10)
-            } else if store.recordingVoiceNote {
-                HStack(spacing: 8) {
-                    ListeningDot()
-                    Text(CT.recordingVoiceNote(lang))
-                        .font(.archivo(14, .semibold))
-                        .foregroundStyle(Palette.crit)
-                }
-                .padding(.horizontal, 10)
+            if recording {
+                RecordingStrip()
             } else {
                 TextField(placeholder, text: $store.threadReply)
                     .font(.archivo(15))
@@ -158,17 +171,27 @@ struct ThreadView: View {
                     .onSubmit { store.sendReply(in: threadID) }
             }
         } buttons: {
-            ComposerButton(
-                systemName: store.recordingVoiceNote || dictating ? "stop.fill" : "mic",
-                label: store.live ? CL.talk(lang) : (store.recordingVoiceNote ? CT.stopVoiceNote(lang) : CT.recordVoiceNote(lang)),
-                style: store.recordingVoiceNote || dictating ? .recording : .plain
-            ) {
-                focused = false
-                store.toggleVoiceNote(in: threadID)
+            if recording {
+                ComposerButton(systemName: "trash", label: SharedText.cancelVoiceMessage(lang), style: .plain) {
+                    store.cancelVoiceMessage()
+                }
+                ComposerButton(systemName: "arrow.up", label: SharedText.sendVoiceMessage(lang), style: .send) {
+                    store.sendVoiceMessage(in: threadID)
+                }
+            } else if hasText {
+                ComposerButton(systemName: "arrow.up", label: CT.send(lang), style: .send) {
+                    store.sendReply(in: threadID)
+                }
+            } else {
+                // Like WhatsApp: the mic records a voice message; typing turns it into Send.
+                ComposerButton(systemName: "mic.fill", label: SharedText.recordVoiceMessage(lang), style: .send) {
+                    focused = false
+                    store.startVoiceMessage(in: threadID)
+                }
             }
-            ComposerButton(systemName: "arrow.up", label: CT.send(lang), style: .send) {
-                store.sendReply(in: threadID)
-            }
+        }
+        .onDisappear {
+            if store.recordingVoiceNote { store.cancelVoiceMessage() }
         }
     }
 }

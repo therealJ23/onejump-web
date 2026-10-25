@@ -3,6 +3,8 @@ import Foundation
 /// Text for signing in and for the coach's real (live) business, in English and Spanish.
 /// Written like a person talks: short, warm, plain.
 enum CL {
+    /// A client's voice message mentioned something health-related (shown to the coach only).
+    static func mentionedFlag(_ term: String) -> Loc { Loc("Mentions “\(term)”. Read it before replying.", "Menciona “\(term)”. Léelo antes de responder.") }
     // MARK: Login
     static let loginTitle = Loc("Welcome back", "Qué bueno verte")
     static let loginSub = Loc("Log in with your OneJump coach account.", "Inicia sesión con tu cuenta de coach de OneJump.")

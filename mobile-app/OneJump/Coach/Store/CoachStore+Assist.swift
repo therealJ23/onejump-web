@@ -25,6 +25,7 @@ extension CoachStore {
         hint = ""
         withAnimation(.snappy) { assistMode = .voice }
         Haptics.tap()
+        Task { @MainActor [weak self] in await self?.warmAssist() }
         voice.startConversation(onUtterance: { [weak self] text in
             self?.heardInVoiceMode(text)
         }, onBargeIn: { [weak self] in
@@ -165,8 +166,9 @@ extension CoachStore {
         guard let message = assistMessages[safe: index], voiceOn else { return }
         if let card = message.card, card.isOpen, card.kind != .proposal || card.voiceOK {
             pendingIndex = index
-            let spoken = [message.say, card.ask.isEmpty ? nil : card.ask].compactMap { $0 }.joined(separator: " ")
-            voice.speak(spoken)
+            let spoken = [message.say, card.ask.isEmpty ? nil : card.ask].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " ")
+            // A streamed answer was already said sentence by sentence.
+            if !spoken.isEmpty { voice.speak(spoken) }
         } else {
             let spoken = message.say ?? message.text
             if !spoken.isEmpty { voice.speak(spoken) }
@@ -328,28 +330,135 @@ extension CoachStore {
     func askServer(_ question: String, history: [[String: String]], proposalID: String?, token: Int) async {
         var body: [String: Any] = ["question": question, "voice": voiceOn, "history": history, "lang": lang == .spanish ? "es" : "en"]
         if let proposalID { body["pendingProposalId"] = proposalID }
+        // Screenshots and tests without a server use the one-shot answer.
+        if Fixtures.isOn || streamUnavailable {
+            await askServerOnce(body, token: token)
+            return
+        }
+        // Streamed: the answer shows while it's written, and in voice mode Assist starts
+        // talking after the first sentence.
+        let speaking = voiceOn
+        if speaking { voice.beginStreamedSpeech() }
+        var shown = ""
+        var bubble: UUID?
+        var gotEvent = false
+        do {
+            for try await event in APIClient.shared.eventStream("/api/assist/ask/stream", body, timeout: 60) {
+                guard token == askToken else { return } // a newer question was asked meanwhile
+                gotEvent = true
+                switch event.type {
+                case "delta":
+                    shown += event.text ?? ""
+                    let text = shown.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !text.isEmpty else { break }
+                    if let id = bubble, let i = assistMessages.firstIndex(where: { $0.id == id }) {
+                        assistMessages[i].text = text
+                    } else {
+                        let m = AssistMessage(fromMe: false, text: text, say: "")
+                        bubble = m.id
+                        withAnimation(.snappy) {
+                            thinking = false
+                            assistMessages.append(m)
+                        }
+                    }
+                case "reset":
+                    // That was a lead-in; Assist is looking things up.
+                    shown = ""
+                    if let id = bubble { withAnimation(.snappy) { assistMessages.removeAll { $0.id == id } } }
+                    bubble = nil
+                    withAnimation(.snappy) { thinking = true }
+                case "say":
+                    if speaking, let text = event.text { voice.speakNext(text) }
+                case "done":
+                    if speaking { voice.endStreamedSpeech() }
+                    guard let data = event.answer, let r = try? JSONDecoder().decode(AskResponse.self, from: data) else { break }
+                    if let id = bubble { assistMessages.removeAll { $0.id == id } }
+                    finishAnswer(r, streamedSpeech: speaking && r.speechStreamed == true)
+                    return
+                case "error":
+                    if speaking { voice.endStreamedSpeech() }
+                    throw APIClient.APIError(status: event.status ?? 500, message: event.message ?? CL.somethingWrong(lang))
+                default:
+                    break
+                }
+            }
+            // The stream ended without an answer.
+            if speaking { voice.endStreamedSpeech() }
+            guard token == askToken else { return }
+            if !gotEvent {
+                await askServerOnce(body, token: token)
+                return
+            }
+            throw APIClient.APIError(status: 0, message: CL.somethingWrong(lang))
+        } catch {
+            guard token == askToken else { return }
+            if speaking && voice.isStreamingSpeech { voice.endStreamedSpeech() }
+            // An older server without streaming: use the one-shot answer from now on.
+            if !gotEvent, let api = error as? APIClient.APIError, api.status == 404 || api.status == 405 {
+                streamUnavailable = true
+                await askServerOnce(body, token: token)
+                return
+            }
+            if !gotEvent && (error as? APIClient.APIError)?.status == 0 && !(error is CancellationError) {
+                await askServerOnce(body, token: token)
+                return
+            }
+            withAnimation(.snappy) { thinking = false }
+            if let id = bubble { assistMessages.removeAll { $0.id == id } }
+            let text = (error as? LocalizedError)?.errorDescription ?? CL.somethingWrong(lang)
+            pushAssistant(AssistMessage(fromMe: false, text: text, say: voiceOn ? text : nil))
+        }
+    }
+
+    /// The whole answer in one response (no streaming).
+    @MainActor
+    private func askServerOnce(_ body: [String: Any], token: Int) async {
         do {
             let r: AskResponse = try await APIClient.shared.post("/api/assist/ask", body, timeout: 90)
             guard token == askToken else { return } // a newer question was asked meanwhile
-            withAnimation(.snappy) { thinking = false }
-            if let d = r.decided { markProposal(d.id, confirmed: d.confirmed, message: d.message) }
-            if r.action == "briefing" {
-                pushAssistant(AssistMessage(fromMe: false, text: CL.startingBriefing(lang), say: ""))
-                go(.today)
-                after(0.4) { [weak self] in self?.toggleBriefing() }
-                return
-            }
-            pushAssistant(message(from: r))
-            if r.mode == "voice" && assistMode == .text { startVoiceMode() }
-            if r.mode == "text" && assistMode == .voice { after(0.2) { [weak self] in self?.endVoiceMode() } }
-            if let nav = r.navigate ?? r.decided?.navigate { navigate(to: nav) }
-            if r.decided?.confirmed == true { Task { @MainActor [weak self] in await self?.refreshAfterAction() } }
+            finishAnswer(r, streamedSpeech: false)
         } catch {
             guard token == askToken else { return }
             withAnimation(.snappy) { thinking = false }
             let text = (error as? LocalizedError)?.errorDescription ?? CL.somethingWrong(lang)
             pushAssistant(AssistMessage(fromMe: false, text: text, say: voiceOn ? text : nil))
         }
+    }
+
+    /// Shows Assist's finished answer (and runs what it asked for: a screen, voice or text, the briefing).
+    @MainActor
+    private func finishAnswer(_ r: AskResponse, streamedSpeech: Bool) {
+        withAnimation(.snappy) { thinking = false }
+        if let d = r.decided { markProposal(d.id, confirmed: d.confirmed, message: d.message) }
+        if r.action == "briefing" {
+            pushAssistant(AssistMessage(fromMe: false, text: CL.startingBriefing(lang), say: ""))
+            go(.today)
+            after(0.4) { [weak self] in self?.toggleBriefing() }
+            return
+        }
+        var m = message(from: r)
+        if streamedSpeech { m.say = "" } // already said, sentence by sentence
+        pushAssistant(m)
+        if r.mode == "voice" && assistMode == .text { startVoiceMode() }
+        if r.mode == "text" && assistMode == .voice { after(0.2) { [weak self] in self?.endVoiceMode() } }
+        if let nav = r.navigate ?? r.decided?.navigate { navigate(to: nav) }
+        if r.decided?.confirmed == true { Task { @MainActor [weak self] in await self?.refreshAfterAction() } }
+    }
+
+    /// Client names (and the coach's own exercises) for speech recognition to expect, so a name
+    /// said fast, with an accent or a little off is still heard right.
+    func updateSpeechHints() {
+        let own = data.library.filter { $0.custom }.map { $0.name(lang) }
+        let programs = data.programs.map { $0.name(lang) }
+        SpeechHints.set(names: allClients.map(\.name), extra: own + programs)
+    }
+
+    /// Gets Assist ready in the background (the server primes the AI so the first question is quick).
+    @MainActor
+    func warmAssist() async {
+        guard live, me.pro, Date().timeIntervalSince(lastAssistWarm) > 45 * 60 else { return }
+        lastAssistWarm = Date()
+        let _: APIClient.Empty? = try? await APIClient.shared.post("/api/assist/warm", ["lang": lang == .spanish ? "es" : "en"], timeout: 20)
     }
 
     /// Opens a screen Assist was asked to show (the conversation keeps going in voice mode).

@@ -20,6 +20,22 @@ enum SharedText {
     )
     static let appLanguageToast = Loc("App language: English", "Idioma de la app: español")
 
+    // Voice messages
+    static let pauseVoiceMessage = Loc("Pause voice message", "Pausar mensaje de voz")
+    static func playVoiceMessage(_ length: String) -> Loc { Loc("Play voice message, \(length)", "Reproducir mensaje de voz, \(length)") }
+    static let recordingVoiceMessage = Loc("Recording a voice message", "Grabando un mensaje de voz")
+    static let recordingHint = Loc("Talk now…", "Habla ahora…")
+    static let recordVoiceMessage = Loc("Record a voice message", "Grabar un mensaje de voz")
+    static let cancelVoiceMessage = Loc("Discard voice message", "Descartar mensaje de voz")
+    static let sendVoiceMessage = Loc("Send voice message", "Enviar mensaje de voz")
+    static let voiceMessageDiscarded = Loc("Voice message discarded.", "Mensaje de voz descartado.")
+    static let voiceMessageSent = Loc("Voice message sent.", "Mensaje de voz enviado.")
+    static let voiceMessageTooShort = Loc("Hold on a bit longer, that was too short to send.", "Habla un poco más, fue demasiado corto para enviarlo.")
+    static let voiceMessageLimit = Loc("That’s the 1-minute limit, so it was sent.", "Llegaste al límite de 1 minuto, así que se envió.")
+    static let micNeeded = Loc("Allow the microphone in Settings to send voice messages.", "Permite el micrófono en Ajustes para enviar mensajes de voz.")
+    static let transcribing = Loc("Writing out what you said…", "Escribiendo lo que dijiste…")
+    static let voiceMessage = Loc("Voice message", "Mensaje de voz")
+
     // Demo role switcher
     static let previewTitle = Loc("Pick an app to preview", "Elige una app para ver")
     static let previewSub = Loc(

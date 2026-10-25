@@ -34,6 +34,11 @@ extension CoachStore {
             }
             // The briefing and its voice get ready in the background, so play starts right away.
             Task { @MainActor [weak self] in await self?.prepareBriefing() }
+            // Assist gets ready too: speech recognition expects these names, the server primes
+            // the AI, and Assist's common lines are fetched so they play without waiting.
+            updateSpeechHints()
+            Task { @MainActor [weak self] in await self?.warmAssist() }
+            voice.prefetch([AVT.listeningSay(lang), CL.wontDoIt(lang)])
         } catch {
             if (error as? APIClient.APIError)?.isLoggedOut == true { return }
             if loadState == .ready {
@@ -132,6 +137,29 @@ extension CoachStore {
         } catch {
             extraThreadMessages[clientID]?.removeAll { $0.id == localID }
             threadReply = text
+            showError(error)
+        }
+    }
+
+    /// Uploads a recorded voice message; the server writes out what was said.
+    @MainActor
+    func uploadVoiceMessage(_ recording: VoiceNoteRecorder.Recording, to clientID: String, localID: UUID) async {
+        struct Sent: Decodable {
+            struct Message: Decodable { let id: String; let body: String? }
+            let message: Message
+        }
+        do {
+            let data = try Data(contentsOf: recording.url)
+            let r: Sent = try await api.upload("/api/threads/\(clientID)/voice-notes", field: "audio", file: data, filename: "voice.m4a", mimeType: "audio/mp4",
+                                               fields: ["durationMs": String(Int(recording.seconds * 1000))], timeout: 90)
+            if let i = extraThreadMessages[clientID]?.firstIndex(where: { $0.id == localID }) {
+                extraThreadMessages[clientID]?[i].serverID = r.message.id
+                extraThreadMessages[clientID]?[i].pending = false
+                if let body = r.message.body, !body.isEmpty { extraThreadMessages[clientID]?[i].text = Loc(same: body) }
+            }
+            toast.show(SharedText.voiceMessageSent(lang))
+        } catch {
+            extraThreadMessages[clientID]?.removeAll { $0.id == localID }
             showError(error)
         }
     }

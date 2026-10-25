@@ -127,6 +127,9 @@ struct ChatMessage: Identifiable {
     var time: Loc
     var isVoice = false
     var duration: String?
+    /// A voice message recorded on this phone (playable).
+    var audioURL: URL?
+    var seconds: Int?
 }
 
 // MARK: - Check-in, booking, settings

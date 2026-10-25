@@ -27,6 +27,8 @@ struct AskResponse: Decodable {
     var navigate: Navigate?
     /// "voice" or "text": the coach asked to switch how they talk to Assist.
     var mode: String?
+    /// Streamed answers: everything to say already arrived sentence by sentence.
+    var speechStreamed: Bool?
 }
 
 /// Something Assist prepared (a message, a reply, a note, a lead, reminders, a program, a nutrition plan).
