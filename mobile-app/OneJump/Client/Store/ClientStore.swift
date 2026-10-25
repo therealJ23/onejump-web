@@ -65,6 +65,8 @@ final class ClientStore {
     var reviewMeal: Meal = .dinner
     var foodQuery = ""
     var heardFood = ""
+    /// Why the last barcode didn't work (not found, offline, bad number).
+    var barcodeMessage: Loc?
     @ObservationIgnored var logToken = 0
 
     // MARK: Progress
@@ -436,14 +438,31 @@ final class ClientStore {
                 self.listenForFood()
             }
         }
-        if mode == .barcode {
-            after(delay + 2.3) { [weak self] in
-                guard let self, token == self.logToken, self.logStage == .barcode else { return }
-                withAnimation(.snappy) { self.logStage = .reading }
-                after(0.9) { [weak self] in
-                    guard let self, token == self.logToken else { return }
-                    self.showReview(ClientData.barcodeItems)
-                }
+        barcodeMessage = nil
+    }
+
+    /// A barcode was scanned (or typed): look the product up, then let the client check the portion.
+    func lookUpBarcode(_ raw: String) {
+        let code = raw.filter(\.isNumber)
+        guard (8...14).contains(code.count) else {
+            barcodeMessage = CLT.badBarcode
+            return
+        }
+        let token = logToken
+        barcodeMessage = nil
+        withAnimation(.snappy) { logStage = .reading }
+        Task { @MainActor [weak self] in
+            let result = await BarcodeLookup.find(code)
+            guard let self, token == self.logToken else { return }
+            switch result {
+            case .found(let food):
+                self.showReview([food])
+            case .notFound:
+                self.barcodeMessage = CLT.barcodeNotFound
+                withAnimation(.snappy) { self.logStage = .barcode }
+            case .failed:
+                self.barcodeMessage = CLT.barcodeOffline
+                withAnimation(.snappy) { self.logStage = .barcode }
             }
         }
     }
@@ -627,5 +646,110 @@ final class ClientStore {
             pickedSlot = nil
         }
         toast.show(CLT.moved(lang))
+    }
+}
+
+// MARK: - Barcode lookup
+
+/// Finds a packaged food by its barcode in Open Food Facts (free, public, no key).
+/// The demo client isn't logged in, so it asks Open Food Facts directly; once real client
+/// accounts exist this can go through the server's `/api/foods/barcode/:code` (cached).
+enum BarcodeLookup {
+    enum Result { case found(FoodItem), notFound, failed }
+
+    private struct Answer: Decodable {
+        let status: Int?
+        let product: Product?
+    }
+
+    private struct Product: Decodable {
+        let product_name: String?
+        let generic_name: String?
+        let brands: String?
+        let serving_size: String?
+        let serving_quantity: Double?
+        let nutriments: [String: Double]?
+
+        enum CodingKeys: String, CodingKey { case product_name, generic_name, brands, serving_size, serving_quantity, nutriments }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            product_name = try? c.decodeIfPresent(String.self, forKey: .product_name)
+            generic_name = try? c.decodeIfPresent(String.self, forKey: .generic_name)
+            brands = try? c.decodeIfPresent(String.self, forKey: .brands)
+            serving_size = try? c.decodeIfPresent(String.self, forKey: .serving_size)
+            // Open Food Facts sends serving_quantity as a number or a string.
+            if let n = try? c.decodeIfPresent(Double.self, forKey: .serving_quantity) {
+                serving_quantity = n
+            } else if let s = try? c.decodeIfPresent(String.self, forKey: .serving_quantity) {
+                serving_quantity = Double(s)
+            } else {
+                serving_quantity = nil
+            }
+            // Nutriments mixes numbers and strings; keep only the numbers.
+            if let all = try? c.decodeIfPresent([String: Flexible].self, forKey: .nutriments) {
+                nutriments = all.compactMapValues(\.number)
+            } else {
+                nutriments = nil
+            }
+        }
+    }
+
+    private struct Flexible: Decodable {
+        let number: Double?
+        init(from decoder: Decoder) throws {
+            let c = try decoder.singleValueContainer()
+            if let d = try? c.decode(Double.self) { number = d }
+            else if let s = try? c.decode(String.self) { number = Double(s) }
+            else { number = nil }
+        }
+    }
+
+    static func find(_ code: String) async -> Result {
+        let fields = "product_name,generic_name,brands,nutriments,serving_size,serving_quantity"
+        guard let url = URL(string: "https://world.openfoodfacts.org/api/v2/product/\(code).json?fields=\(fields)") else { return .failed }
+        var request = URLRequest(url: url, timeoutInterval: 12)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        // Open Food Facts asks every app to say who it is.
+        request.setValue("OneJump-iOS/1.0 (hello@onejumpfit.com)", forHTTPHeaderField: "User-Agent")
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if status == 404 { return .notFound }
+            guard (200..<300).contains(status) else { return .failed }
+            let answer = try JSONDecoder().decode(Answer.self, from: data)
+            guard answer.status == 1, let p = answer.product, let food = food(from: p) else { return .notFound }
+            return .found(food)
+        } catch {
+            return .failed
+        }
+    }
+
+    private static func food(from p: Product) -> FoodItem? {
+        let n = p.nutriments ?? [:]
+        guard let kcal100 = n["energy-kcal_100g"] ?? n["energy_100g"].map({ $0 / 4.184 }) else { return nil }
+        let protein100 = n["proteins_100g"] ?? 0
+        let carbs100 = n["carbohydrates_100g"] ?? 0
+        let fat100 = n["fat_100g"] ?? 0
+
+        let name = (p.product_name ?? p.generic_name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let brand = p.brands?.split(separator: ",").first.map { $0.trimmingCharacters(in: .whitespaces) }
+        let title = name.isEmpty ? (brand ?? "Product") : (brand.map { name.localizedCaseInsensitiveContains($0) ? name : "\(name) · \($0)" } ?? name)
+
+        // One serving when the label gives one, otherwise 100 g.
+        let grams = (p.serving_quantity ?? 0) > 0 ? p.serving_quantity! : 100
+        let quantity: Loc
+        if (p.serving_quantity ?? 0) > 0 {
+            let label = p.serving_size?.trimmingCharacters(in: .whitespaces) ?? ""
+            quantity = label.isEmpty
+                ? Loc("1 serving (\(Int(grams.rounded())) g)", "1 porción (\(Int(grams.rounded())) g)")
+                : Loc("1 serving (\(label))", "1 porción (\(label))")
+        } else {
+            quantity = Loc(same: "100 g")
+        }
+        let f = grams / 100
+        return FoodItem(name: Loc(same: title), quantity: quantity,
+                        kcal: kcal100 * f, protein: protein100 * f, carbs: carbs100 * f, fat: fat100 * f,
+                        source: Loc("Barcode · Open Food Facts", "Código · Open Food Facts"))
     }
 }

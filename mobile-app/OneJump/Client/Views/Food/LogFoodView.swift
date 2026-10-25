@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 /// Logging food four ways: photo, voice, barcode or search.
 /// Assist reads what it can, then the client checks portions before anything is saved.
@@ -98,9 +99,7 @@ struct LogFoodView: View {
     // MARK: Barcode
 
     private var barcodeStage: some View {
-        CameraFrame(tip: CLT.holdSteady(lang)) {
-            BarcodeIllustration()
-        }
+        BarcodeScanStage()
     }
 
     // MARK: Reading
@@ -124,6 +123,170 @@ struct LogFoodView: View {
         case .photo: return CLT.readingPhoto(lang)
         case .barcode: return CLT.foundIt(lang)
         default: return CLT.findingFoods(lang)
+        }
+    }
+}
+
+// MARK: - Barcode scanning
+
+/// The live camera reads the barcode on its own; typing the numbers works too.
+private struct BarcodeScanStage: View {
+    @Environment(ClientStore.self) private var store
+    @Environment(\.lang) private var lang
+    @Environment(\.openURL) private var openURL
+    @State private var access = AVCaptureDevice.authorizationStatus(for: .video)
+    @State private var typed = ""
+
+    private var hasCamera: Bool { AVCaptureDevice.default(for: .video) != nil }
+    private var denied: Bool { access == .denied || access == .restricted }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            CameraFrame(tip: tip) {
+                if access == .authorized && hasCamera {
+                    BarcodeCameraView { code in store.lookUpBarcode(code) }
+                        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                        .accessibilityLabel(CLT.pointAtBarcode(lang))
+                } else if denied {
+                    VStack(spacing: 8) {
+                        Image(systemName: "camera.fill").font(.system(size: 30)).foregroundStyle(Palette.volt)
+                        Text(CLT.cameraOff(lang)).font(OJFont.title).foregroundStyle(Color(hex: 0xF4F6F1))
+                        Text(CLT.cameraOffNote(lang)).font(.archivo(13)).foregroundStyle(Color(hex: 0xE6ECE3).opacity(0.8))
+                            .multilineTextAlignment(.center).frame(maxWidth: 260)
+                    }
+                } else {
+                    BarcodeIllustration()
+                }
+            }
+            if denied {
+                Button(CLT.openSettings(lang)) {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                }
+                .buttonStyle(.oj(.ghost, fullWidth: true))
+            }
+            if let message = store.barcodeMessage {
+                Text(message(lang))
+                    .font(.archivo(14, .semibold))
+                    .foregroundStyle(Palette.ink)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                HStack(spacing: 8) {
+                    Button(CLT.methodSearch(lang)) { store.searchMore() }
+                        .buttonStyle(.oj(.ghost, fullWidth: true))
+                }
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                SubText(CLT.typeBarcode(lang))
+                HStack(spacing: 8) {
+                    TextField("0 12345 67890 5", text: $typed)
+                        .keyboardType(.numberPad)
+                        .font(.archivo(16, .semibold))
+                        .padding(.horizontal, 14)
+                        .frame(height: 46)
+                        .background(Palette.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Palette.line2, lineWidth: 1))
+                        .accessibilityLabel(CLT.typeBarcode(lang))
+                    Button(CLT.lookUp(lang)) { store.lookUpBarcode(typed) }
+                        .buttonStyle(.oj(.primary))
+                        .disabled(typed.filter(\.isNumber).count < 8)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .task {
+            guard access == .notDetermined else { return }
+            let ok = await AVCaptureDevice.requestAccess(for: .video)
+            access = ok ? .authorized : .denied
+        }
+    }
+
+    private var tip: String {
+        if denied { return "" }
+        if !hasCamera { return CLT.noCamera(lang) }
+        return CLT.holdSteady(lang)
+    }
+}
+
+/// The phone's back camera, reading EAN/UPC barcodes (the ones on food packaging).
+private struct BarcodeCameraView: UIViewRepresentable {
+    var onCode: (String) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onCode: onCode) }
+
+    func makeUIView(context: Context) -> PreviewView {
+        let view = PreviewView()
+        view.backgroundColor = .black
+        context.coordinator.start(in: view)
+        return view
+    }
+
+    func updateUIView(_ uiView: PreviewView, context: Context) {
+        context.coordinator.onCode = onCode
+    }
+
+    static func dismantleUIView(_ uiView: PreviewView, coordinator: Coordinator) {
+        coordinator.stop()
+    }
+
+    final class PreviewView: UIView {
+        override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
+        var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
+    }
+
+    final class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
+        var onCode: (String) -> Void
+        private let session = AVCaptureSession()
+        private let queue = DispatchQueue(label: "oj.barcode.camera")
+        private var handled = false
+
+        init(onCode: @escaping (String) -> Void) {
+            self.onCode = onCode
+        }
+
+        func start(in view: PreviewView) {
+            view.previewLayer.session = session
+            view.previewLayer.videoGravity = .resizeAspectFill
+            let session = self.session
+            queue.async { [weak self] in
+                guard let self,
+                      let device = AVCaptureDevice.default(for: .video),
+                      let input = try? AVCaptureDeviceInput(device: device),
+                      session.canAddInput(input) else { return }
+                session.beginConfiguration()
+                session.addInput(input)
+                let output = AVCaptureMetadataOutput()
+                if session.canAddOutput(output) {
+                    session.addOutput(output)
+                    output.setMetadataObjectsDelegate(self, queue: .main)
+                    let wanted: [AVMetadataObject.ObjectType] = [.ean13, .ean8, .upce, .code128]
+                    output.metadataObjectTypes = wanted.filter { output.availableMetadataObjectTypes.contains($0) }
+                }
+                session.commitConfiguration()
+                // Packages are held close: focus near.
+                if (try? device.lockForConfiguration()) != nil {
+                    if device.isAutoFocusRangeRestrictionSupported { device.autoFocusRangeRestriction = .near }
+                    if device.isFocusModeSupported(.continuousAutoFocus) { device.focusMode = .continuousAutoFocus }
+                    device.unlockForConfiguration()
+                }
+                session.startRunning()
+            }
+        }
+
+        func stop() {
+            let session = self.session
+            queue.async {
+                if session.isRunning { session.stopRunning() }
+            }
+        }
+
+        func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+            guard !handled,
+                  let code = metadataObjects.compactMap({ $0 as? AVMetadataMachineReadableCodeObject }).first?.stringValue,
+                  !code.isEmpty else { return }
+            handled = true
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            stop()
+            onCode(code)
         }
     }
 }
