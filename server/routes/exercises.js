@@ -1,5 +1,5 @@
 // Exercise library: OneJump's shared library plus the coach's custom exercises.
-// Coaches can add their own exercises (with a photo or a video), delete their own, and remove
+// Coaches can add their own exercises (with a demo video), delete their own, and remove
 // shared ones from their library (hidden for their business only; workouts that use them keep working).
 import { Router } from 'express';
 import multer from 'multer';
@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { body, z, name } from '../lib/validate.js';
 import { must, badRequest } from '../lib/errors.js';
 import { HOWTO } from '../seed/exercises.js';
-import { StorageService, sniffImage, sniffVideo, stripJpegMetadata } from '../storage/StorageService.js';
+import { StorageService, sniffImage, sniffVideo } from '../storage/StorageService.js';
 
 export const router = Router();
 
@@ -119,18 +119,19 @@ router.post('/:id/restore', async (req, res) => {
   res.json({ ok: true, message: `${e.name} is back in your library.` });
 });
 
-/** A photo or video for one of the coach's own exercises (replaces the old one). */
+/**
+ * A demo video for one of the coach's own exercises (replaces the old one). Videos only (Oct 25):
+ * coaches show the movement. Photos added before then still show.
+ */
 router.post('/:id/media', upload.single('media'), async (req, res) => {
   const e = must(await req.db.exercise.findFirst({ where: { id: req.params.id, businessId: req.auth.businessId } }), 'That custom exercise');
-  if (!req.file) throw badRequest('Choose a photo or a video.');
-  let buf = req.file.buffer;
-  const image = sniffImage(buf);
-  const video = image ? null : sniffVideo(buf);
-  if (!image && !video) throw badRequest('Upload a photo (JPG, PNG, WebP, HEIC) or a video (MP4 or MOV).');
-  if (image === 'image/jpeg') buf = stripJpegMetadata(buf) || buf;
+  if (!req.file) throw badRequest('Choose a video.');
+  const buf = req.file.buffer;
+  const video = sniffVideo(buf);
+  if (!video) throw badRequest(sniffImage(buf) ? 'Exercises take a video, not a photo. Pick or record a short video of the movement.' : 'Upload a video (MP4 or MOV).');
   const key = `exercises/${req.auth.businessId}/${e.id}/${randomUUID()}`;
-  await StorageService.put(key, buf, image || video);
-  const updated = await req.db.exercise.update({ where: { id: e.id }, data: { mediaKey: key, mediaType: image ? 'image' : 'video' } });
+  await StorageService.put(key, buf, video);
+  const updated = await req.db.exercise.update({ where: { id: e.id }, data: { mediaKey: key, mediaType: 'video' } });
   if (e.mediaKey) await StorageService.remove(e.mediaKey).catch(() => null);
   res.status(201).json({ exercise: await shapeExercise(updated, new Map(), { withMedia: true }) });
 });

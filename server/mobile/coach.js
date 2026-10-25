@@ -450,7 +450,7 @@ export async function threadFor(db, clientId, { now = new Date() } = {}) {
     id: clientId,
     messages: messages.reverse().map(m => {
       const v = voiceFields(m, { coach: true });
-      return { id: m.id, fromMe: m.senderRole !== 'CLIENT', text: m.body || '', time: when(m.createdAt, tz, now), isVoice: !!v.voice };
+      return { id: m.id, fromMe: m.senderRole !== 'CLIENT', text: m.body || '', time: when(m.createdAt, tz, now), isVoice: !!v.voice, ...(v.voice ? { durationS: v.voice.durationS, summary: v.voice.summary || null, flag: v.voice.flag || null } : {}) };
     }),
   };
 }

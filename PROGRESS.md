@@ -1,6 +1,6 @@
 # Progress
 
-_Last updated: October 20, 2026_
+_Last updated: October 25, 2026_
 
 ## Now building: Voice + Nutrition (approved Oct 8)
 
@@ -29,6 +29,13 @@ Spec: `03-voice-and-nutrition-spec.md`. Everything runs on mock voice, AI and fo
 - [x] **iPhone build 2 (Oct 20, `ios-app` branch):** create and delete programs, add and edit workouts, add exercises with a photo or video, delete exercises; Assist voice mode (always listening, talk over it to interrupt, glowing logo, keeps working on every screen with glowing edges) and a silent text mode; faster morning briefing with a fixed-size card that shows one line at a time.
 
 **Tests:** `npm test` → lint passes, **204 API tests pass** (including the month forecast's arithmetic, HQ admin-only and no client details, the iPhone app's snapshot API, nutrition plans, spoken yes/no approvals, health details never approved by voice, other coaches’ proposals ignored, prompt caching). `npm run test:e2e` → **40 browser tests pass** (desktop + phone), including the Business insights page and HQ forecast, business charts, the nutrition plan builder, typed yes/no approvals, dictation, denied mic, Ask Assist, set by voice + Undo, voice notes, voice food logging and the briefing.
+
+- [x] **Faster Assist (Oct 25):** Claude Haiku 5.5 with thinking off (falls back to Haiku 4.5), streamed answers that start speaking after the first sentence, an hour-long prompt cache with a warm-up when the app opens, a snapshot of the coach’s day so most questions take one step, parallel tools, shorter pause at the end of a sentence.
+- [x] **Understands mispronounced names (Oct 25):** client names, programs and exercises as speech-recognition hints (phone and Deepgram), and sounds-alike matching for clients and exercises (“Mia” → Maya, “goblin squat” → Goblet Squat).
+- [x] **Voice messages on the iPhone (Oct 25):** record, send and play voice messages in the coach’s client threads (sent to the server, transcribed) and in the client app’s chat.
+- [x] **Exercise videos only (Oct 25):** the exercise library takes demo videos (record or pick), no photos.
+
+**Tests:** `npm test` → lint passes, **216 API tests pass** (new: Haiku 5.5 options, 1-hour caching, model fallback, streaming parser, streamed answers and speech, health details never streamed aloud, parallel tools, snapshot isolation, sounds-alike names, Deepgram key terms, video-only exercise media).
 
 ## MVP: built ✅
 

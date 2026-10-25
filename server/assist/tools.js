@@ -10,6 +10,7 @@ import { buildToday } from '../core/queue.js';
 import { programWeek } from '../core/training.js';
 import { weightSeries } from '../core/stats.js';
 import { todayKey, addDays, DAY } from '../lib/time.js';
+import { soundsLike } from '../lib/fuzzy.js';
 
 const firstOf = n => String(n || '').split(' ')[0];
 const ACTIVE = { status: { in: ['NEW', 'ACTIVE'] } };
@@ -25,9 +26,17 @@ export async function findClientsIn(db, text) {
   return clients.filter(c => s.includes(` ${firstOf(c.name).toLowerCase()} `));
 }
 
+/**
+ * The client a name refers to. Exact first or full name first; if nothing matches (a name misheard
+ * by speech recognition or said differently, like "Mia" for Maya), the client whose name sounds
+ * most like it, when one clearly does.
+ */
 export async function clientByName(db, name) {
   const hits = await findClientsIn(db, name);
-  return { client: hits.length === 1 ? hits[0] : null, matches: hits };
+  if (hits.length) return { client: hits.length === 1 ? hits[0] : null, matches: hits };
+  const clients = await db.client.findMany({ where: { status: { not: 'INACTIVE' } }, select: { id: true, name: true } });
+  const { hit, close } = soundsLike(clients, name);
+  return { client: hit, matches: hit ? [hit] : close, ...(hit ? { soundedLike: true } : {}) };
 }
 
 async function lastCheckinFor(db, clientId) {

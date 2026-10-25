@@ -241,8 +241,8 @@ describe('hands-free approvals: Assist reads it back, a spoken yes or no decides
     const p = new AnthropicProvider({ apiKey: 'x', model: 'claude-haiku-4-5', fetchImpl: async (_u, o) => { sent = JSON.parse(o.body); return { ok: true, status: 200, json: async () => ({ content: [], usage: { input_tokens: 10, cache_read_input_tokens: 1000, output_tokens: 5 } }) }; } });
     const msgs = [{ role: 'user', content: 'hi' }];
     const r = await p.chat({ system: 'sys', messages: msgs, tools: [{ name: 'a', input_schema: {} }, { name: 'b', input_schema: {} }], cache: true });
-    expect(sent.system[0].cache_control).toEqual({ type: 'ephemeral' });
-    expect(sent.tools[1].cache_control).toEqual({ type: 'ephemeral' });
+    expect(sent.system[0].cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
+    expect(sent.tools[1].cache_control).toEqual({ type: 'ephemeral', ttl: '1h' });
     expect(sent.tools[0].cache_control).toBeUndefined();
     expect(sent.messages[0].content[0]).toMatchObject({ text: 'hi', cache_control: { type: 'ephemeral' } });
     expect(msgs[0].content).toBe('hi'); // caller's array untouched

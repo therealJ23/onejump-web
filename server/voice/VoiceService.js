@@ -40,11 +40,15 @@ class MockVoice {
 
 class DeepgramVoice {
   constructor({ apiKey, model, fetchImpl = fetch }) { if (!apiKey) throw new Error('DEEPGRAM_API_KEY is not set'); this.name = 'deepgram'; this.key = apiKey; this.model = model; this.fetch = fetchImpl; }
-  async transcribe(buf, { mimeType = 'audio/webm', lang = 'en' } = {}) {
+  async transcribe(buf, { mimeType = 'audio/webm', lang = 'en', keyterms = [] } = {}) {
     // Spanish speakers often mix in English (names, exercises), so Spanish uses multilingual mode.
-    const res = await this.fetch(`https://api.deepgram.com/v1/listen?model=${encodeURIComponent(this.model)}&smart_format=true&punctuate=true${lang === 'es' ? '&language=multi' : ''}`, {
-      method: 'POST', headers: { Authorization: `Token ${this.key}`, 'Content-Type': mimeType.split(';')[0] }, body: buf, signal: AbortSignal.timeout(30000),
-    });
+    // Key terms (client names, exercises, coaching words) help Nova-3 spell names right even when
+    // they're said quickly or with an accent. If Deepgram won't take them, it's retried without.
+    const base = `https://api.deepgram.com/v1/listen?model=${encodeURIComponent(this.model)}&smart_format=true&punctuate=true&filler_words=false${lang === 'es' ? '&language=multi' : ''}`;
+    const terms = /^nova-3/.test(this.model) ? keytermQuery(keyterms) : '';
+    const call = url => this.fetch(url, { method: 'POST', headers: { Authorization: `Token ${this.key}`, 'Content-Type': mimeType.split(';')[0] }, body: buf, signal: AbortSignal.timeout(30000) });
+    let res = await call(base + terms);
+    if (!res.ok && terms && res.status === 400) res = await call(base);
     if (!res.ok) throw new Error(`Deepgram ${res.status}: ${(await res.text()).slice(0, 200)}`);
     const json = await res.json();
     return { transcript: json.results?.channels?.[0]?.alternatives?.[0]?.transcript || '', durationMs: json.metadata?.duration ? Math.round(json.metadata.duration * 1000) : null };
@@ -72,6 +76,27 @@ class OpenAIVoice {
     const json = await res.json();
     return { transcript: json.text || '', durationMs: json.duration ? Math.round(json.duration * 1000) : null };
   }
+}
+
+/** Deepgram key terms as query parameters (at most 50 short terms). */
+export function keytermQuery(terms = []) {
+  const seen = new Set(), out = [];
+  for (const t of terms) {
+    const v = String(t || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (v.length < 2 || seen.has(v.toLowerCase())) continue;
+    seen.add(v.toLowerCase()); out.push(v);
+    if (out.length >= 50) break;
+  }
+  return out.map(t => `&keyterm=${encodeURIComponent(t)}`).join('');
+}
+
+/** Words worth recognizing for this workspace: the app's own words and every client's name. */
+export const APP_TERMS = ['OneJump', 'Assist', 'check-in', 'check-ins', 'macros', 'RPE', 'deload', 'superset'];
+export async function keytermsFor(db) {
+  try {
+    const clients = await db.client.findMany({ where: { status: { not: 'INACTIVE' } }, select: { name: true }, take: 40 });
+    return [...clients.map(c => c.name), ...APP_TERMS];
+  } catch { return APP_TERMS; }
 }
 
 /** The longest recording each kind accepts, in seconds (the browser stops on its own before this). */
@@ -118,12 +143,14 @@ export const VoiceService = {
    * not stored here; callers that keep audio (voice notes) store it themselves.
    * @param {*} db tenant client for the business (coach-level)
    */
-  async transcribe(db, buf, { mimeType, durationMs = 0, hint = null, userId, clientId = null, kind = 'ask', lang = 'en' }) {
+  async transcribe(db, buf, { mimeType, durationMs = 0, hint = null, userId, clientId = null, kind = 'ask', lang = 'en', keyterms = null }) {
     const p = active();
     const estimate = estimateDurationMs(buf, mimeType), max = (MAX_SECONDS[kind] || 60) * 1000;
     if (estimate > max * 1.5 + 2000) throw new HttpError(400, `That recording is too long. Keep it under ${Math.round(max / 1000)} seconds.`, { code: 'too_long' });
     let out;
-    try { out = await p.transcribe(buf, { mimeType, hint, kind, lang }); }
+    // Key terms only matter for the real provider; the coach's own words get their client names.
+    const terms = p.name === 'deepgram' ? (keyterms || (kind === 'ask' || !clientId ? await keytermsFor(db) : APP_TERMS)) : [];
+    try { out = await p.transcribe(buf, { mimeType, hint, kind, lang, keyterms: terms }); }
     catch (e) { console.error(`[voice] ${p.name} failed:`, e.message); throw new HttpError(502, 'I couldn’t hear that clearly. Try again, or type instead.', { code: 'voice_failed' }); }
     // Bill the longest of: what the provider measured, what the browser reported, and the size-based estimate.
     const ms = Math.round(Math.max(0, Number(out.durationMs) || 0, Math.min(max * 1.5 + 2000, Number(durationMs) || 0), estimate));

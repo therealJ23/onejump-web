@@ -8,6 +8,7 @@
 import { must, conflict, badRequest, paymentRequired } from '../lib/errors.js';
 import { audit } from '../db/system.js';
 import { clientByName } from './tools.js';
+import { soundsLike } from '../lib/fuzzy.js';
 import { sendMessage, ensureThread } from '../core/messaging.js';
 import { fillTemplate } from '../core/automationTemplates.js';
 import { missingCheckinClients } from '../core/checkinStatus.js';
@@ -40,7 +41,10 @@ export function bestMatch(list, want, key = x => x.name) {
   const words = new Set(w.split(' ').filter(t => t.length > 2));
   const scored = list.map(x => ({ x, n: norm(key(x)).split(' ').filter(t => words.has(t)).length })).filter(s => s.n > 0).sort((a, b) => b.n - a.n);
   if (scored.length && (scored.length === 1 || scored[0].n > scored[1].n)) return { hits: [scored[0].x] };
-  return { hits: scored.slice(0, 4).map(s => s.x), loose: true };
+  if (scored.length) return { hits: scored.slice(0, 4).map(s => s.x), loose: true };
+  // Nothing shares a word: a name that sounds alike ("goblin squat" → Goblet Squat, misheard by voice).
+  const { hit, close } = soundsLike(list, want, key);
+  return { hits: hit ? [hit] : close, loose: !hit };
 }
 
 async function findProgram(db, name, lang) {
@@ -203,7 +207,7 @@ export const ACTION_PROPOSE = {
     const level = ['Beginner', 'Intermediate', 'Advanced'].includes(a.level) ? a.level : 'Beginner';
     const d = { name, pattern, level, muscle: clean(a.muscle_group).slice(0, 60) || 'Full body', equipment: clean(a.equipment).slice(0, 40) || 'Bodyweight', instructions: clean(a.instructions).slice(0, 2000), videoUrl: /^https:\/\//i.test(clean(a.video_url)) ? clean(a.video_url).slice(0, 190) : '' };
     const lines = [`${d.muscle} · ${d.equipment} · ${level}`, ...(d.instructions ? d.instructions.split('\n').filter(Boolean).slice(0, 4) : []), ...(d.videoUrl ? [d.videoUrl] : [])];
-    return { proposal: await save(db, auth, { type: 'create_exercise', summary: T(lang, `New exercise: ${name}`, `Ejercicio nuevo: ${name}`), payload: { ...d, lines, button: T(lang, 'Add exercise', 'Agregar ejercicio'), voiceOk: true, say: T(lang, `I’ll add ${name} to your exercise library. Should I add it? You can add a photo or video on its page after.`, `Voy a agregar ${name} a tu biblioteca de ejercicios. ¿Lo agrego? Después puedes ponerle foto o video en su página.`) }, source }) };
+    return { proposal: await save(db, auth, { type: 'create_exercise', summary: T(lang, `New exercise: ${name}`, `Ejercicio nuevo: ${name}`), payload: { ...d, lines, button: T(lang, 'Add exercise', 'Agregar ejercicio'), voiceOk: true, say: T(lang, `I’ll add ${name} to your exercise library. Should I add it? You can add a video on its page after.`, `Voy a agregar ${name} a tu biblioteca de ejercicios. ¿Lo agrego? Después puedes ponerle un video en su página.`) }, source }) };
   },
 
   async delete_exercise(db, auth, a, { source, lang }) {
@@ -503,7 +507,7 @@ export function actionToolDefinitions() {
     P('duplicate_program', 'Make a copy of a program, with all its workouts.', { program_name: { type: 'string' }, new_name: { type: 'string' } }, ['program_name']),
     P('save_workout', 'Add a workout to a program, or replace the exercises of one it already has (replace_workout = its name).', { program_name: { type: 'string' }, name: { type: 'string' }, day: { type: 'integer' }, replace_workout: { type: 'string' }, exercises: ex }, ['program_name', 'exercises']),
     P('delete_workout', 'Delete one workout from a program.', { program_name: { type: 'string' }, workout_name: { type: 'string' } }, ['program_name', 'workout_name']),
-    P('create_exercise', 'Add the coach’s own exercise to the exercise library (a photo or video can be added on its page after).', { name: { type: 'string' }, muscle_group: { type: 'string', description: 'legs, glutes, push, chest, shoulders, pull, back, core, cardio or full body' }, pattern: { type: 'string', enum: PATTERNS }, equipment: { type: 'string' }, level: { type: 'string', enum: ['Beginner', 'Intermediate', 'Advanced'] }, instructions: { type: 'string', description: 'How-to cues, one per line' }, video_url: { type: 'string', description: 'An https link to a demo video, if the coach gave one' } }, ['name']),
+    P('create_exercise', 'Add the coach’s own exercise to the exercise library (a demo video can be added on its page after).', { name: { type: 'string' }, muscle_group: { type: 'string', description: 'legs, glutes, push, chest, shoulders, pull, back, core, cardio or full body' }, pattern: { type: 'string', enum: PATTERNS }, equipment: { type: 'string' }, level: { type: 'string', enum: ['Beginner', 'Intermediate', 'Advanced'] }, instructions: { type: 'string', description: 'How-to cues, one per line' }, video_url: { type: 'string', description: 'An https link to a demo video, if the coach gave one' } }, ['name']),
     P('delete_exercise', 'Delete an exercise from the coach’s library (their own is deleted; a OneJump one is removed from their library).', { exercise_name: { type: 'string' } }, ['exercise_name']),
     P('restore_exercise', 'Put back an exercise the coach removed from their library.', { exercise_name: { type: 'string' } }, ['exercise_name']),
     P('add_client', 'Add a new client (and email their invite if there’s an email).', { name: { type: 'string' }, email: { type: 'string' }, mode: { type: 'string', enum: ['Online', 'Hybrid', 'In person'] }, goal: { type: 'string' }, program_name: { type: 'string' }, send_invite: { type: 'boolean' } }, ['name']),
@@ -525,7 +529,7 @@ export const SCREENS = ['today', 'clients', 'client', 'assist', 'inbox', 'messag
 const GUIDE = {
   overview: 'OneJump is coaching software for personal trainers and online coaches, founded by Jansell. The iPhone app has five tabs: Today (what needs you, Assist’s drafts to approve, the morning briefing, business charts), Clients (each client’s profile with Overview, Program, Food, Progress and Notes), Assist (talk or type to me), Inbox (messages and check-ins) and More (Programs, Exercise library, Nutrition, Payments, Leads, Automations, Settings, Plan and billing).',
   programs: 'Programs: More → Programs. Tap New program to make one (name, weeks, days a week, level). Open a program to add workouts, add exercises to each workout with sets and reps, delete workouts, or delete the program (it needs no active clients). Assist can build a whole program with its workouts, change one, copy one, or start a client on one.',
-  library: 'Exercise library: More → Exercise library. Tap + to add your own exercise with a photo or a video from your camera roll. Swipe left on an exercise, or open it and tap Delete, to remove it. Your own exercises are deleted; OneJump’s are removed from your library only. Assist can add, delete or bring back exercises too.',
+  library: 'Exercise library: More → Exercise library. Tap + to add your own exercise with a demo video: record one or pick it from your camera roll (exercises take videos, not photos). Swipe left on an exercise, or open it and tap Delete, to remove it. Your own exercises are deleted; OneJump’s are removed from your library only. Assist can add, delete or bring back exercises too.',
   assist: 'Assist: type, or tap the mic to switch to voice. In voice mode Assist is always listening: talk any time, and if you start talking while it speaks it stops and listens. Voice keeps going when you leave the Assist tab; the screen corners glow green while it listens. In text mode nothing is read aloud. Anything that changes your business shows a card first: tap Confirm, or say yes.',
   clients: 'Clients: the Clients tab. Tap + to add a client and email their invite. Open a client for their program, food plan, progress, notes and messages. Assist can add clients, change their details, pause them, start them on a program, write and send messages, and build nutrition plans.',
   checkins: 'Check-ins: Inbox → Check-ins. Assist summarizes each one and drafts a reply for you to approve or edit.',

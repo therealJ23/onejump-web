@@ -1,4 +1,4 @@
-// The exercise library from the iPhone app (add with a photo or video, delete, remove shared ones),
+// The exercise library from the iPhone app (add with a video, delete, remove shared ones),
 // and everything Assist can now do inside OneJump: programs, workouts, exercises, clients, group
 // messages, automations, opening screens, switching to voice, and who founded OneJump.
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -15,20 +15,20 @@ const ask = (question, extra = {}) => dani.post('/api/assist/ask', { question, .
 const confirm = id => dani.post(`/api/assist/proposals/${id}/confirm`, {});
 
 describe('exercise library', () => {
-  it('adds a coach’s own exercise with a photo, then swaps it for a video that streams in ranges', async () => {
+  it('adds a coach’s own exercise with a video (photos are refused) that streams in ranges', async () => {
     const created = await dani.post('/api/exercises', { name: 'Band pull-apart (Dani)', muscle: 'Back', equipment: 'Band', level: 'Beginner', pattern: 'pull', instructions: 'Arms straight\nSqueeze shoulder blades' });
     expect(created.status).toBe(201);
     const id = created.body.exercise.id;
     expect(created.body.exercise.custom).toBe(true);
 
     const photo = await dani.upload(`/api/exercises/${id}/media`, 'media', PNG, 'pull.png');
-    expect(photo.status).toBe(201);
-    expect(photo.body.exercise.mediaType).toBe('image');
-    expect(photo.body.exercise.mediaUrl).toMatch(/^\/files\//);
+    expect(photo.status).toBe(400);
+    expect(photo.body.error).toMatch(/video, not a photo/);
 
     const video = await dani.upload(`/api/exercises/${id}/media`, 'media', MP4, 'pull.mp4');
     expect(video.status).toBe(201);
     expect(video.body.exercise.mediaType).toBe('video');
+    expect(video.body.exercise.mediaUrl).toMatch(/^\/files\//);
     const detail = await dani.get(`/api/exercises/${id}`);
     const url = detail.body.exercise.mediaUrl;
     const anon = await browser();
@@ -44,7 +44,7 @@ describe('exercise library', () => {
     expect(row.mediaType).toBe('video');
   });
 
-  it('refuses files that aren’t photos or videos', async () => {
+  it('refuses files that aren’t videos', async () => {
     const created = await dani.post('/api/exercises', { name: 'Wall sit (Dani)', equipment: 'Bodyweight', level: 'Beginner', pattern: 'squat' });
     const r = await dani.upload(`/api/exercises/${created.body.exercise.id}/media`, 'media', Buffer.from('not a picture at all, just text'), 'x.txt');
     expect(r.status).toBe(400);

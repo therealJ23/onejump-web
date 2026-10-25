@@ -55,9 +55,10 @@ export const config = {
   ai: {
     provider: (env.AI_PROVIDER || 'mock').toLowerCase(),
     anthropicKey: env.ANTHROPIC_API_KEY || '',
-    anthropicModel: env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
+    // Claude Haiku 5.5: the fastest Claude (falls back to Haiku 4.5 if the API key can't use it).
+    anthropicModel: env.ANTHROPIC_MODEL || 'claude-haiku-5-5',
     // Ask Assist (conversations) can use a smarter model than the drafts, e.g. ASSIST_MODEL=claude-sonnet-5-5.
-    assistModel: (env.ASSIST_MODEL || '').trim() || env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
+    assistModel: (env.ASSIST_MODEL || '').trim() || env.ANTHROPIC_MODEL || 'claude-haiku-5-5',
     openaiKey: env.OPENAI_API_KEY || '',
     openaiModel: env.OPENAI_MODEL || 'gpt-4o-mini',
     monthlyBudgetUsd: Number(env.AI_MONTHLY_BUDGET_USD || 5),
