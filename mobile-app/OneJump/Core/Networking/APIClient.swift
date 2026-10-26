@@ -83,7 +83,7 @@ final class APIClient {
     }
 
     /// POST that returns raw bytes (audio). nil when the server answers 204 (no content).
-    func postForData(_ path: String, _ json: [String: Any], timeout: TimeInterval = 20) async throws -> Data? {
+    func postForData(_ path: String, _ json: [String: Any], timeout: TimeInterval = 9) async throws -> Data? {
         if Fixtures.isOn { return nil }
         let (data, status) = try await raw("POST", path, json: json, timeout: timeout, retryCSRF: true)
         return status == 204 || data.isEmpty ? nil : data
