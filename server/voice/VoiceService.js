@@ -56,7 +56,7 @@ class DeepgramVoice {
   async speak(text, voice = config.voice.deepgramVoice) {
     const version = voice.startsWith('flux-') ? 'v2' : 'v1'; // Flux voices use the newer endpoint
     const res = await this.fetch(`https://api.deepgram.com/${version}/speak?model=${encodeURIComponent(voice)}&encoding=mp3`, {
-      method: 'POST', headers: { Authorization: `Token ${this.key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal: AbortSignal.timeout(20000),
+      method: 'POST', headers: { Authorization: `Token ${this.key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), signal: AbortSignal.timeout(7000),
     });
     if (!res.ok) { const why = (await res.text().catch(() => '')).slice(0, 200); console.error(`[voice] Deepgram TTS ${res.status} for ${voice}: ${why}`); throw new Error(`Deepgram TTS ${res.status}`); }
     return Buffer.from(await res.arrayBuffer());
