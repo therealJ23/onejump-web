@@ -148,7 +148,8 @@ struct VoiceMessageRow: View {
                     if loading {
                         ProgressView().controlSize(.small).tint(fromMe ? Palette.onPrimary : Palette.ink)
                     } else {
-                        Image(systemName: playing ? "pause.fill" : "play.fill").font(.system(size: 13, weight: .bold))
+                        Image(systemName: playing ? "pause.fill" : (player.failedID == id ? "exclamationmark.triangle.fill" : "play.fill"))
+                            .font(.system(size: 13, weight: .bold))
                     }
                 }
                 .frame(width: 34, height: 34)

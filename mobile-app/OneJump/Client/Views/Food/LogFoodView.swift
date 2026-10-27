@@ -1,5 +1,7 @@
 import SwiftUI
 import AVFoundation
+import PhotosUI
+import VisionKit
 
 /// Logging food four ways: photo, voice, barcode or search.
 /// Assist reads what it can, then the client checks portions before anything is saved.
@@ -54,23 +56,7 @@ struct LogFoodView: View {
     // MARK: Photo
 
     private var photoStage: some View {
-        VStack(spacing: 18) {
-            CameraFrame(tip: CLT.fitPlate(lang)) {
-                PlateIllustration()
-            }
-            Button { store.takePhoto() } label: {
-                Circle()
-                    .fill(Palette.volt)
-                    .frame(width: 72, height: 72)
-                    .overlay(Circle().stroke(Palette.line2, lineWidth: 5))
-                    .padding(4)
-                    .overlay(Circle().stroke(Palette.surface, lineWidth: 4))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(CLT.takePhoto(lang))
-            SubText(CLT.photoNote(lang)).multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
+        PhotoStage()
     }
 
     // MARK: Voice
@@ -127,6 +113,100 @@ struct LogFoodView: View {
     }
 }
 
+// MARK: - Photo
+
+/// Take a photo of the plate (or choose one); Assist reads it and the client checks the foods.
+private struct PhotoStage: View {
+    @Environment(ClientStore.self) private var store
+    @Environment(\.lang) private var lang
+    @State private var showCamera = false
+    @State private var pickerItem: PhotosPickerItem?
+
+    var body: some View {
+        VStack(spacing: 18) {
+            CameraFrame(tip: store.foodPhoto == nil ? CLT.fitPlate(lang) : "") {
+                if let photo = store.foodPhoto {
+                    Image(uiImage: photo)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                } else {
+                    PlateIllustration()
+                }
+            }
+            Button {
+                if PhotoCamera.isAvailable { showCamera = true } else { store.toast.show(CLT.noCameraPhoto(lang)) }
+            } label: {
+                Circle()
+                    .fill(Palette.volt)
+                    .frame(width: 72, height: 72)
+                    .overlay(Image(systemName: "camera.fill").font(.system(size: 24, weight: .bold)).foregroundStyle(Color(hex: 0x12281F)))
+                    .overlay(Circle().stroke(Palette.line2, lineWidth: 5))
+                    .padding(4)
+                    .overlay(Circle().stroke(Palette.surface, lineWidth: 4))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(CLT.takePhoto(lang))
+            PhotosPicker(selection: $pickerItem, matching: .images) {
+                Label(CLT.choosePhoto(lang), systemImage: "photo.on.rectangle")
+            }
+            .buttonStyle(.oj(.ghost, fullWidth: true))
+            SubText(CLT.photoNote(lang)).multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .fullScreenCover(isPresented: $showCamera) {
+            PhotoCamera { image in
+                showCamera = false
+                if let image { store.analyzePhoto(image) }
+            }
+            .ignoresSafeArea()
+        }
+        .onChange(of: pickerItem) { _, item in
+            guard let item else { return }
+            Task { @MainActor in
+                defer { pickerItem = nil }
+                guard let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else {
+                    store.toast.show(CLT.photoUnreadable(lang))
+                    return
+                }
+                store.analyzePhoto(image)
+            }
+        }
+    }
+}
+
+/// The system camera, for one still photo.
+struct PhotoCamera: UIViewControllerRepresentable {
+    static var isAvailable: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) }
+    var onDone: (UIImage?) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onDone: onDone) }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.cameraCaptureMode = .photo
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ picker: UIImagePickerController, context: Context) {}
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let onDone: (UIImage?) -> Void
+        init(onDone: @escaping (UIImage?) -> Void) { self.onDone = onDone }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            onDone(info[.originalImage] as? UIImage)
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            onDone(nil)
+        }
+    }
+}
+
 // MARK: - Barcode scanning
 
 /// The live camera reads the barcode on its own; typing the numbers works too.
@@ -144,9 +224,16 @@ private struct BarcodeScanStage: View {
         VStack(spacing: 16) {
             CameraFrame(tip: tip) {
                 if access == .authorized && hasCamera {
-                    BarcodeCameraView { code in store.lookUpBarcode(code) }
-                        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-                        .accessibilityLabel(CLT.pointAtBarcode(lang))
+                    Group {
+                        // Apple's own scanner (iPhone XS and newer); the plain camera reader otherwise.
+                        if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
+                            LiveBarcodeScanner { code in store.lookUpBarcode(code) }
+                        } else {
+                            BarcodeCameraView { code in store.lookUpBarcode(code) }
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .accessibilityLabel(CLT.pointAtBarcode(lang))
                 } else if denied {
                     VStack(spacing: 8) {
                         Image(systemName: "camera.fill").font(.system(size: 30)).foregroundStyle(Palette.volt)
@@ -157,6 +244,10 @@ private struct BarcodeScanStage: View {
                 } else {
                     BarcodeIllustration()
                 }
+            }
+            if access == .notDetermined && hasCamera {
+                Button(CLT.turnOnCamera(lang)) { Task { await askForCamera() } }
+                    .buttonStyle(.oj(.primary, fullWidth: true))
             }
             if denied {
                 Button(CLT.openSettings(lang)) {
@@ -193,17 +284,83 @@ private struct BarcodeScanStage: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .task {
-            guard access == .notDetermined else { return }
-            let ok = await AVCaptureDevice.requestAccess(for: .video)
-            access = ok ? .authorized : .denied
+        .task { await askForCamera() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // Back from Settings: pick up a change to camera access.
+            access = AVCaptureDevice.authorizationStatus(for: .video)
         }
+    }
+
+    @MainActor
+    private func askForCamera() async {
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined else {
+            access = AVCaptureDevice.authorizationStatus(for: .video)
+            return
+        }
+        let ok = await AVCaptureDevice.requestAccess(for: .video)
+        access = ok ? .authorized : .denied
     }
 
     private var tip: String {
         if denied { return "" }
         if !hasCamera { return CLT.noCamera(lang) }
         return CLT.holdSteady(lang)
+    }
+}
+
+/// Apple's live scanner (VisionKit): finds and reads a food barcode with focus, zoom and
+/// highlighting handled by iOS.
+private struct LiveBarcodeScanner: UIViewControllerRepresentable {
+    var onCode: (String) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onCode: onCode) }
+
+    func makeUIViewController(context: Context) -> DataScannerViewController {
+        let scanner = DataScannerViewController(
+            recognizedDataTypes: [.barcode(symbologies: [.ean13, .ean8, .upce, .code128])],
+            qualityLevel: .balanced,
+            recognizesMultipleItems: false,
+            isHighFrameRateTrackingEnabled: false,
+            isPinchToZoomEnabled: true,
+            isGuidanceEnabled: false,
+            isHighlightingEnabled: true
+        )
+        scanner.delegate = context.coordinator
+        // Scanning can only start once the camera view is on screen.
+        DispatchQueue.main.async { try? scanner.startScanning() }
+        return scanner
+    }
+
+    func updateUIViewController(_ scanner: DataScannerViewController, context: Context) {
+        context.coordinator.onCode = onCode
+        if !scanner.isScanning && !context.coordinator.handled { try? scanner.startScanning() }
+    }
+
+    static func dismantleUIViewController(_ scanner: DataScannerViewController, coordinator: Coordinator) {
+        scanner.stopScanning()
+    }
+
+    @MainActor
+    final class Coordinator: NSObject, DataScannerViewControllerDelegate {
+        var onCode: (String) -> Void
+        var handled = false
+
+        init(onCode: @escaping (String) -> Void) {
+            self.onCode = onCode
+        }
+
+        func dataScanner(_ dataScanner: DataScannerViewController, didAdd addedItems: [RecognizedItem], allItems: [RecognizedItem]) {
+            guard !handled else { return }
+            for item in addedItems {
+                if case .barcode(let barcode) = item, let code = barcode.payloadStringValue, !code.isEmpty {
+                    handled = true
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    dataScanner.stopScanning()
+                    onCode(code)
+                    return
+                }
+            }
+        }
     }
 }
 

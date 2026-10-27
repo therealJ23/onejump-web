@@ -94,11 +94,15 @@ struct MeView: View {
             }
 
             Button {
-                settings.role = nil
+                if settings.signedIn { settings.clientPreview = false } else { settings.role = nil }
             } label: {
                 HStack(spacing: 12) {
                     IconTile(systemName: "arrow.left.arrow.right")
-                    TitleSub(SharedText.switchApp(lang), sub: SharedText.switchAppSub(lang))
+                    if settings.signedIn {
+                        TitleSub(SharedText.backToCoach(lang), sub: SharedText.backToCoachSub(lang))
+                    } else {
+                        TitleSub(SharedText.switchApp(lang), sub: SharedText.switchAppSub(lang))
+                    }
                 }
                 .card()
             }

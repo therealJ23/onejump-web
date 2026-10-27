@@ -3,6 +3,7 @@ import SwiftUI
 /// More: everything else, grouped into Coaching, Business and Account.
 struct MoreView: View {
     @Environment(CoachStore.self) private var store
+    @Environment(AppSettings.self) private var settings
     @Environment(\.lang) private var lang
 
     private struct Item: Identifiable {
@@ -69,11 +70,19 @@ struct MoreView: View {
     }
 
     private var accountItems: [Item] {
-        [
+        var items = [
             Item(title: CT.settings(lang), sub: CT.settingsSub(lang), systemImage: "slider.horizontal.3") { store.push(.settings) },
             Item(title: CT.planBilling(lang), sub: store.live ? CL.planLine(store.me.planLabel, store.me.trialDaysLeft)(lang) : CT.trial11(lang), systemImage: "doc.text") { store.push(.billing) },
             Item(title: CT.help(lang), sub: CT.helpSub(lang), systemImage: "questionmark.circle") { store.toast.show(CT.helpToast(lang)) }
         ]
+        if store.live {
+            // Try what clients see (sample client) — photo logging uses your real Assist.
+            items.insert(Item(title: SharedText.seeClientApp(lang), sub: SharedText.seeClientAppSub(lang), systemImage: "iphone") {
+                store.voice.stopSpeaking()
+                settings.clientPreview = true
+            }, at: 1)
+        }
+        return items
     }
 
     private func group(_ title: String, _ items: [Item]) -> some View {

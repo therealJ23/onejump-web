@@ -3,6 +3,8 @@ import Foundation
 /// Text for signing in and for the coach's real (live) business, in English and Spanish.
 /// Written like a person talks: short, warm, plain.
 enum CL {
+    /// A voice message couldn't be loaded or isn't in a format the iPhone can play.
+    static let voicePlayFailed = Loc("This voice message couldn’t be played. Read what was said below, or open it on onejumpfit.com.", "No se pudo reproducir este mensaje de voz. Lee lo que se dijo abajo o ábrelo en onejumpfit.com.")
     /// A client's voice message mentioned something health-related (shown to the coach only).
     static func mentionedFlag(_ term: String) -> Loc { Loc("Mentions “\(term)”. Read it before replying.", "Menciona “\(term)”. Léelo antes de responder.") }
     // MARK: Login

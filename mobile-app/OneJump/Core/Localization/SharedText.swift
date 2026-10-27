@@ -47,5 +47,9 @@ enum SharedText {
     static let clientApp = Loc("Client app", "App de cliente")
     static let clientAppSub = Loc("Train, log food and talk to your coach", "Entrena, registra comida y habla con tu coach")
     static let switchApp = Loc("Switch app (preview)", "Cambiar de app (vista previa)")
+    static let seeClientApp = Loc("See the client app", "Ver la app del cliente")
+    static let seeClientAppSub = Loc("What your clients see. Photo logging uses your real Assist.", "Lo que ven tus clientes. El registro con foto usa tu Assist real.")
+    static let backToCoach = Loc("Back to the coach app", "Volver a la app del coach")
+    static let backToCoachSub = Loc("You’re previewing the client app", "Estás viendo la app del cliente")
     static let switchAppSub = Loc("Go back to the app picker", "Volver a elegir app")
 }

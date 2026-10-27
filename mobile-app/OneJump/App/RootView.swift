@@ -7,7 +7,11 @@ struct RootView: View {
     var body: some View {
         Group {
             if settings.signedIn {
-                CoachRootView(settings: settings, live: true)
+                if settings.clientPreview {
+                    ClientRootView(settings: settings)
+                } else {
+                    CoachRootView(settings: settings, live: true)
+                }
             } else {
                 switch settings.role {
                 case .coach:
@@ -20,6 +24,7 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: settings.signedIn)
+        .animation(.easeInOut(duration: 0.25), value: settings.clientPreview)
         .animation(.easeInOut(duration: 0.25), value: settings.role)
         .animation(.easeInOut(duration: 0.25), value: settings.demo)
         .onReceive(NotificationCenter.default.publisher(for: .ojLoggedOut)) { _ in

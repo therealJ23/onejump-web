@@ -67,6 +67,8 @@ final class ClientStore {
     var heardFood = ""
     /// Why the last barcode didn't work (not found, offline, bad number).
     var barcodeMessage: Loc?
+    /// The meal photo being read (shown in the frame while Assist works).
+    var foodPhoto: UIImage?
     @ObservationIgnored var logToken = 0
 
     // MARK: Progress
@@ -420,6 +422,7 @@ final class ClientStore {
         reviewMeal = meal
         foodQuery = ""
         heardFood = ""
+        foodPhoto = nil
         let token = logToken
         // If the quick-log sheet is open, let it close before the logger slides up.
         let delay = showQuickLog ? 0.4 : 0
@@ -467,12 +470,44 @@ final class ClientStore {
         }
     }
 
-    func takePhoto() {
+    /// A meal photo was taken or chosen. Signed in (the coach trying the client app), Assist on
+    /// the server reads it; in the demo, sample foods stand in.
+    func analyzePhoto(_ image: UIImage) {
         let token = logToken
+        foodPhoto = image
         withAnimation(.snappy) { logStage = .reading }
-        after(1.7) { [weak self] in
+        guard settings.signedIn else {
+            after(1.7) { [weak self] in
+                guard let self, token == self.logToken else { return }
+                self.showReview(ClientData.photoItems)
+                self.toast.show(CLT.demoPhotoNote(self.lang))
+            }
+            return
+        }
+        Task { @MainActor [weak self] in
+            let jpeg = await Task.detached(priority: .userInitiated) { image.jpegForUpload(maxSide: 1600, quality: 0.8) }.value
             guard let self, token == self.logToken else { return }
-            self.showReview(ClientData.photoItems)
+            guard let jpeg else {
+                self.photoFailed(CLT.photoUnreadable(self.lang))
+                return
+            }
+            do {
+                let answer: PhotoAnswer = try await APIClient.shared.upload("/api/nutrition/photo-preview", field: "photo", file: jpeg, filename: "meal.jpg", mimeType: "image/jpeg", timeout: 90)
+                guard token == self.logToken else { return }
+                let foods = answer.items.map { $0.food(source: CLT.fromPhotoAssist) }
+                if foods.isEmpty { self.photoFailed(CLT.notFoodPhoto(self.lang)) } else { self.showReview(foods) }
+            } catch {
+                guard token == self.logToken else { return }
+                self.photoFailed((error as? LocalizedError)?.errorDescription ?? CLT.notFoodPhoto(self.lang))
+            }
+        }
+    }
+
+    private func photoFailed(_ message: String) {
+        toast.show(message)
+        withAnimation(.snappy) {
+            foodPhoto = nil
+            logStage = .photo
         }
     }
 
@@ -783,4 +818,27 @@ enum BarcodeLookup {
                         kcal: kcal100 * f, protein: protein100 * f, carbs: carbs100 * f, fat: fat100 * f,
                         source: Loc("Barcode · Open Food Facts", "Código · Open Food Facts"))
     }
+}
+
+/// Assist's reading of a meal photo (`POST /api/nutrition/photo-preview`).
+struct PhotoAnswer: Decodable {
+    struct Item: Decodable {
+        let name: String
+        let matched: String?
+        let grams: Double?
+        let portionText: String?
+        let calories: Double?
+        let proteinG: Double?
+        let carbsG: Double?
+        let fatG: Double?
+
+        func food(source: Loc) -> FoodItem {
+            let portion = portionText ?? grams.map { "\(Int($0.rounded())) g" } ?? ""
+            return FoodItem(name: Loc(name, name), quantity: Loc(portion, portion),
+                            kcal: (calories ?? 0).rounded(), protein: (proteinG ?? 0).rounded(),
+                            carbs: (carbsG ?? 0).rounded(), fat: (fatG ?? 0).rounded(), source: source)
+        }
+    }
+    let title: String?
+    let items: [Item]
 }

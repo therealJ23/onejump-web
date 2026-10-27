@@ -42,6 +42,9 @@ final class AppSettings {
         didSet { UserDefaults.standard.set(signedIn, forKey: Keys.signedIn) }
     }
 
+    /// A signed-in coach is looking at the client app (from More). Not saved: the app reopens on the coach side.
+    var clientPreview = false
+
     /// The demo picker is showing (instead of the login screen).
     var demo: Bool {
         didSet { UserDefaults.standard.set(demo, forKey: Keys.demo) }
@@ -88,6 +91,7 @@ final class AppSettings {
     /// Back to the login screen (logged out, or the session ended).
     func signOut() {
         voice.remoteVoice = nil
+        clientPreview = false
         signedIn = false
         role = nil
         demo = false

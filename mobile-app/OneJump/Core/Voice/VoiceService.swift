@@ -766,6 +766,9 @@ final class VoiceNotePlayer {
     @ObservationIgnored private var player: AVPlayer?
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var endObserver: NSObjectProtocol?
+    @ObservationIgnored private var statusObserver: NSKeyValueObservation?
+    /// Set when a message couldn't be played (bad file or format), so the row can say so.
+    private(set) var failedID: String?
 
     /// Plays the message, or pauses it if it's the one playing. `url` is called only when needed
     /// (a server link is fetched on the first tap). Call on the main thread.
@@ -780,7 +783,7 @@ final class VoiceNotePlayer {
             let link = await url()
             guard let self, self.loadingID == id else { return }
             self.loadingID = nil
-            guard let link else { return }
+            guard let link else { self.failedID = id; return }
             self.play(id: id, url: link)
         }
     }
@@ -801,6 +804,15 @@ final class VoiceNotePlayer {
         endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
             self?.stop()
         }
+        statusObserver = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+            guard item.status == .failed else { return }
+            DispatchQueue.main.async {
+                guard let self, self.playingID == id else { return }
+                self.stop()
+                self.failedID = id
+            }
+        }
+        failedID = nil
         p.play()
     }
 
@@ -809,6 +821,8 @@ final class VoiceNotePlayer {
         timeObserver = nil
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = nil
+        statusObserver?.invalidate()
+        statusObserver = nil
         player?.pause()
         player = nil
         playingID = nil

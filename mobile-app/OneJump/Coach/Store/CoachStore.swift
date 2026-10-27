@@ -614,14 +614,46 @@ final class CoachStore {
     func voiceMessageURL(_ message: ThreadMessage, in clientID: String) async -> URL? {
         if let local = message.audioURL, FileManager.default.fileExists(atPath: local.path) { return local }
         guard live, let serverID = message.serverID else { return nil }
+        // Kept on the phone after the first play, so it starts at once next time.
+        let folder = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("voice-notes", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // The player goes by the file extension, so keep the right one.
+        for ext in ["wav", "m4a", "mp3"] {
+            let file = folder.appendingPathComponent("\(serverID).\(ext)")
+            if FileManager.default.fileExists(atPath: file.path) { return file }
+        }
         struct Link: Decodable { let url: String }
         do {
-            let link: Link = try await APIClient.shared.get("/api/threads/\(clientID)/messages/\(serverID)/audio")
-            return APIClient.shared.absoluteURL(link.url)
+            // Web recordings are WebM, which the iPhone can't play: `format=wav` asks the server
+            // for a WAV copy (MP4 and WAV recordings come back as they are).
+            let link: Link = try await APIClient.shared.get("/api/threads/\(clientID)/messages/\(serverID)/audio?format=wav")
+            guard let url = APIClient.shared.absoluteURL(link.url) else { return nil }
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard (response as? HTTPURLResponse)?.statusCode == 200, !data.isEmpty else {
+                toast.show(CL.voicePlayFailed(lang))
+                return nil
+            }
+            guard let ext = Self.audioExtension(data) else {
+                toast.show(CL.voicePlayFailed(lang))
+                return nil
+            }
+            let saved = folder.appendingPathComponent("\(serverID).\(ext)")
+            try data.write(to: saved, options: .atomic)
+            return saved
         } catch {
             showError(error)
             return nil
         }
+    }
+
+    /// The file type the iPhone can play, from the first bytes (nil for WebM/Ogg, which it can't).
+    static func audioExtension(_ data: Data) -> String? {
+        let head = [UInt8](data.prefix(12))
+        guard head.count >= 12 else { return nil }
+        if head[0...3] == [0x52, 0x49, 0x46, 0x46], head[8...11] == [0x57, 0x41, 0x56, 0x45] { return "wav" } // RIFF…WAVE
+        if head[4...7] == [0x66, 0x74, 0x79, 0x70] { return "m4a" } // ftyp
+        if head[0...2] == [0x49, 0x44, 0x33] || (head[0] == 0xFF && head[1] & 0xE0 == 0xE0) { return "mp3" }
+        return nil
     }
 
     /// Listens once and hands back what was said (empty if nothing).
