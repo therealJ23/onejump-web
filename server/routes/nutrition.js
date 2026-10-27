@@ -1,21 +1,41 @@
 // Coach: the Nutrition page (Coaching → Nutrition), meal plan templates and recipes, private flags.
 import { Router } from 'express';
 import { body, z } from '../lib/validate.js';
-import { must } from '../lib/errors.js';
+import { must, badRequest } from '../lib/errors.js';
 import { requireFeature } from '../auth/middleware.js';
 import { overview } from '../nutrition/insights.js';
-import { attentionItems } from '../nutrition/attention.js';
+import multer from 'multer';
+import rateLimit from 'express-rate-limit';
+import { attentionItems, matchPhotoItems } from '../nutrition/attention.js';
+import { AI } from '../ai/AIService.js';
+import { config } from '../config.js';
+import { stripJpegMetadata, sniffImage } from '../storage/StorageService.js';
 import { foods, nutrientsFor, CREDITS } from '../nutrition/foods.js';
 import { flagReplyDraft } from '../nutrition/flags.js';
 import { audit } from '../db/system.js';
 
 export const router = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 6 * 1024 * 1024, files: 1, fields: 4, fieldSize: 1024 } });
+const photoLimit = rateLimit({ windowMs: 24 * 3600e3, limit: 40, keyGenerator: req => `photo:${req.auth.businessId}`, standardHeaders: 'draft-7', legacyHeaders: false, skip: () => config.isTest, message: { error: 'That’s 40 photos today, the daily limit for trying it out. Search still works.', code: 'photo_limit' } });
 const tzOf = async db => (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
 
 router.get('/overview', async (req, res) => {
   const tz = await tzOf(req.db);
   const data = await overview(req.db, { tz });
   res.json({ ...data, attention: await attentionItems(req.db, data, { tz }), credits: [CREDITS.usda, CREDITS.off], provider: foods().mode });
+});
+
+// ---------------------------------------------------------------- photo logging, tried by the coach (Pro)
+/** The iPhone app's client preview: Assist reads a meal photo for the coach. Nothing is saved: no photo, no food log. */
+router.post('/photo-preview', requireFeature('PRO', 'Photo logging'), photoLimit, upload.single('photo'), async (req, res) => {
+  if (!req.file) throw badRequest('Take or choose a photo.');
+  if (sniffImage(req.file.buffer) !== 'image/jpeg') throw badRequest('Send the photo as a JPEG. The app does this for you; try again.');
+  const clean = stripJpegMetadata(req.file.buffer);
+  if (!clean) throw badRequest('That photo couldn’t be read. Try again.');
+  const a = (await AI.analyzeMealPhoto(clean, { db: req.db })).data;
+  if (!a.is_food || !a.items.length) return res.status(422).json({ error: 'I couldn’t recognize food in this photo. Try again or search instead.', code: 'not_food' });
+  const items = await matchPhotoItems(a);
+  res.json({ isFood: true, title: a.title, note: a.note, items: items.map(x => ({ ...x, check: x.confidence !== 'high' })) });
 });
 
 // ---------------------------------------------------------------- private flags

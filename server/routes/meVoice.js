@@ -13,6 +13,7 @@ import { sendVoiceNote, guardClientTranscript, VOICE_NOTE_MAX_SECONDS } from '..
 import { StorageService, sniffAudio } from '../storage/StorageService.js';
 import { parseSet } from '../../public/js/shared/parse.js';
 import { AI } from '../ai/AIService.js';
+import { playableAudioUrl } from '../voice/webmToWav.js';
 
 export const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
@@ -77,5 +78,5 @@ router.post('/voice-notes', proOnly('Voice notes'), upload.single('audio'), body
 router.get('/messages/:id/audio', async (req, res) => {
   const m = must(await req.db.message.findFirst({ where: { id: req.params.id }, select: { audioKey: true } }), 'That voice note');
   if (!m.audioKey) throw badRequest('That message has no audio.');
-  res.set('Cache-Control', 'no-store').json({ url: await StorageService.signedUrl(m.audioKey) });
+  res.set('Cache-Control', 'no-store').json({ url: await playableAudioUrl(m.audioKey, { format: req.query.format === 'wav' ? 'wav' : undefined }) });
 });

@@ -3,6 +3,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { fixtures, loginCoach, loginClient } from './helpers.js';
 import { config } from '../server/config.js';
 import { parseSet } from '../public/js/shared/parse.js';
+import { readFileSync } from 'node:fs';
+import { webmToWav } from '../server/voice/webmToWav.js';
 
 const AUDIO = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.from('fake webm opus audio for the tests')]);
 let f, dani, alex, mike;
@@ -243,5 +245,48 @@ describe('voice notes', () => {
       expect(r.body.error).toMatch(/type your message instead/);
       expect((await mike.post('/api/me/messages', { body: 'Typing still works' })).status).toBe(201);
     } finally { config.voice.monthlyMinutes = original; }
+  });
+});
+
+describe('Voice notes on the iPhone (WebM → WAV)', () => {
+  const REAL_WEBM = readFileSync(new URL('./fixtures/chrome-voice.webm', import.meta.url));
+  const fetchFile = (who, url) => who.get(new URL(url, 'http://x').pathname + new URL(url, 'http://x').search);
+
+  it('converts a real Chrome recording to 24 kHz mono WAV of the same length', async () => {
+    const wav = await webmToWav(REAL_WEBM);
+    expect(wav.subarray(0, 4).toString()).toBe('RIFF');
+    expect(wav.subarray(8, 12).toString()).toBe('WAVE');
+    expect(wav.readUInt32LE(24)).toBe(24000);
+    const seconds = (wav.length - 44) / 2 / 24000;
+    expect(seconds).toBeGreaterThan(2.2);
+    expect(seconds).toBeLessThan(2.7);
+    let peak = 0;
+    for (let i = 44; i < wav.length; i += 2) peak = Math.max(peak, Math.abs(wav.readInt16LE(i)));
+    expect(peak).toBeGreaterThan(1000); // it has sound, not silence
+  });
+
+  it('?format=wav gives the coach a WAV of a WebM note (made once, then reused); without it the original', async () => {
+    const r = await mike.upload('/api/me/voice-notes', 'audio', REAL_WEBM, 'note.webm', { hint: 'Quick update on my week', durationMs: '2500' });
+    expect(r.status).toBe(201);
+    const id = r.body.message.id;
+    const a = await dani.get(`/api/threads/${f.mike.id}/messages/${id}/audio?format=wav`);
+    expect(a.status).toBe(200);
+    expect(new URL(a.body.url, 'http://x').pathname).toMatch(/\.wav$/);
+    const file = await fetchFile(dani, a.body.url);
+    expect(file.headers['content-type']).toMatch(/audio\/wav/);
+    expect(Buffer.from(file.body).subarray(0, 4).toString()).toBe('RIFF');
+    const again = await dani.get(`/api/threads/${f.mike.id}/messages/${id}/audio?format=wav`);
+    expect(new URL(again.body.url, 'http://x').pathname).toBe(new URL(a.body.url, 'http://x').pathname);
+    const plain = await dani.get(`/api/threads/${f.mike.id}/messages/${id}/audio`);
+    expect((await fetchFile(dani, plain.body.url)).headers['content-type']).toMatch(/audio\/webm/);
+    expect((await mike.get(`/api/me/messages/${id}/audio?format=wav`)).body.url).toMatch(/\.wav/);
+    expect((await alex.get(`/api/threads/${f.mike.id}/messages/${id}/audio?format=wav`)).status).toBe(404);
+  });
+
+  it('a file that can’t be converted still plays as the original instead of failing', async () => {
+    const r = await mike.upload('/api/me/voice-notes', 'audio', AUDIO, 'broken.webm', { hint: 'hello', durationMs: '1000' });
+    const a = await dani.get(`/api/threads/${f.mike.id}/messages/${r.body.message.id}/audio?format=wav`);
+    expect(a.status).toBe(200);
+    expect(new URL(a.body.url, 'http://x').pathname).not.toMatch(/\.wav$/);
   });
 });

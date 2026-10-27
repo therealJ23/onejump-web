@@ -27,7 +27,8 @@ export const recordingSupported = typeof window !== 'undefined' && !!(navigator.
 if (typeof document !== 'undefined' && !recordingSupported) document.documentElement.classList.add('no-rec');
 
 function pickMime() {
-  for (const t of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus']) if (window.MediaRecorder?.isTypeSupported?.(t)) return t;
+  // MP4/AAC first where the browser can (Safari): it plays everywhere, the iPhone app included.
+  for (const t of ['audio/mp4;codecs=mp4a.40.2', 'audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus']) if (window.MediaRecorder?.isTypeSupported?.(t)) return t;
   return '';
 }
 

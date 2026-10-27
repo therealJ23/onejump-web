@@ -64,6 +64,21 @@ describe('photo logging with Assist', () => {
     expect(r.body.error).toBe('I couldn’t recognize food in this photo. Try again or search instead.');
   });
 
+  it('the coach can try photo logging in the iPhone preview: items come back, nothing is saved', async () => {
+    const entries = await entryCount(), insights = await f.dbA.aIInsight.count({ where: { kind: 'meal_photo' } });
+    const r = await dani.upload('/api/nutrition/photo-preview', 'photo', FOOD_PHOTO, 'meal.jpg');
+    expect(r.status).toBe(200);
+    expect(r.body.isFood).toBe(true);
+    expect(r.body.items.length).toBeGreaterThan(0);
+    expect(r.body.items[0]).toHaveProperty('calories');
+    expect(r.body).not.toHaveProperty('photoToken');
+    expect(await entryCount()).toBe(entries);
+    expect(await f.dbA.aIInsight.count({ where: { kind: 'meal_photo' } })).toBe(insights);
+    expect((await dani.upload('/api/nutrition/photo-preview', 'photo', BLANK_PHOTO, 'wall.jpg')).status).toBe(422);
+    expect((await dani.upload('/api/nutrition/photo-preview', 'photo', Buffer.from('not a photo at all'), 'x.jpg')).status).toBe(400);
+    expect([401, 403]).toContain((await mike.upload('/api/nutrition/photo-preview', 'photo', FOOD_PHOTO, 'meal.jpg')).status);
+  });
+
   it('photos are stripped of EXIF/GPS metadata', () => {
     const exif = Buffer.from('Exif\0\0GPSDATA!!'); const app1 = Buffer.concat([Buffer.from([0xff, 0xe1, 0x00, exif.length + 2]), exif]);
     const withExif = Buffer.concat([FOOD_PHOTO.subarray(0, 2), app1, FOOD_PHOTO.subarray(2)]);

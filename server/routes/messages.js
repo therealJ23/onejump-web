@@ -13,6 +13,7 @@ import { requireFeature, planOf, isPro } from '../auth/middleware.js';
 import { VoiceService } from '../voice/VoiceService.js';
 import { sendVoiceNote, voiceFields, fmtDuration } from '../voice/voiceNotes.js';
 import { StorageService, sniffAudio } from '../storage/StorageService.js';
+import { playableAudioUrl } from '../voice/webmToWav.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
 
@@ -67,7 +68,7 @@ router.post('/:clientId/voice-notes', requireFeature('PRO', 'Voice notes'), uplo
 router.get('/:clientId/messages/:id/audio', async (req, res) => {
   const m = must(await req.db.message.findFirst({ where: { id: req.params.id, clientId: req.params.clientId }, select: { audioKey: true } }), 'That voice note');
   if (!m.audioKey) throw badRequest('That message has no audio.');
-  res.set('Cache-Control', 'no-store').json({ url: await StorageService.signedUrl(m.audioKey) });
+  res.set('Cache-Control', 'no-store').json({ url: await playableAudioUrl(m.audioKey, { format: req.query.format === 'wav' ? 'wav' : undefined }) });
 });
 
 router.post('/:clientId/messages', body(z.object({ body: z.string().trim().min(1).max(5000), insightId: z.string().max(64).optional() })), async (req, res) => {

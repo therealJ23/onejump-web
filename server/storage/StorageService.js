@@ -39,6 +39,22 @@ export const StorageService = {
     return key;
   },
 
+  /** The file's bytes, or null if it isn't there. Only call after access was checked. */
+  async get(key) {
+    if (useR2()) {
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      try {
+        const r = await (await r2()).send(new GetObjectCommand({ Bucket: config.storage.r2Bucket, Key: key }));
+        return Buffer.from(await r.Body.transformToByteArray());
+      } catch (e) {
+        if (e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404) return null;
+        throw e;
+      }
+    }
+    const p = localPath(key);
+    return existsSync(p) ? readFileSync(p) : null;
+  },
+
   /** A URL that works for 5 minutes. Only call after the caller's access to the file was checked. */
   async signedUrl(key) {
     if (useR2()) {

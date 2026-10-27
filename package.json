@@ -38,6 +38,7 @@
     "mariadb": "^3.5.4",
     "multer": "^2.4.0",
     "node-cron": "^4.6.0",
+    "opus-decoder": "^0.7.12",
     "otpauth": "^9.5.2",
     "qrcode": "^1.5.4",
     "stripe": "^23.0.0",

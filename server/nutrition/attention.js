@@ -84,13 +84,8 @@ export async function weeklySummary(db, client, { tz = 'UTC', force = false } = 
  * Photo logging: Assist identifies foods and grams; the server matches each to the food database
  * and does the math. Saved as a pending analysis (not a food entry) until the client taps Add.
  */
-export async function analyzeMealPhoto(coachDb, { clientId, buffer, photoKey }) {
-  const r = await AI.analyzeMealPhoto(buffer, { db: coachDb });
-  const a = r.data;
-  if (!a.is_food || !a.items.length) {
-    await saveInsight(coachDb, { clientId, kind: 'meal_photo', source: 'photo', summary: 'Not food', draft: { isFood: false, photoKey }, model: r.model, promptVersion: r.promptVersion, status: 'dismissed' });
-    return { isFood: false };
-  }
+/** Matches what Assist saw in a meal photo to the food database (or keeps Assist's estimate). */
+export async function matchPhotoItems(a) {
   const items = [];
   for (const [i, it] of a.items.entries()) {
     const match = (await foods().search(it.name)).results[0] || null;
@@ -98,6 +93,17 @@ export async function analyzeMealPhoto(coachDb, { clientId, buffer, photoKey }) 
     if (match) items.push({ index: i, name: it.name, matched: match.name, foodRef: match.ref, grams: it.grams, portionText: it.portion_text, confidence: it.confidence, per100g: match.per100g, ...nutrientsFor(match, it.grams), source: match.source });
     else items.push({ index: i, name: it.name, matched: null, foodRef: null, grams: it.grams, portionText: it.portion_text, confidence: 'estimate', per100g: est && it.grams ? Object.fromEntries(Object.entries(est).map(([k, v]) => [k, Math.round(v / it.grams * 1000) / 10])) : null, ...(est || { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }), source: 'estimate' });
   }
+  return items;
+}
+
+export async function analyzeMealPhoto(coachDb, { clientId, buffer, photoKey }) {
+  const r = await AI.analyzeMealPhoto(buffer, { db: coachDb });
+  const a = r.data;
+  if (!a.is_food || !a.items.length) {
+    await saveInsight(coachDb, { clientId, kind: 'meal_photo', source: 'photo', summary: 'Not food', draft: { isFood: false, photoKey }, model: r.model, promptVersion: r.promptVersion, status: 'dismissed' });
+    return { isFood: false };
+  }
+  const items = await matchPhotoItems(a);
   const ins = await saveInsight(coachDb, { clientId, kind: 'meal_photo', source: 'photo', summary: a.title, draft: { isFood: true, title: a.title, note: a.note, photoKey, items: items.map(x => ({ name: x.name, grams: x.grams, portionText: x.portionText, calories: x.calories, proteinG: x.proteinG, carbsG: x.carbsG, fatG: x.fatG, foodRef: x.foodRef })) }, model: r.model, promptVersion: r.promptVersion });
   return { isFood: true, photoToken: ins.id, title: a.title, note: a.note, items: items.map(x => ({ ...x, foodRef: x.foodRef || `est:${ins.id}:${x.index}`, check: x.confidence !== 'high' })) };
 }
