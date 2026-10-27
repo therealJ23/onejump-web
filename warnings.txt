@@ -1,0 +1,1 @@
+/Users/runner/work/onejump-web/onejump-web/mobile-app/OneJump/Core/Voice/VoiceService.swift:692:23: warning: capture of 'self' with non-sendable type 'VoiceNoteRecorder?' in a '@Sendable' closure
