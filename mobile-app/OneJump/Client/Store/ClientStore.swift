@@ -1327,7 +1327,7 @@ extension ClientStore {
             workoutMeta = Loc(en, es)
             workoutDay = t.today == nil ? LiveAPI.day(slot.date, utc: true, weekday: true) : nil
             let note = slot.note ?? (t.today != nil ? t.coachNote?.text : nil)
-            workoutNote = note.map { Loc(same: "\($0) — \(t.coach.first)") }
+            workoutNote = note.map { Loc(same: "\($0) — \(t.coach.first ?? t.coach.name)") }
         } else {
             workoutTitle = Loc("Rest day", "Día de descanso")
             workoutMeta = Loc("Nothing scheduled. Your coach will add your next workout.", "Nada programado. Tu coach agregará tu próximo entrenamiento.")
