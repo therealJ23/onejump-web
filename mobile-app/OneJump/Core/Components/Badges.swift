@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// A small rounded status label ("At risk", "New").
 struct Pill: View {
@@ -44,19 +45,74 @@ struct CountBadge: View {
     }
 }
 
-/// A circle with someone's initials.
+/// A circle with someone's profile photo, or their initials when there's no photo (or while it loads).
 struct Avatar: View {
     let initials: String
     var color: Color = Palette.stone
     var size: CGFloat = 44
+    /// A signed photo link from the server ("/files/…" or a full URL).
+    var photoURL: String? = nil
+    /// A photo picked on this phone that hasn't finished uploading yet.
+    var localImage: UIImage? = nil
 
     var body: some View {
-        Text(initials)
-            .font(.archivo(size * 0.34, .bold))
-            .foregroundStyle(Palette.deep)
-            .frame(width: size, height: size)
-            .background(color, in: Circle())
-            .accessibilityHidden(true)
+        ZStack {
+            Text(initials)
+                .font(.archivo(size * 0.34, .bold))
+                .foregroundStyle(Palette.deep)
+            if let localImage {
+                Image(uiImage: localImage).resizable().scaledToFill()
+            } else if let photoURL, !photoURL.isEmpty {
+                RemotePhoto(path: photoURL)
+            }
+        }
+        .frame(width: size, height: size)
+        .background(color, in: Circle())
+        .clipShape(Circle())
+        .accessibilityHidden(true)
+    }
+}
+
+/// Photos already downloaded this session, by address without the signature (signed links
+/// change every time the server sends them; the photo behind them doesn't).
+final class PhotoCache: @unchecked Sendable {
+    static let shared = PhotoCache()
+    private let cache = NSCache<NSString, UIImage>()
+
+    static func key(_ path: String) -> String { path.components(separatedBy: "?").first ?? path }
+    func image(_ path: String) -> UIImage? { cache.object(forKey: Self.key(path) as NSString) }
+    func store(_ image: UIImage, for path: String) { cache.setObject(image, forKey: Self.key(path) as NSString) }
+}
+
+/// A private photo from the server (profile and progress photos), filling its frame.
+struct RemotePhoto: View {
+    let path: String
+    @State private var image: UIImage?
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else {
+                Color.clear
+            }
+        }
+        .task(id: PhotoCache.key(path)) { await load() }
+    }
+
+    @MainActor
+    private func load() async {
+        if let cached = PhotoCache.shared.image(path) {
+            image = cached
+            return
+        }
+        image = nil
+        guard let url = APIClient.shared.absoluteURL(path) else { return }
+        guard let result = try? await URLSession.shared.data(from: url),
+              (result.1 as? HTTPURLResponse)?.statusCode == 200,
+              let loaded = UIImage(data: result.0) else { return }
+        PhotoCache.shared.store(loaded, for: path)
+        image = loaded
     }
 }
 

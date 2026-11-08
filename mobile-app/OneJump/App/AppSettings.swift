@@ -37,10 +37,19 @@ final class AppSettings {
         didSet { UserDefaults.standard.set(role?.rawValue, forKey: Keys.role) }
     }
 
-    /// A coach is signed in to their real account (the session cookie is kept by the system).
+    /// Someone is signed in to their real account (the session cookie is kept by the system).
     var signedIn: Bool {
         didSet { UserDefaults.standard.set(signedIn, forKey: Keys.signedIn) }
     }
+
+    /// Who is signed in: a coach (the coach app) or a client (their coaching app). Coach by default,
+    /// so people who signed in before client accounts existed stay in the coach app.
+    var signedInRole: AppRole {
+        didSet { UserDefaults.standard.set(signedInRole.rawValue, forKey: Keys.signedInRole) }
+    }
+
+    /// A client is signed in to their own account.
+    var signedInAsClient: Bool { signedIn && signedInRole == .client }
 
     /// A signed-in coach is looking at the client app (from More). Not saved: the app reopens on the coach side.
     var clientPreview = false
@@ -65,6 +74,7 @@ final class AppSettings {
         static let signedIn = "oj.signedIn"
         static let demo = "oj.demo"
         static let coachName = "oj.coachName"
+        static let signedInRole = "oj.signedInRole"
     }
 
     init() {
@@ -75,14 +85,17 @@ final class AppSettings {
         appearance = defaults.string(forKey: Keys.appearance).flatMap(Appearance.init(rawValue:)) ?? .system
         role = defaults.string(forKey: Keys.role).flatMap(AppRole.init(rawValue:))
         signedIn = defaults.bool(forKey: Keys.signedIn)
+        signedInRole = defaults.string(forKey: Keys.signedInRole).flatMap(AppRole.init(rawValue:)) ?? .coach
         demo = defaults.bool(forKey: Keys.demo)
         coachName = defaults.string(forKey: Keys.coachName) ?? ""
         voice.language = language
     }
 
-    /// After a successful login.
-    func signIn(name: String) {
+    /// After a successful login (a coach, or a client with `as: .client`).
+    func signIn(name: String, as who: AppRole = .coach) {
         coachName = name
+        signedInRole = who
+        clientPreview = false
         role = nil
         demo = false
         signedIn = true

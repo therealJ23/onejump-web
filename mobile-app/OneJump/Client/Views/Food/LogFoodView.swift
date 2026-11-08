@@ -457,18 +457,24 @@ private struct SearchFoodsStage: View {
     var body: some View {
         @Bindable var store = store
         let query = store.foodQuery.trimmingCharacters(in: .whitespaces).lowercased()
-        let results = ClientData.foods.filter { query.isEmpty || $0.name(lang).lowercased().contains(query) }
+        let results = store.live
+            ? store.foodSearchResults
+            : ClientData.foods.filter { query.isEmpty || $0.name(lang).lowercased().contains(query) }
 
         VStack(alignment: .leading, spacing: 12) {
             SearchField(placeholder: CLT.searchFoods(lang), text: $store.foodQuery)
-            if results.isEmpty {
+            if store.live && store.searchingFoods && results.isEmpty {
+                ProgressView().frame(maxWidth: .infinity).padding(.vertical, 30)
+            } else if store.live && query.count < 2 {
+                SubText(CLT.typeToSearch(lang)).frame(maxWidth: .infinity).padding(.vertical, 20)
+            } else if results.isEmpty {
                 EmptyStateCard(systemImage: "magnifyingglass", title: CLT.noMatch(lang), message: CLT.tryWord(lang))
             } else {
                 ListCard {
                     DividedRows(results) { food in
                         Button { store.addSearchResult(food) } label: {
                             HStack {
-                                TitleSub(food.name(lang), sub: CLT.foodLine(food.quantity(lang), Fmt.grouped(Int(food.kcal)), Int(food.protein))(lang))
+                                TitleSub(food.name(lang), sub: store.hideNumbers ? food.quantity(lang) : CLT.foodLine(food.quantity(lang), Fmt.grouped(Int(food.kcal)), Int(food.protein))(lang))
                                 Image(systemName: "plus")
                                     .font(.system(size: 13, weight: .bold))
                                     .frame(width: 34, height: 34)
@@ -480,6 +486,13 @@ private struct SearchFoodsStage: View {
                     }
                 }
             }
+        }
+        .task(id: store.live ? query : "") {
+            guard store.live else { return }
+            // Wait for a pause in typing before asking the server.
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            if Task.isCancelled { return }
+            await store.searchFoodsLive(store.foodQuery)
         }
     }
 }
@@ -505,7 +518,7 @@ private struct ReviewFoodsStage: View {
                     HStack(spacing: 10) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.food.name(lang)).font(OJFont.title)
-                            SubText(CLT.foodLine(scaled.quantity(lang), Fmt.grouped(Int(scaled.kcal.rounded())), Int(scaled.protein.rounded()))(lang))
+                            SubText(store.hideNumbers ? scaled.quantity(lang) : CLT.foodLine(scaled.quantity(lang), Fmt.grouped(Int(scaled.kcal.rounded())), Int(scaled.protein.rounded()))(lang))
                             if let source = item.food.source {
                                 Text(source(lang)).font(.archivo(11)).foregroundStyle(Palette.muted)
                             }
@@ -523,12 +536,14 @@ private struct ReviewFoodsStage: View {
                     .rowPadding()
                 }
             }
-            HStack {
-                Text(CLT.total(lang)).font(OJFont.title)
-                Spacer()
-                Text(CLT.reviewTotal(Fmt.grouped(Int(kcal.rounded())), Int(protein.rounded()))(lang)).font(OJFont.title)
+            if !store.hideNumbers {
+                HStack {
+                    Text(CLT.total(lang)).font(OJFont.title)
+                    Spacer()
+                    Text(CLT.reviewTotal(Fmt.grouped(Int(kcal.rounded())), Int(protein.rounded()))(lang)).font(OJFont.title)
+                }
+                .padding(.horizontal, 4)
             }
-            .padding(.horizontal, 4)
 
             Eyebrow(CLT.addToTitle(lang)).padding(.leading, 4)
             HStack(spacing: 8) {

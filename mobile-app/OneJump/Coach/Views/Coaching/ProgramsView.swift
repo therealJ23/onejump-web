@@ -154,7 +154,7 @@ struct ProgramDetailView: View {
                             store.push(.client(c.id))
                         } label: {
                             HStack(spacing: 12) {
-                                Avatar(initials: c.initials, color: c.avatarColor, size: 36)
+                                Avatar(initials: c.initials, color: c.avatarColor, size: 36, photoURL: c.photoURL)
                                 TitleSub(c.name, sub: c.week > 0 ? CT.weekOf(c.week, c.weeks)(lang) : CT.startsSoon(lang))
                             }
                             .rowPadding()

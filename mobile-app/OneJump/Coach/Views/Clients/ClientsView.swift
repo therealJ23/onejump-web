@@ -66,7 +66,7 @@ struct ClientRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Avatar(initials: client.initials, color: client.avatarColor)
+            Avatar(initials: client.initials, color: client.avatarColor, photoURL: client.photoURL)
             TitleSub(client.name, sub: store.programLabel(for: client)(lang), lineLimit: 1)
             VStack(alignment: .trailing, spacing: 4) {
                 Pill(client.kind.label(lang), tone: client.tone)

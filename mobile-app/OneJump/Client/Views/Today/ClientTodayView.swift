@@ -8,33 +8,46 @@ struct ClientTodayView: View {
     var body: some View {
         ScreenScroll {
             header
+            if store.live && store.paymentProblem {
+                Button { store.push(.me) } label: {
+                    HStack(spacing: 12) {
+                        IconTile(systemName: "creditcard.trianglebadge.exclamationmark")
+                        Text(CLT.paymentProblem(lang)).font(OJFont.body).foregroundStyle(Palette.ink).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .card(background: Palette.surface2)
+                }
+                .buttonStyle(.plain)
+            }
             workoutCard
             if !store.checkInSent {
                 Button { store.openCheckIn() } label: {
                     HStack(spacing: 12) {
                         IconTile(systemName: "list.clipboard", tone: .assist)
-                        TitleSub(CLT.checkInCard(lang), sub: CLT.checkInCardSub(lang))
+                        TitleSub(store.live ? CLT.weekCheckIn(lang) : CLT.checkInCard(lang), sub: store.live ? CLT.weekCheckInSub(lang) : CLT.checkInCardSub(lang))
                         Pill(CLT.start(lang), tone: .warn)
                     }
                     .card()
                 }
                 .buttonStyle(.plain)
             }
-            habitsCard
+            if !store.habitList.isEmpty { habitsCard }
             foodCard
             ListCard {
-                HStack(spacing: 12) {
-                    IconTile(systemName: "video")
-                    TitleSub(store.slotLabel(store.booked), sub: CLT.videoWithAlex(lang))
-                    Button(CLT.reschedule(lang)) { store.push(.book) }
-                        .buttonStyle(.oj(.ghost, size: .small))
+                if !store.live {
+                    HStack(spacing: 12) {
+                        IconTile(systemName: "video")
+                        TitleSub(store.slotLabel(store.booked), sub: CLT.videoWithAlex(lang))
+                        Button(CLT.reschedule(lang)) { store.push(.book) }
+                            .buttonStyle(.oj(.ghost, size: .small))
+                    }
+                    .rowPadding()
+                    RowDivider()
                 }
-                .rowPadding()
-                RowDivider()
                 Button { store.go(.coach) } label: {
                     HStack(spacing: 12) {
-                        Avatar(initials: "AR", color: Palette.volt, size: 36)
-                        TitleSub("Alex", sub: ClientData.chat.last(where: { !$0.fromMe })?.text(lang), lineLimit: 1)
+                        Avatar(initials: store.coachPerson.initials, color: Palette.volt, size: 36, photoURL: store.coachPerson.photoURL)
+                        TitleSub(store.coachPerson.first.isEmpty ? CLT.yourCoach(lang) : store.coachPerson.first,
+                                 sub: lastCoachLine, lineLimit: 1)
                         if !store.readCoach {
                             Circle().fill(Palette.crit).frame(width: 10, height: 10)
                         }
@@ -45,24 +58,32 @@ struct ClientTodayView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .refreshable { if store.live { await store.loadLive() } }
+    }
+
+    private var lastCoachLine: String? {
+        let message: Loc? = store.live ? store.lastCoachMessage : ClientData.chat.last(where: { !$0.fromMe })?.text
+        return message.map { $0(lang) }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ScreenHeader(eyebrow: CLT.date(lang), title: CLT.hello(lang)) {
+            ScreenHeader(eyebrow: store.dateLine(lang), title: store.greeting(lang)) {
                 HStack(spacing: 8) {
                     ThemeToggleButton()
                     Button { store.push(.me) } label: {
-                        Avatar(initials: "MC", color: Color(hex: 0xCFE0C3))
+                        Avatar(initials: store.mePerson.initials, color: Color(hex: 0xCFE0C3), photoURL: store.mePerson.photoURL, localImage: store.pendingProfilePhoto)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(CLT.profile(lang))
                 }
             }
-            Label(CLT.streakLine(lang), systemImage: "flame.fill")
-                .font(.archivo(14, .semibold))
-                .foregroundStyle(Palette.ink)
-                .labelStyle(StreakLabelStyle())
+            if !store.streakText(lang).isEmpty {
+                Label(store.streakText(lang), systemImage: "flame.fill")
+                    .font(.archivo(14, .semibold))
+                    .foregroundStyle(Palette.ink)
+                    .labelStyle(StreakLabelStyle())
+            }
         }
     }
 
@@ -70,34 +91,46 @@ struct ClientTodayView: View {
         let total = store.allSets.count
         let status: String = store.workoutDone ? CLT.doneLabel(lang)
             : (store.workoutStarted ? CLT.setsOf(store.setsDone, total)(lang) : CLT.notStarted(lang))
+        let eyebrow: String = !store.hasWorkout ? CLT.restDay(lang)
+            : (store.workoutDay.map { CLT.nextUp($0(lang))(lang) } ?? CLT.todaysWorkout(lang))
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Eyebrow(CLT.todaysWorkout(lang), color: Palette.volt)
+                Eyebrow(eyebrow, color: Palette.volt)
                 Spacer()
-                Text(status).font(OJFont.sub).foregroundStyle(Palette.bone.opacity(0.75))
+                if store.hasWorkout && (!store.live || store.workoutStarted || store.workoutDone) {
+                    Text(status).font(OJFont.sub).foregroundStyle(Palette.bone.opacity(0.75))
+                }
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(CLT.workoutName(lang)).font(.archivo(34, .heavy)).tracking(-1)
-                Text(CLT.workoutMeta(lang)).font(OJFont.sub).foregroundStyle(Palette.bone.opacity(0.75))
+                Text(store.workoutTitle(lang)).font(.archivo(34, .heavy)).tracking(-1)
+                Text(store.workoutMeta(lang)).font(OJFont.sub).foregroundStyle(Palette.bone.opacity(0.75))
             }
-            HStack(alignment: .top, spacing: 10) {
-                Avatar(initials: "AR", color: Palette.volt, size: 28)
-                Text(CLT.coachNote(lang)).font(.archivo(14)).fixedSize(horizontal: false, vertical: true)
+            if let note = store.workoutNote {
+                HStack(alignment: .top, spacing: 10) {
+                    Avatar(initials: store.coachPerson.initials, color: Palette.volt, size: 28, photoURL: store.coachPerson.photoURL)
+                    Text(note(lang)).font(.archivo(14)).fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             if store.workoutDone {
                 HStack(spacing: 10) {
                     Pill(CLT.doneLabel(lang), tone: .ai)
-                    Text(summary).font(OJFont.sub).foregroundStyle(Palette.bone.opacity(0.75))
+                    if store.startDate != nil {
+                        Text(summary).font(OJFont.sub).foregroundStyle(Palette.bone.opacity(0.75))
+                    }
                 }
-            } else {
+            } else if store.hasWorkout {
                 Button { store.startWorkout() } label: {
-                    Label(store.workoutStarted ? CLT.continueWorkout(lang) : CLT.startWorkout(lang), systemImage: "play.fill")
+                    HStack(spacing: 8) {
+                        if store.workoutLoading { ProgressView().tint(Palette.deep) }
+                        Label(store.workoutStarted ? CLT.continueWorkout(lang) : (store.workoutDay != nil ? CLT.startEarly(lang) : CLT.startWorkout(lang)), systemImage: "play.fill")
+                    }
                 }
                 .buttonStyle(.oj(.volt, size: .large, fullWidth: true))
+                .disabled(store.workoutLoading)
             }
         }
         .heroCard()
@@ -109,15 +142,15 @@ struct ClientTodayView: View {
     }
 
     private var habitsCard: some View {
-        let done = ClientData.habits.filter { store.habits[$0.id] ?? false }.count
+        let done = store.habitList.filter { store.habits[$0.id] ?? false }.count
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(CLT.habitsToday(lang)).font(OJFont.title)
                 Spacer()
-                Pill(CLT.nOfT(done, ClientData.habits.count)(lang), tone: done == ClientData.habits.count ? .good : .muted)
+                Pill(CLT.nOfT(done, store.habitList.count)(lang), tone: done == store.habitList.count ? .good : .muted)
             }
             .padding(.bottom, 4)
-            DividedRows(ClientData.habits) { habit in
+            DividedRows(store.habitList) { habit in
                 let on = store.habits[habit.id] ?? false
                 Button { store.toggleHabit(habit) } label: {
                     HStack(spacing: 12) {
@@ -128,7 +161,7 @@ struct ClientTodayView: View {
                             .background(on ? Palette.good : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(on ? Color.clear : Palette.line2, lineWidth: 2))
                             .scaleEffect(on ? 1.04 : 1)
-                        TitleSub(habit.title(lang), sub: habit.id == "water" ? CLT.waterHabit(Fmt.trimmed(store.water))(lang) : habit.detail.map { $0(lang) })
+                        TitleSub(habit.title(lang), sub: habit.id == "water" && !store.live ? CLT.waterHabit(Fmt.trimmed(store.water))(lang) : habit.detail.map { $0(lang) })
                     }
                     .padding(.vertical, 10)
                 }
@@ -143,19 +176,28 @@ struct ClientTodayView: View {
         let totals = store.totals(for: .today)
         return Button { store.go(.food) } label: {
             HStack(spacing: 16) {
-                CalorieRing(eaten: totals.kcal, target: ClientData.kcalTarget, size: 92)
+                if let targets = store.targets {
+                    CalorieRing(eaten: totals.kcal, target: targets.kcal, size: 92)
+                } else {
+                    IconTile(systemName: "fork.knife", tone: .assist, size: 52)
+                }
                 VStack(alignment: .leading, spacing: 8) {
                     Text(CLT.foodToday(lang)).font(OJFont.title)
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(CLT.protein(lang)).font(.archivo(13))
-                            Spacer()
-                            SubText("\(Int(totals.protein.rounded())) / \(Int(ClientData.proteinTarget)) g")
+                    if let targets = store.targets, targets.protein > 0 {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(CLT.protein(lang)).font(.archivo(13))
+                                Spacer()
+                                SubText("\(Int(totals.protein.rounded())) / \(Int(targets.protein)) g")
+                            }
+                            ProgressBar(value: totals.protein / targets.protein, tint: Palette.progressGreen)
                         }
-                        ProgressBar(value: totals.protein / ClientData.proteinTarget, tint: Palette.progressGreen)
                     }
-                    SubText(CLT.foodsLogged(totals.count, Int(totals.protein.rounded()))(lang))
+                    SubText(store.hideNumbers || store.targets == nil
+                            ? CLT.foodsCount(totals.count)(lang)
+                            : CLT.foodsLogged(totals.count, Int(totals.protein.rounded()))(lang))
                 }
+                Spacer(minLength: 0)
             }
             .foregroundStyle(Palette.ink)
             .card()

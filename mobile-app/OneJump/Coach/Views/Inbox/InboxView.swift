@@ -124,7 +124,7 @@ struct InboxView: View {
                 DividedRows(store.data.missingCheckIns) { m in
                     let c = store.client(m.clientID)
                     HStack(spacing: 12) {
-                        Avatar(initials: c.initials, color: c.avatarColor, size: 36)
+                        Avatar(initials: c.initials, color: c.avatarColor, size: 36, photoURL: c.photoURL)
                         TitleSub(c.name, sub: m.why(lang))
                     }
                     .rowPadding()
@@ -159,7 +159,7 @@ struct InboxView: View {
             tag = CT.newTag(lang); tone = .info
         }
         return HStack(spacing: 12) {
-            Avatar(initials: c.initials, color: c.avatarColor)
+            Avatar(initials: c.initials, color: c.avatarColor, photoURL: c.photoURL)
             TitleSub(c.name, sub: report.map { "\($0.week(lang)) · \($0.when(lang))" } ?? "")
             Pill(tag, tone: tone)
         }

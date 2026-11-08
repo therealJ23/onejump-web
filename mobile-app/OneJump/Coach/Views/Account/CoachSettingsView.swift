@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 
 /// Settings: language first, then appearance, Assist, voice, notifications, account, team, import, privacy.
@@ -5,21 +6,52 @@ struct CoachSettingsView: View {
     @Environment(CoachStore.self) private var store
     @Environment(AppSettings.self) private var settings
     @Environment(\.lang) private var lang
+    @State private var photoPick: PhotosPickerItem?
 
     var body: some View {
         @Bindable var store = store
         @Bindable var settings = settings
 
         ScreenScroll {
-            HStack(spacing: 12) {
-                Avatar(initials: store.me.initials, color: Palette.volt)
-                TitleSub(store.me.name, sub: store.me.email)
-                if !store.live {
-                    Button(CT.edit(lang)) { store.toast.show(CT.editProfileToast(lang)) }
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Avatar(initials: store.me.initials, color: Palette.volt, size: 56, photoURL: store.me.photoURL, localImage: store.pendingProfilePhoto)
+                        .overlay {
+                            if store.uploadingPhoto {
+                                Circle().fill(Color.black.opacity(0.35))
+                                ProgressView().tint(.white)
+                            }
+                        }
+                    TitleSub(store.me.name, sub: store.me.email)
+                    if !store.live {
+                        Button(CT.edit(lang)) { store.toast.show(CT.editProfileToast(lang)) }
+                            .buttonStyle(.oj(.ghost, size: .small))
+                    }
+                }
+                if store.live {
+                    HStack(spacing: 8) {
+                        PhotosPicker(selection: $photoPick, matching: .images) {
+                            Label(store.me.photoURL == nil ? CL.addPhoto(lang) : CL.changePhoto(lang), systemImage: "camera")
+                        }
                         .buttonStyle(.oj(.ghost, size: .small))
+                        .disabled(store.uploadingPhoto)
+                        if store.me.photoURL != nil {
+                            Button(CL.removePhoto(lang)) { store.removeProfilePhoto() }
+                                .buttonStyle(.oj(.ghost, size: .small))
+                                .disabled(store.uploadingPhoto)
+                        }
+                    }
                 }
             }
             .card()
+            .onChange(of: photoPick) { _, item in
+                guard let item else { return }
+                Task { @MainActor in
+                    defer { photoPick = nil }
+                    guard let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) else { return }
+                    store.changeProfilePhoto(image)
+                }
+            }
 
             // Language
             sectionTitle(SharedText.language(lang))
@@ -118,7 +150,7 @@ struct CoachSettingsView: View {
             sectionTitle(CT.team(lang))
             ListCard {
                 HStack(spacing: 12) {
-                    Avatar(initials: store.me.initials, color: Palette.volt, size: 36)
+                    Avatar(initials: store.me.initials, color: Palette.volt, size: 36, photoURL: store.me.photoURL, localImage: store.pendingProfilePhoto)
                     TitleSub(store.me.name, sub: CT.ownerAll(lang))
                     Pill(CT.youPill(lang), tone: .muted)
                 }

@@ -7,7 +7,10 @@ struct RootView: View {
     var body: some View {
         Group {
             if settings.signedIn {
-                if settings.clientPreview {
+                if settings.signedInRole == .client {
+                    // A client's own account: their real program, food, progress and coach.
+                    ClientRootView(settings: settings, live: true)
+                } else if settings.clientPreview {
                     ClientRootView(settings: settings)
                 } else {
                     CoachRootView(settings: settings, live: true)
@@ -34,36 +37,51 @@ struct RootView: View {
     }
 }
 
-/// Coach login: email and password, then the 6-digit code if two-step login is on.
+/// Logging in. Coaches: email and password, then the 6-digit code if two-step login is on.
+/// Clients: their email, then the 6-digit code from the login email (no password).
 struct LoginView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(\.lang) private var lang
+    @State private var who: AppRole = UserDefaults.standard.string(forKey: "oj.loginAs").flatMap(AppRole.init(rawValue:)) ?? .coach
     @State private var email = ""
     @State private var password = ""
     @State private var code = ""
     @State private var needsCode = false
     @State private var busy = false
     @State private var error: String?
+    @State private var note: String?
     @FocusState private var focus: Field?
 
     private enum Field { case email, password, code }
 
+    private var cleanEmail: String { email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // No language switch here: the phone's language is used, and coaches change it in
-                // Settings once signed in (same as the website).
+                // No language switch here: the phone's language is used, and people change it in
+                // their settings once signed in (same as the website).
                 OneJumpWordmark(height: 26)
                     .padding(.top, 24)
 
+                SegmentedBar(
+                    options: [
+                        SegmentOption(value: AppRole.coach, label: CL.iAmCoach(lang)),
+                        SegmentOption(value: AppRole.client, label: CL.iAmClient(lang))
+                    ],
+                    selection: Binding(get: { who }, set: { switchTo($0) })
+                )
+                .padding(.top, 8)
+                .disabled(busy)
+
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(needsCode ? CL.codeTitle(lang) : CL.loginTitle(lang))
+                    Text(title)
                         .font(OJFont.h1)
                         .tracking(-0.8)
                         .foregroundStyle(Palette.ink)
-                    SubText(needsCode ? CL.codeSub(lang) : CL.loginSub(lang))
+                    SubText(subtitle)
                 }
-                .padding(.top, 16)
+                .padding(.top, 8)
 
                 VStack(spacing: 12) {
                     if needsCode {
@@ -72,6 +90,11 @@ struct LoginView: View {
                                 .keyboardType(.numberPad)
                                 .textContentType(.oneTimeCode)
                                 .focused($focus, equals: .code)
+                                .onChange(of: code) { _, value in
+                                    let digits = String(value.filter(\.isNumber).prefix(who == .client ? 6 : 10))
+                                    if digits != value { code = digits }
+                                    if who == .client && digits.count == 6 { submit() }
+                                }
                         }
                     } else {
                         field(CL.email(lang)) {
@@ -80,21 +103,29 @@ struct LoginView: View {
                                 .textContentType(.username)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
-                                .submitLabel(.next)
+                                .submitLabel(who == .coach ? .next : .send)
                                 .focused($focus, equals: .email)
-                                .onSubmit { focus = .password }
+                                .onSubmit { if who == .coach { focus = .password } else { submit() } }
                         }
-                        field(CL.password(lang)) {
-                            SecureField("••••••••", text: $password)
-                                .textContentType(.password)
-                                .submitLabel(.go)
-                                .focused($focus, equals: .password)
-                                .onSubmit { submit() }
+                        if who == .coach {
+                            field(CL.password(lang)) {
+                                SecureField("••••••••", text: $password)
+                                    .textContentType(.password)
+                                    .submitLabel(.go)
+                                    .focused($focus, equals: .password)
+                                    .onSubmit { submit() }
+                            }
                         }
                     }
                 }
                 .card()
 
+                if let note {
+                    Label(note, systemImage: "envelope.fill")
+                        .font(.archivo(14, .semibold))
+                        .foregroundStyle(Palette.good)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if let error {
                     Label(error, systemImage: "exclamationmark.circle.fill")
                         .font(.archivo(14, .semibold))
@@ -106,24 +137,31 @@ struct LoginView: View {
                 Button(action: submit) {
                     HStack(spacing: 8) {
                         if busy { ProgressView().tint(Palette.onPrimary) }
-                        Text(busy ? CL.loggingIn(lang) : (needsCode ? CL.verify(lang) : CL.logIn(lang)))
+                        Text(buttonLabel)
                     }
                 }
                 .buttonStyle(.oj(.primary, size: .large, fullWidth: true))
                 .disabled(busy)
 
                 if needsCode {
+                    if who == .client {
+                        Button(CL.resendCode(lang)) { sendClientCode(resend: true) }
+                            .buttonStyle(.oj(.ghost, fullWidth: true))
+                            .disabled(busy)
+                    }
                     Button(CL.startOver(lang)) {
-                        withAnimation(.snappy) { needsCode = false; code = ""; error = nil }
+                        withAnimation(.snappy) { needsCode = false; code = ""; error = nil; note = nil }
                     }
                     .buttonStyle(.oj(.ghost, fullWidth: true))
                 }
 
-                SubText(CL.clientsOnWeb(lang))
-                    .padding(.top, 4)
-                Link(CL.noAccount(lang), destination: URL(string: "https://onejumpfit.com/signup")!)
-                    .font(.archivo(14, .semibold))
-                    .foregroundStyle(Palette.link)
+                if who == .coach {
+                    Link(CL.noAccount(lang), destination: URL(string: "https://onejumpfit.com/signup")!)
+                        .font(.archivo(14, .semibold))
+                        .foregroundStyle(Palette.link)
+                } else {
+                    SubText(CL.clientInviteNote(lang))
+                }
 
                 Button {
                     settings.demo = true
@@ -147,6 +185,34 @@ struct LoginView: View {
         .background(Palette.bg.ignoresSafeArea())
     }
 
+    private var title: String {
+        if who == .client { return needsCode ? CL.checkEmailTitle(lang) : CL.clientLoginTitle(lang) }
+        return needsCode ? CL.codeTitle(lang) : CL.loginTitle(lang)
+    }
+
+    private var subtitle: String {
+        if who == .client { return needsCode ? CL.checkEmailSub(cleanEmail)(lang) : CL.clientLoginSub(lang) }
+        return needsCode ? CL.codeSub(lang) : CL.loginSub(lang)
+    }
+
+    private var buttonLabel: String {
+        if busy { return CL.loggingIn(lang) }
+        if who == .client { return needsCode ? CL.logIn(lang) : CL.sendCode(lang) }
+        return needsCode ? CL.verify(lang) : CL.logIn(lang)
+    }
+
+    private func switchTo(_ role: AppRole) {
+        guard role != who else { return }
+        withAnimation(.snappy) {
+            who = role
+            needsCode = false
+            code = ""
+            error = nil
+            note = nil
+        }
+        UserDefaults.standard.set(role.rawValue, forKey: "oj.loginAs")
+    }
+
     private func field<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Eyebrow(label)
@@ -162,7 +228,10 @@ struct LoginView: View {
     private func submit() {
         guard !busy else { return }
         error = nil
-        let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if who == .client {
+            if needsCode { finishClientLogin() } else { sendClientCode(resend: false) }
+            return
+        }
         if needsCode {
             guard code.trimmingCharacters(in: .whitespaces).count >= 6 else { return }
         } else {
@@ -186,13 +255,70 @@ struct LoginView: View {
                 let me = try await APIClient.shared.me()
                 guard me.isCoach, let user = me.user else {
                     await APIClient.shared.logOut()
-                    error = CL.clientsOnWeb(lang)
+                    error = CL.notACoach(lang)
                     return
                 }
                 password = ""
-                settings.signIn(name: user.name)
+                settings.signIn(name: user.name, as: .coach)
+            } catch let apiError as APIClient.APIError where apiError.code == "use_magic_link" {
+                // A client typed their email on the coach side: send them a code instead.
+                password = ""
+                switchTo(.client)
+                // After this task has finished (and `busy` is off again).
+                Task { @MainActor in sendClientCode(resend: false) }
             } catch {
                 self.error = (error as? LocalizedError)?.errorDescription ?? CL.somethingWrong(lang)
+            }
+        }
+    }
+
+    private func sendClientCode(resend: Bool) {
+        guard !busy else { return }
+        guard cleanEmail.contains("@"), cleanEmail.contains(".") else {
+            error = CL.fillEmail(lang)
+            return
+        }
+        busy = true
+        focus = nil
+        error = nil
+        Task { @MainActor in
+            defer { busy = false }
+            do {
+                try await APIClient.shared.requestClientCode(email: cleanEmail)
+                code = ""
+                note = resend ? CL.codeResent(lang) : nil
+                withAnimation(.snappy) { needsCode = true }
+                focus = .code
+            } catch {
+                self.error = (error as? LocalizedError)?.errorDescription ?? CL.somethingWrong(lang)
+            }
+        }
+    }
+
+    private func finishClientLogin() {
+        let digits = code.filter(\.isNumber)
+        guard digits.count == 6 else {
+            error = CL.sixDigits(lang)
+            return
+        }
+        busy = true
+        focus = nil
+        note = nil
+        Task { @MainActor in
+            defer { busy = false }
+            do {
+                try await APIClient.shared.logIn(email: cleanEmail, clientCode: digits)
+                let me = try await APIClient.shared.me()
+                guard me.isClient, let user = me.user else {
+                    await APIClient.shared.logOut()
+                    error = CL.notAClient(lang)
+                    return
+                }
+                settings.signIn(name: user.name, as: .client)
+            } catch {
+                code = ""
+                self.error = (error as? LocalizedError)?.errorDescription ?? CL.somethingWrong(lang)
+                focus = .code
             }
         }
     }

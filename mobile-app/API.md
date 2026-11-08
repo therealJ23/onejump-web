@@ -5,10 +5,13 @@ All requests and responses are JSON. Every request that changes something (POST,
 
 ## Logging in (no passwords for clients)
 1. `GET /api/auth/csrf` → `{ csrfToken }`. Keep the session cookie (`oj.sid`) that comes back. `URLSession`’s shared cookie storage does this automatically.
-2. `POST /api/auth/magic-link` `{ email }` → the client gets an email with a link `…/login/magic?token=XYZ`.
-3. When the app opens that link: `POST /api/auth/magic` `{ token }` → `{ ok, redirect, csrfToken }`. The session cookie is now logged in. Store the new `csrfToken`.
-4. `GET /api/auth/me` → who is logged in (`role` is `CLIENT`).
+2. `POST /api/auth/magic-link` `{ email }` → the client gets one email with a link (for the web) **and a 6-digit code** (for the app). Same answer whether or not the email exists.
+3. The app: `POST /api/auth/magic-code` `{ email, code }` → `{ ok, csrfToken }`. The session cookie is now logged in. Store the new `csrfToken`. Wrong code → `401 { code: "code_wrong" }`; expired, used, replaced by a newer email or 5 wrong tries → `401 { code: "code_expired" }` (ask for a new one).
+   The web: `POST /api/auth/magic` `{ token }` from the link.
+4. `GET /api/auth/me` → who is logged in (`role` is `CLIENT`; `user.photoUrl` is their profile photo).
 5. `POST /api/auth/logout` to log out.
+
+A coach login (`POST /api/auth/login`) with a client's email answers `400 { code: "use_magic_link" }`: the app switches to the client login and sends the code.
 
 A `401` means “logged out” (show the login screen). A `403` with `{ code: "csrf" }` means “get a fresh token from `/api/auth/csrf` and retry once”.
 
@@ -30,6 +33,25 @@ A `401` means “logged out” (show the login screen). A `403` with `{ code: "c
 | POST | `/billing/checkout` | `{ clientPlanId }` → `{ url }` to open in Safari (Stripe Checkout) |
 | POST | `/billing/portal` | `{ url }` to update the card |
 | GET | `/export` | All of the client’s data as JSON |
+| POST | `/delete-account` | `{ confirm: "DELETE" }` → deletes their data and login, tells the coach. `409 { code: "cancel_plan_first" }` while a paid plan is active |
+| GET | `/nutrition/today?day=YYYY-MM-DD` | Targets (or none), food entries by meal, habits, favorites, coach note, features (`photo`, `voice`). No numbers when the coach hides them |
+| POST | `/food-entries` | `{ meal, source, items: [{ name, grams, portionText, foodRef, calories… }], photoToken?, favoriteId? }` |
+| DELETE | `/food-entries/:id` | Remove a logged food |
+| POST | `/food-photo` | multipart `photo` (JPEG) → `{ photoToken, items }` (Pro) |
+| POST | `/food-text` | `{ text, source: "voice" }` → `{ items }` |
+| POST | `/habits/:id/check` | Tick or untick today |
+| POST | `/voice-notes` | multipart `audio` (m4a), `durationMs`, `hint?` (Pro) |
+| GET | `/messages/:id/audio?format=wav` | `{ url }` to play a voice note |
+
+Food search and barcodes: `GET /api/foods/search?q=…` and `GET /api/foods/barcode/:code` (cached; USDA and Open Food Facts).
+
+## Profile photos (coaches and clients)
+| Method | Path | What |
+| --- | --- | --- |
+| POST | `/api/account/photo` | multipart `photo` (JPG/PNG/WebP, max 6 MB; the app sends a 640 px JPEG) → `{ photoUrl }` |
+| DELETE | `/api/account/photo` | Remove it |
+
+Photo links are signed and last an hour; the app caches photos by the link without its signature. Clients get their coach's photo in `/today`, `/thread` and `/account`; coaches get each client's `photoUrl` in `/api/mobile/coach` (and `me.photoUrl`).
 
 Errors look like `{ "error": "Plain-English message", "fields": { "email": "…" } }`.
 

@@ -13,7 +13,7 @@ struct WeeklyCheckInView: View {
                 form
             }
         }
-        .ojNavigationTitle(CLT.checkInCard(lang))
+        .ojNavigationTitle(store.live ? CLT.weekCheckIn(lang) : CLT.checkInCard(lang))
         .toolbar(.hidden, for: .tabBar)
         .onDisappear { if store.listenMode == .note { store.stopListening() } }
     }
@@ -23,19 +23,45 @@ struct WeeklyCheckInView: View {
         return VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(CLT.prefilled(lang)).font(OJFont.title)
-                autoRow(CLT.workouts(lang), CLT.ofThree(store.workoutDone ? 3 : 2)(lang))
-                autoRow(CLT.foodLogged(lang), CLT.sixOfSeven(lang))
-                autoRow(CLT.avgProtein(lang), "128 g")
-                autoRow(CLT.weight(lang), "\(Fmt.oneDecimal(store.weight)) lb")
+                if store.live {
+                    autoRow(CLT.workouts(lang), CLT.workoutsOf(store.weekDone, store.weekPlanned)(lang))
+                    if store.weight > 0 { autoRow(CLT.weight(lang), "\(Fmt.oneDecimal(store.weight)) lb") }
+                } else {
+                    autoRow(CLT.workouts(lang), CLT.ofThree(store.workoutDone ? 3 : 2)(lang))
+                    autoRow(CLT.foodLogged(lang), CLT.sixOfSeven(lang))
+                    autoRow(CLT.avgProtein(lang), "128 g")
+                    autoRow(CLT.weight(lang), "\(Fmt.oneDecimal(store.weight)) lb")
+                }
             }
             .card(background: Palette.assistSoft)
 
-            ForEach(ClientData.scales) { scale in
+            if store.live {
+                HStack {
+                    Text(CLT.sleepHours(lang)).font(OJFont.title)
+                    Spacer()
+                    ValueStepper(
+                        value: "\(Fmt.trimmed(store.checkInSleep)) h",
+                        decreaseLabel: CLT.less(lang),
+                        increaseLabel: CLT.more(lang),
+                        onDecrease: { store.checkInSleep = max(0, store.checkInSleep - 0.5) },
+                        onIncrease: { store.checkInSleep = min(14, store.checkInSleep + 0.5) }
+                    )
+                }
+            }
+
+            ForEach(store.live ? ClientData.scales.filter { $0.id != "sleep" } : ClientData.scales) { scale in
                 VStack(alignment: .leading, spacing: 8) {
                     Text(scale.label(lang)).font(OJFont.title)
                     ScaleRow(options: scale.options.map { $0(lang) }, selected: store.checkInAnswers[scale.id] ?? 2) {
                         store.checkInAnswers[scale.id] = $0
                     }
+                }
+            }
+
+            if store.live {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(CLT.moodQuestion(lang)).font(OJFont.title)
+                    ScaleRow(options: CLT.moodOptions.map { $0(lang) }, selected: store.checkInMood) { store.checkInMood = $0 }
                 }
             }
 
@@ -47,6 +73,7 @@ struct WeeklyCheckInView: View {
                 )
             }
 
+            if !store.live {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(CLT.progressPhotos(lang)).font(OJFont.title)
@@ -59,10 +86,11 @@ struct WeeklyCheckInView: View {
                     photoButton("back", CLT.backPose(lang))
                 }
             }
+            }
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(CLT.anythingElse(lang)).font(OJFont.title)
+                    Text(store.live ? CLT.anythingElseFor(store.coachPerson.first)(lang) : CLT.anythingElse(lang)).font(OJFont.title)
                     Spacer()
                     Button { store.dictateCheckInNote() } label: {
                         Label(CLT.talk(lang), systemImage: "mic")
@@ -76,9 +104,13 @@ struct WeeklyCheckInView: View {
             }
 
             Button { store.sendCheckIn() } label: {
-                Label(CLT.sendToAlex(lang), systemImage: "paperplane.fill")
+                HStack(spacing: 8) {
+                    if store.sendingCheckIn { ProgressView().tint(Palette.onPrimary) }
+                    Label(store.live ? CLT.sendTo(store.coachPerson.first)(lang) : CLT.sendToAlex(lang), systemImage: "paperplane.fill")
+                }
             }
             .buttonStyle(.oj(.primary, size: .large, fullWidth: true))
+            .disabled(store.sendingCheckIn)
         }
     }
 
@@ -114,7 +146,7 @@ struct WeeklyCheckInView: View {
                 .shadow(color: Palette.volt.opacity(0.5), radius: 30)
                 .padding(.top, 60)
             Text(CLT.checkInSent(lang)).font(OJFont.h1).foregroundStyle(Palette.ink)
-            SubText(CLT.checkInSentSub(lang)).multilineTextAlignment(.center)
+            SubText(store.live ? CLT.checkInSentSubLive(store.coachPerson.first)(lang) : CLT.checkInSentSub(lang)).multilineTextAlignment(.center)
             Button(CLT.backToToday(lang)) { store.go(.today) }
                 .buttonStyle(.oj(.primary, size: .large, fullWidth: true))
         }

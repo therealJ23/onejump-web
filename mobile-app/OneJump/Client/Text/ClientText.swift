@@ -281,4 +281,65 @@ enum CLT {
     static func waterToast(_ liters: String) -> Loc { Loc("+250 ml · \(liters) L today", "+250 ml · \(liters) L hoy") }
     static let less = Loc("Less", "Menos")
     static let more = Loc("More", "Más")
+
+    // MARK: Live account (a signed-in client)
+    static let noWorkoutToday = Loc("No workout scheduled. Your coach will add the next one.", "No hay entrenamiento programado. Tu coach agregará el próximo.")
+    static let emptyWorkout = Loc("This workout has no exercises yet. Ask your coach.", "Este entrenamiento aún no tiene ejercicios. Pregúntale a tu coach.")
+    static func savedSayLive(_ first: String) -> Loc { Loc("Workout saved. Nice work, \(first).", "Entrenamiento guardado. Buen trabajo, \(first).") }
+    static func niceWorkLive(_ me: String, _ coach: String) -> Loc { Loc("Nice work, \(me). \(coach) can see it already.", "Buen trabajo, \(me). \(coach) ya lo puede ver.") }
+    static let fromVoiceAssist = Loc("From what you said · USDA", "De lo que dijiste · USDA")
+    static let foodRemoved = Loc("Removed from your log", "Quitado de tu registro")
+    static let removeFood = Loc("Remove", "Quitar")
+    static func photoAddedLive(_ coach: String) -> Loc { Loc("Photo added. Only you and \(coach) can see it.", "Foto agregada. Solo tú y \(coach) pueden verla.") }
+    static let photoDeleted = Loc("Photo deleted", "Foto borrada")
+    static let deletePhoto = Loc("Delete photo", "Borrar foto")
+    static let sending = Loc("Sending…", "Enviando…")
+    static let voiceNotesPro = Loc("Voice notes are part of your coach’s Pro plan. Type your message instead.", "Las notas de voz son del plan Pro de tu coach. Escribe tu mensaje.")
+    static func checkInSentSayLive(_ coach: String) -> Loc { Loc("Check-in sent. \(coach) will reply soon.", "Revisión enviada. \(coach) te responderá pronto.") }
+    static func checkInSentSubLive(_ coach: String) -> Loc { Loc("\(coach) will read it and reply in your messages.", "\(coach) la leerá y te responderá en tus mensajes.") }
+    static func profilePhotoSaved(_ coach: String) -> Loc { Loc("Photo updated. \(coach) sees it too.", "Foto actualizada. \(coach) también la ve.") }
+    static let profilePhotoRemoved = Loc("Photo removed", "Foto quitada")
+    static let changePhoto = Loc("Change photo", "Cambiar foto")
+    static let addPhoto = Loc("Add a photo", "Agregar una foto")
+    static let removePhoto = Loc("Remove photo", "Quitar foto")
+    static func messageTo(_ name: String) -> Loc { Loc("Message \(name)", "Mensaje para \(name)") }
+    static func sendTo(_ name: String) -> Loc { Loc("Send to \(name)", "Enviar a \(name)") }
+    static func anythingElseFor(_ name: String) -> Loc { Loc("Anything else for \(name)?", "¿Algo más para \(name)?") }
+    static func onlyYouAnd(_ name: String) -> Loc { Loc("Only you and \(name)", "Solo tú y \(name)") }
+    static func realPersonLive(_ name: String) -> Loc { Loc("Messages go to \(name), a real person. Voice notes come with a written transcript.", "Los mensajes van a \(name), una persona real. Las notas de voz llevan transcripción escrita.") }
+    static func voiceNoteTo(_ name: String) -> Loc { Loc("Voice note to \(name)", "Nota de voz para \(name)") }
+    static let yourCoach = Loc("Your coach", "Tu coach")
+    static let coachSubLive = Loc("Your coach · replies here", "Tu coach · responde aquí")
+    static func nextUp(_ day: String) -> Loc { Loc("Next workout · \(day)", "Próximo entrenamiento · \(day)") }
+    static let startEarly = Loc("Start it now", "Empezar ahora")
+    static let restDay = Loc("Rest day", "Día de descanso")
+    static let loadingAccount = Loc("Loading your app…", "Cargando tu app…")
+    static let tryAgain = Loc("Try again", "Intentar de nuevo")
+    static let paymentProblem = Loc("Your last payment didn’t go through. Update your card from Me.", "Tu último pago no pasó. Actualiza tu tarjeta desde Tú.")
+    static let weekCheckIn = Loc("Weekly check-in", "Revisión semanal")
+    static let weekCheckInSub = Loc("2 minutes · how your week went", "2 minutos · cómo te fue la semana")
+    static let numbersHidden = Loc("Your coach keeps the numbers out of the way. Just log what you eat.", "Tu coach prefiere no mostrar números. Solo registra lo que comes.")
+    static let noHabits = Loc("No habits yet. Your coach can add some.", "Aún no hay hábitos. Tu coach puede agregar algunos.")
+    static let noFavorites = Loc("Foods you save as favorites on the web show up here.", "Los alimentos que guardes como favoritos en la web aparecen aquí.")
+    static let noBests = Loc("Log workouts to see your personal bests.", "Registra entrenamientos para ver tus récords.")
+    static let noPhotosYet = Loc("No photos yet", "Aún no hay fotos")
+    static let noMessages = Loc("Say hi. Questions about a workout, how you’re feeling, anything.", "Saluda. Dudas sobre un entrenamiento, cómo te sientes, lo que sea.")
+    static let thisWeek = Loc("This week", "Esta semana")
+    static func workoutsOf(_ d: Int, _ p: Int) -> Loc { Loc("\(d) of \(p)", "\(d) de \(p)") }
+    static let sleepHours = Loc("Hours of sleep (average)", "Horas de sueño (promedio)")
+    static let moodQuestion = Loc("Mood", "Ánimo")
+    static let moodOptions: [Loc] = [Loc("Low", "Bajo"), Loc("Meh", "Regular"), Loc("OK", "Bien"), Loc("Good", "Muy bien"), Loc("Great", "Excelente")]
+    static let manageBilling = Loc("Manage on the web", "Gestionar en la web")
+    static let downloadReady = Loc("Your data is ready", "Tus datos están listos")
+    static let deleteTitle = Loc("Delete your account?", "¿Borrar tu cuenta?")
+    static func deleteBody(_ coach: String) -> Loc { Loc("This removes your workouts, check-ins, food log, messages and photos, and lets \(coach) know. It can’t be undone. If you pay for a plan, cancel it first. Type DELETE to confirm.", "Esto borra tus entrenamientos, revisiones, registro de comidas, mensajes y fotos, y le avisa a \(coach). No se puede deshacer. Si pagas un plan, cancélalo primero. Escribe DELETE para confirmar.") }
+    static let deleteForGood = Loc("Delete my account", "Borrar mi cuenta")
+    static let cancel = Loc("Cancel", "Cancelar")
+    static let typeDelete = Loc("Type DELETE", "Escribe DELETE")
+    static let liveLanguageNote = Loc("Your coach writes in their own language.", "Tu coach escribe en su propio idioma.")
+    static func foodsCount(_ n: Int) -> Loc { n == 1 ? Loc("1 food logged", "1 alimento registrado") : Loc("\(n) foods logged", "\(n) alimentos registrados") }
+    static func exerciseLineShort(_ target: String, _ rest: String) -> Loc { Loc("\(target) · rest \(rest)", "\(target) · descanso \(rest)") }
+    static func setsLeftLive(_ n: Int, _ coach: String) -> Loc { Loc("\(n) sets not logged. You can still save, \(coach) will see what you did.", "\(n) series sin registrar. Igual puedes guardar; \(coach) verá lo que hiciste.") }
+    static let typeToSearch = Loc("Type a food, like “chicken breast” or “oatmeal”.", "Escribe un alimento, como “pechuga de pollo” o “avena”.")
+    static func goalLineLive(_ goal: String) -> Loc { Loc("Goal \(goal) lb", "Meta \(goal) lb") }
 }

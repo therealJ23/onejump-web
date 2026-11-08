@@ -32,7 +32,7 @@ struct MoreView: View {
                 store.push(.settings)
             } label: {
                 HStack(spacing: 12) {
-                    Avatar(initials: store.me.initials, color: Palette.volt)
+                    Avatar(initials: store.me.initials, color: Palette.volt, photoURL: store.me.photoURL, localImage: store.pendingProfilePhoto)
                     TitleSub(store.me.name, sub: store.live ? store.me.business : CT.profileSub(lang))
                     Image(systemName: "chevron.right").foregroundStyle(Palette.muted)
                 }

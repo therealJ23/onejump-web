@@ -14,7 +14,7 @@ struct WorkoutPlayerView: View {
                     progressSegments
                     if store.workoutDone {
                         WorkoutDoneView()
-                    } else {
+                    } else if store.workout.indices.contains(store.currentExercise) {
                         ExercisePlayer()
                     }
                 }
@@ -31,7 +31,7 @@ struct WorkoutPlayerView: View {
                 }
                 ToolbarItem(placement: .principal) {
                     VStack(spacing: 0) {
-                        Text(CLT.workoutName(lang)).font(OJFont.title)
+                        Text(store.workoutTitle(lang)).font(OJFont.title)
                         ElapsedLabel()
                     }
                 }
@@ -54,7 +54,7 @@ struct WorkoutPlayerView: View {
 
     private var progressSegments: some View {
         HStack(spacing: 4) {
-            ForEach(ClientData.workout.indices, id: \.self) { i in
+            ForEach(store.workout.indices, id: \.self) { i in
                 Capsule()
                     .fill(store.isExerciseDone(i) ? Palette.progressGreen : (i == store.currentExercise ? Palette.primary : Palette.surface3))
                     .frame(height: 5)
@@ -89,35 +89,43 @@ private struct ExercisePlayer: View {
 
     var body: some View {
         let index = store.currentExercise
-        let exercise = ClientData.workout[index]
+        let exercise = store.workout[index]
         let complete = store.activeSetIndex == nil
 
         VStack(alignment: .leading, spacing: 14) {
             RestBar()
 
-            VideoPlaceholder(label: CLT.playHowTo(lang)) { store.toast.show(CLT.videoHere(lang)) }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Eyebrow(CLT.exerciseOf(index + 1, ClientData.workout.count)(lang))
-                Text(store.exerciseName(index)(lang)).font(OJFont.h3).foregroundStyle(Palette.ink)
-                SubText(CLT.exerciseLine(exercise.target(lang), "\(exercise.rest) \(CLT.secUnit(lang))", exercise.last(lang))(lang))
-                Text(exercise.cue(lang))
-                    .font(OJFont.body)
-                    .foregroundStyle(Palette.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
+            if !store.live {
+                VideoPlaceholder(label: CLT.playHowTo(lang)) { store.toast.show(CLT.videoHere(lang)) }
             }
 
-            ChipScroller {
-                SubText(CLT.equipmentBusy(lang))
-                ForEach(Array(exercise.swaps.enumerated()), id: \.offset) { pair in
-                    Chip(label: pair.element(lang), isOn: store.swapped[index] == pair.offset, systemImage: "arrow.left.arrow.right") {
-                        store.swap(to: pair.offset)
+            VStack(alignment: .leading, spacing: 4) {
+                Eyebrow(CLT.exerciseOf(index + 1, store.workout.count)(lang))
+                Text(store.exerciseName(index)(lang)).font(OJFont.h3).foregroundStyle(Palette.ink)
+                SubText(exercise.last(lang).isEmpty
+                        ? CLT.exerciseLineShort(exercise.target(lang), "\(exercise.rest) \(CLT.secUnit(lang))")(lang)
+                        : CLT.exerciseLine(exercise.target(lang), "\(exercise.rest) \(CLT.secUnit(lang))", exercise.last(lang))(lang))
+                if !exercise.cue(lang).isEmpty {
+                    Text(exercise.cue(lang))
+                        .font(OJFont.body)
+                        .foregroundStyle(Palette.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 4)
+                }
+            }
+
+            if !exercise.swaps.isEmpty {
+                ChipScroller {
+                    SubText(CLT.equipmentBusy(lang))
+                    ForEach(Array(exercise.swaps.enumerated()), id: \.offset) { pair in
+                        Chip(label: pair.element(lang), isOn: store.swapped[index] == pair.offset, systemImage: "arrow.left.arrow.right") {
+                            store.swap(to: pair.offset)
+                        }
                     }
                 }
             }
 
-            ForEach(Array(store.sets[index].enumerated()), id: \.offset) { pair in
+            ForEach(Array((store.sets[safe: index] ?? []).enumerated()), id: \.offset) { pair in
                 SetRow(setIndex: pair.offset, entry: pair.element, isActive: pair.offset == store.activeSetIndex)
             }
 
@@ -127,7 +135,7 @@ private struct ExercisePlayer: View {
             }
 
             ListCard {
-                DividedRows(Array(ClientData.workout.indices)) { i in
+                DividedRows(Array(store.workout.indices)) { i in
                     exerciseRow(i)
                 }
             }
@@ -136,7 +144,7 @@ private struct ExercisePlayer: View {
 
     private var nextLabel: String {
         let current = store.currentExercise
-        let indices = ClientData.workout.indices
+        let indices = store.workout.indices
         if let next = indices.first(where: { $0 > current && !store.isExerciseDone($0) }) {
             return CLT.nextExercise(store.exerciseName(next)(lang))(lang)
         }
@@ -147,8 +155,8 @@ private struct ExercisePlayer: View {
     }
 
     private func exerciseRow(_ i: Int) -> some View {
-        let ex = ClientData.workout[i]
-        let done = store.sets[i].filter(\.done).count
+        let ex = store.workout[i]
+        let done = (store.sets[safe: i] ?? []).filter(\.done).count
         let isCurrent = i == store.currentExercise
         return Button {
             withAnimation(.snappy) { store.currentExercise = i }
@@ -216,7 +224,7 @@ private struct SetRow: View {
     @Environment(ClientStore.self) private var store
     @Environment(\.lang) private var lang
 
-    private var exercise: WorkoutExercise { ClientData.workout[store.currentExercise] }
+    private var exercise: WorkoutExercise { store.workout[safe: store.currentExercise] ?? store.workout[0] }
 
     var body: some View {
         if isActive {

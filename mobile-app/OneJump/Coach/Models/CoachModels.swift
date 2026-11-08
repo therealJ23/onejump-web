@@ -64,6 +64,8 @@ struct CoachClient: Identifiable {
     var unread = 0
     var checkInID: String? = nil
     var suggestTarget: String? = nil
+    /// The client's profile photo (a signed link), when they added one.
+    var photoURL: String? = nil
 
     var avatarColor: Color { Color(hex: avatar) }
 }
@@ -464,6 +466,8 @@ struct CoachMe {
     var trialDaysLeft: Int?
     var pro: Bool
     var totpEnabled: Bool
+    /// The coach's own profile photo (a signed link). Clients see it in their app.
+    var photoURL: String? = nil
 }
 
 /// One row of a client's week on the Program tab.

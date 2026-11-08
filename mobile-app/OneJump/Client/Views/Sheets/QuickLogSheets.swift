@@ -10,16 +10,29 @@ struct QuickLogSheet: View {
             VStack(alignment: .leading, spacing: 14) {
                 Text(CLT.whatToLog(lang)).font(OJFont.h2).padding(.top, 20)
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                    tile(CLT.snapMeal(lang), CLT.photoToFoods(lang), "camera", volt: true) { store.openLogger(.photo) }
-                    tile(CLT.sayAte(lang), CLT.talkToFoods(lang), "mic", volt: true) { store.openLogger(.voice) }
-                    tile(CLT.logWeight(lang), CLT.lastWeight("\(Fmt.oneDecimal(store.weight)) lb")(lang), "scalemass") {
-                        store.weightDraft = store.weight
+                    if store.photoLogging {
+                        tile(CLT.snapMeal(lang), CLT.photoToFoods(lang), "camera", volt: true) { store.openLogger(.photo) }
+                    }
+                    if store.voiceLogging {
+                        tile(CLT.sayAte(lang), CLT.talkToFoods(lang), "mic", volt: true) { store.openLogger(.voice) }
+                    }
+                    if store.live {
+                        tile(CLT.methodSearch(lang), CLT.logSearchTitle(lang), "magnifyingglass", volt: !store.photoLogging) { store.openLogger(.search) }
+                    }
+                    tile(CLT.logWeight(lang), store.weight > 0 ? CLT.lastWeight("\(Fmt.oneDecimal(store.weight)) lb")(lang) : "—", "scalemass") {
+                        store.weightDraft = store.weight > 0 ? store.weight : 150
                         store.showQuickLog = false
                         after(0.35) { store.showWeightSheet = true }
                     }
-                    tile(CLT.addWater(lang), CLT.waterOf(Fmt.trimmed(store.water))(lang), "drop") { store.addWater() }
-                    tile(CLT.voiceNoteToAlex(lang), CLT.withTranscript(lang), "waveform") { store.startVoiceNoteFromQuickLog() }
-                    tile(CLT.weeklyCheckIn(lang), CLT.twoMinutes(lang), "list.clipboard") { store.openCheckIn() }
+                    if !store.live {
+                        tile(CLT.addWater(lang), CLT.waterOf(Fmt.trimmed(store.water))(lang), "drop") { store.addWater() }
+                    }
+                    if !store.live || store.voiceNotes {
+                        tile(store.live ? CLT.voiceNoteTo(store.coachPerson.first)(lang) : CLT.voiceNoteToAlex(lang), CLT.withTranscript(lang), "waveform") { store.startVoiceNoteFromQuickLog() }
+                    }
+                    if !store.checkInSent || !store.live {
+                        tile(CLT.weeklyCheckIn(lang), CLT.twoMinutes(lang), "list.clipboard") { store.openCheckIn() }
+                    }
                 }
             }
             .padding(.horizontal, 18)

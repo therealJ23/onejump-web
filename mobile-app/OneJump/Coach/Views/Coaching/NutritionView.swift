@@ -25,7 +25,7 @@ struct NutritionView: View {
                     let c = store.client(row.clientID)
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 10) {
-                            Avatar(initials: c.initials, color: c.avatarColor, size: 32)
+                            Avatar(initials: c.initials, color: c.avatarColor, size: 32, photoURL: c.photoURL)
                             Text(c.name).font(OJFont.title)
                             Spacer()
                             Pill(row.label(lang), tone: tone(for: row.percent))

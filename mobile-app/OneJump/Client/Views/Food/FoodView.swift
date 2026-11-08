@@ -20,19 +20,43 @@ struct FoodView: View {
                 selection: $store.foodDay
             )
 
-            HStack(spacing: 16) {
-                CalorieRing(eaten: totals.kcal, target: ClientData.kcalTarget)
-                VStack(alignment: .leading, spacing: 10) {
-                    macroRow(CLT.protein(lang), totals.protein, ClientData.proteinTarget, Palette.progressGreen)
-                    macroRow(CLT.carbs(lang), totals.carbs, ClientData.carbsTarget, Palette.green)
-                    macroRow(CLT.fat(lang), totals.fat, ClientData.fatTarget, Color(hex: 0xC9A227))
+            if let targets = store.targets {
+                HStack(spacing: 16) {
+                    CalorieRing(eaten: totals.kcal, target: targets.kcal)
+                    VStack(alignment: .leading, spacing: 10) {
+                        macroRow(CLT.protein(lang), totals.protein, targets.protein, Palette.progressGreen)
+                        macroRow(CLT.carbs(lang), totals.carbs, targets.carbs, Palette.green)
+                        macroRow(CLT.fat(lang), totals.fat, targets.fat, Color(hex: 0xC9A227))
+                    }
                 }
+                .card()
+            } else if store.live {
+                HStack(alignment: .top, spacing: 12) {
+                    IconTile(systemName: "fork.knife", tone: .assist)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(CLT.foodsCount(totals.count)(lang)).font(OJFont.title)
+                        SubText(store.nutritionNote ?? (store.hideNumbers ? CLT.numbersHidden(lang) : ""))
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .card()
             }
-            .card()
+            if store.live, store.targets != nil, let note = store.nutritionNote, !note.isEmpty {
+                HStack(alignment: .top, spacing: 10) {
+                    Avatar(initials: store.coachPerson.initials, color: Palette.volt, size: 28, photoURL: store.coachPerson.photoURL)
+                    Text(note).font(.archivo(14)).foregroundStyle(Palette.ink).fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .card(padding: 12, background: Palette.surface2)
+            }
 
             HStack(spacing: 10) {
-                method(CLT.methodPhoto(lang), "camera") { store.openLogger(.photo) }
-                method(CLT.sayIt(lang), "mic") { store.openLogger(.voice) }
+                if store.photoLogging {
+                    method(CLT.methodPhoto(lang), "camera") { store.openLogger(.photo) }
+                }
+                if store.voiceLogging {
+                    method(CLT.sayIt(lang), "mic") { store.openLogger(.voice) }
+                }
                 method(CLT.methodBarcode(lang), "barcode.viewfinder") { store.openLogger(.barcode) }
                 method(CLT.methodSearch(lang), "magnifyingglass") { store.openLogger(.search) }
             }
@@ -41,10 +65,12 @@ struct FoodView: View {
                 mealCard(meal, items: meals[meal] ?? [])
             }
 
-            SectionHeader(CLT.quickAdd(lang), note: CLT.yourFavorites(lang))
-            ChipScroller {
-                ForEach(ClientData.favorites) { food in
-                    Chip(label: food.name(lang), systemImage: "plus") { store.addFavorite(food) }
+            if !store.favoriteFoods.isEmpty {
+                SectionHeader(CLT.quickAdd(lang), note: CLT.yourFavorites(lang))
+                ChipScroller {
+                    ForEach(store.favoriteFoods) { food in
+                        Chip(label: food.name(lang), systemImage: "plus") { store.addFavorite(food) }
+                    }
                 }
             }
             SubText(CLT.dataSources(lang))
@@ -52,6 +78,7 @@ struct FoodView: View {
                 .multilineTextAlignment(.center)
         }
         .toolbar(.hidden, for: .navigationBar)
+        .refreshable { if store.live { await store.loadLive() } }
     }
 
     private func macroRow(_ label: String, _ now: Double, _ target: Double, _ color: Color) -> some View {
@@ -61,7 +88,7 @@ struct FoodView: View {
                 Spacer()
                 SubText("\(Int(now.rounded())) / \(Int(target)) g")
             }
-            ProgressBar(value: now / target, tint: color, height: 7)
+            ProgressBar(value: target > 0 ? now / target : 0, tint: color, height: 7)
         }
     }
 
@@ -85,7 +112,7 @@ struct FoodView: View {
             HStack {
                 Text(meal.name(lang)).font(OJFont.title)
                 Spacer()
-                if !items.isEmpty {
+                if !items.isEmpty && !store.hideNumbers {
                     SubText("\(Fmt.grouped(Int(kcal.rounded()))) kcal")
                 }
                 CircleIconButton(systemName: "plus", label: CLT.addTo(meal.name(lang).lowercased())(lang), size: 34, style: .soft) {
@@ -98,9 +125,24 @@ struct FoodView: View {
                 DividedRows(items) { item in
                     HStack {
                         TitleSub(item.name(lang), sub: item.quantity(lang))
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text("\(Fmt.grouped(Int(item.kcal.rounded()))) kcal").font(.archivo(13, .semibold))
-                            SubText(CLT.gramsProtein(Int(item.protein.rounded()))(lang))
+                        if !store.hideNumbers {
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("\(Fmt.grouped(Int(item.kcal.rounded()))) kcal").font(.archivo(13, .semibold))
+                                SubText(CLT.gramsProtein(Int(item.protein.rounded()))(lang))
+                            }
+                        }
+                        if store.live && item.entryID != nil && store.foodDay == .today {
+                            Menu {
+                                Button(role: .destructive) { store.deleteFood(item) } label: {
+                                    Label(CLT.removeFood(lang), systemImage: "trash")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(Palette.muted)
+                                    .frame(width: 32, height: 32)
+                            }
+                            .accessibilityLabel(CLT.removeFood(lang))
                         }
                     }
                     .padding(.vertical, 8)

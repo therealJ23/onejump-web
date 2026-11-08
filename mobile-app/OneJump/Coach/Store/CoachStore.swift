@@ -54,6 +54,9 @@ final class CoachStore {
     /// Everything the screens show.
     var data: CoachSnapshot
     var loadState: LoadState
+    /// A profile photo picked on this phone, shown while it uploads.
+    var pendingProfilePhoto: UIImage?
+    var uploadingPhoto = false
     @ObservationIgnored var lastLoaded: Date?
     @ObservationIgnored var pendingLink: String?
 

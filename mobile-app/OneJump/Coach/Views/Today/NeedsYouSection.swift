@@ -75,7 +75,7 @@ struct NeedsYouSection: View {
             HStack(spacing: -8) {
                 ForEach(items) { item in
                     let c = store.client(item.clientID)
-                    Avatar(initials: c.initials, color: c.avatarColor, size: 26)
+                    Avatar(initials: c.initials, color: c.avatarColor, size: 26, photoURL: c.photoURL)
                         .overlay(Circle().stroke(Palette.bg, lineWidth: 2))
                 }
             }
@@ -124,7 +124,7 @@ private struct QueueCard: View {
                 store.push(.client(item.clientID))
             } label: {
                 HStack(spacing: 12) {
-                    Avatar(initials: c.initials, color: c.avatarColor)
+                    Avatar(initials: c.initials, color: c.avatarColor, photoURL: c.photoURL)
                     TitleSub(c.name, sub: item.reason(lang))
                     Pill(item.tag(lang), tone: item.tone)
                 }

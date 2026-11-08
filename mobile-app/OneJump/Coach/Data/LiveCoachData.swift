@@ -26,6 +26,7 @@ struct LiveCoachDTO: Decodable {
     struct Me: Decodable {
         let name: String; let first: String; let initials: String; let email: String; let business: String
         let bookingUrl: String; let planLabel: LocDTO; let trialDaysLeft: Int?; let pro: Bool; let totpEnabled: Bool
+        let photoUrl: String?
     }
     struct Queue: Decodable { let id: String; let clientId: String; let reason: LocDTO; let tag: LocDTO; let tone: String; let draft: String }
     struct SessionDTO: Decodable { let clientId: String; let name: String; let time: LocDTO; let type: LocDTO; let icon: String }
@@ -49,6 +50,7 @@ struct LiveCoachDTO: Decodable {
         let weight: String; let weightChange: LocDTO; let weightTotal: LocDTO; let streak: String; let spark: [Double]
         let insight: LocDTO; let suggest: LocDTO; let suggestTarget: String?; let next: LocDTO; let billing: LocDTO; let nutritionNote: LocDTO
         let noLogs: Bool; let lowProtein: Bool; let filters: [String]; let unread: Int; let checkInId: String?
+        let photoUrl: String?
     }
     struct Thread: Decodable {
         struct Last: Decodable { let fromMe: Bool; let text: String; let time: LocDTO; let isVoice: Bool }
@@ -124,7 +126,7 @@ extension CoachSnapshot {
     init(live d: LiveCoachDTO, keepingSuggestions suggestions: [Loc]) {
         let k = d.today.kpis
         me = CoachMe(name: d.me.name, first: d.me.first, initials: d.me.initials, email: d.me.email, business: d.me.business,
-                     bookingURL: d.me.bookingUrl, planLabel: d.me.planLabel.loc, trialDaysLeft: d.me.trialDaysLeft, pro: d.me.pro, totpEnabled: d.me.totpEnabled)
+                     bookingURL: d.me.bookingUrl, planLabel: d.me.planLabel.loc, trialDaysLeft: d.me.trialDaysLeft, pro: d.me.pro, totpEnabled: d.me.totpEnabled, photoURL: d.me.photoUrl)
         minutesSavedLabel = d.today.savedLabel
         savedSub = Loc("this week · approved drafts and automations", "esta semana · borradores aprobados y automatizaciones")
         queue = d.today.queue.map {
@@ -155,7 +157,7 @@ extension CoachSnapshot {
                 weightChange: c.weightChange.loc, weightTotal: c.weightTotal.loc, streak: c.streak, spark: c.spark,
                 insight: c.insight.loc, suggest: c.suggest.loc, next: c.next.loc, billing: c.billing.loc, nutritionNote: c.nutritionNote.loc,
                 noLogs: c.noLogs, lowProtein: c.lowProtein, filters: Set(c.filters.compactMap(ClientFilter.init(rawValue:))),
-                programName: c.programName.isEmpty ? nil : Loc(same: c.programName), unread: c.unread, checkInID: c.checkInId, suggestTarget: c.suggestTarget
+                programName: c.programName.isEmpty ? nil : Loc(same: c.programName), unread: c.unread, checkInID: c.checkInId, suggestTarget: c.suggestTarget, photoURL: c.photoUrl
             )
         }
         extras = [:]

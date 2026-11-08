@@ -65,6 +65,12 @@ final class APIClient {
         try decode(T.self, try await send("GET", path, json: nil, timeout: timeout))
     }
 
+    /// GET that returns the raw bytes (a data export).
+    func getData(_ path: String, timeout: TimeInterval = 60) async throws -> Data {
+        if Fixtures.isOn { return Fixtures.answer("GET", path) }
+        return try await raw("GET", path, json: nil, timeout: timeout, retryCSRF: true).0
+    }
+
     /// POST with a JSON body (a dictionary of strings, numbers, booleans, arrays and dictionaries).
     func post<T: Decodable>(_ path: String, _ json: [String: Any] = [:], as type: T.Type = T.self, timeout: TimeInterval = 30) async throws -> T {
         try decode(T.self, try await send("POST", path, json: json, timeout: timeout))
@@ -294,7 +300,7 @@ final class APIClient {
     }
 
     struct Me: Decodable {
-        struct User: Decodable { let id: String; let name: String; let email: String }
+        struct User: Decodable { let id: String; let name: String; let email: String; var photoUrl: String? }
         struct Business: Decodable { let name: String; let slug: String?; let effectivePlan: String?; let trialDaysLeft: Int? }
         let user: User?
         let role: String?
@@ -303,6 +309,8 @@ final class APIClient {
 
         /// Owners and coaches use the coach app.
         var isCoach: Bool { role == "OWNER" || role == "COACH" }
+        /// Clients use their coaching app.
+        var isClient: Bool { role == "CLIENT" }
     }
 
     /// Coach login. Returns true when the two-step code is needed next.
@@ -315,6 +323,17 @@ final class APIClient {
     /// The 6-digit code from the coach's authenticator app.
     func logIn(code: String) async throws {
         let r: LoginResponse = try await post("/api/auth/login/2fa", ["code": code])
+        use(csrf: r.csrfToken)
+    }
+
+    /// Clients: emails a login link and a 6-digit code (same answer whether or not the email exists).
+    func requestClientCode(email: String) async throws {
+        let _: OK = try await post("/api/auth/magic-link", ["email": email])
+    }
+
+    /// Clients: the 6-digit code from the login email.
+    func logIn(email: String, clientCode: String) async throws {
+        let r: LoginResponse = try await post("/api/auth/magic-code", ["email": email, "code": clientCode])
         use(csrf: r.csrfToken)
     }
 

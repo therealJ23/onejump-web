@@ -19,10 +19,16 @@ struct FinishWorkoutSheet: View {
                 Text(CLT.howSore(lang)).font(OJFont.title)
                 ScaleRow(options: CLT.soreOptions.map { $0(lang) }, selected: store.soreness) { store.soreness = $0 }
                 if left > 0 {
-                    SubText(CLT.setsLeft(left)(lang))
+                    SubText(store.live ? CLT.setsLeftLive(left, store.coachPerson.first)(lang) : CLT.setsLeft(left)(lang))
                 }
-                Button(CLT.saveWorkout(lang)) { store.saveWorkout() }
-                    .buttonStyle(.oj(.primary, size: .large, fullWidth: true))
+                Button { store.saveWorkout() } label: {
+                    HStack(spacing: 8) {
+                        if store.savingWorkout { ProgressView().tint(Palette.onPrimary) }
+                        Text(CLT.saveWorkout(lang))
+                    }
+                }
+                .buttonStyle(.oj(.primary, size: .large, fullWidth: true))
+                .disabled(store.savingWorkout)
             }
             .padding(20)
         }
@@ -82,7 +88,7 @@ struct WorkoutDoneView: View {
                 .padding(.top, 24)
             VStack(spacing: 6) {
                 Text(CLT.workoutDone(lang)).font(OJFont.h1).foregroundStyle(Palette.ink)
-                SubText(CLT.niceWork(lang)).multilineTextAlignment(.center)
+                SubText(store.live ? CLT.niceWorkLive(store.mePerson.first, store.coachPerson.first)(lang) : CLT.niceWork(lang)).multilineTextAlignment(.center)
             }
             HStack(spacing: 10) {
                 StatTile(value: "\(minutes)", label: CLT.minutes(lang))

@@ -25,7 +25,7 @@ struct CheckInReviewView: View {
 
         return ScreenScroll {
             HStack(spacing: 12) {
-                Avatar(initials: client.initials, color: client.avatarColor)
+                Avatar(initials: client.initials, color: client.avatarColor, photoURL: client.photoURL)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(client.name).font(.archivo(18, .bold)).foregroundStyle(Palette.ink)
                     SubText("\(report.week(lang)) · \(report.when(lang))")

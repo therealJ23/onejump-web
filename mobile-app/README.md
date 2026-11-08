@@ -7,8 +7,12 @@ One Xcode project with **both apps**: the **Coach app** and the **Client app**.
 > payments and charts, and Assist (Claude, on the server) answers with your data and speaks
 > with your Elise voice. **Try the demo** on the login screen opens the sample business (and
 > the client app), with nothing sent anywhere.
-> The client app is still the demo: clients log in with an email link, and email isn't set
-> up yet (Resend).
+> **The client app runs on real client accounts too (build 6).** On the login screen pick
+> **I’m a client**, type the email your coach invited, and type the 6-digit code from the
+> email. Clients see their own program and workouts, food log (search, barcode, photo and
+> voice), habits, progress and photos, check-ins and messages with their coach, can change
+> their profile photo and can delete their account. Coaches can change their profile photo
+> in Settings, and see their clients' photos.
 
 ## Open and run it (5 minutes)
 
@@ -153,8 +157,7 @@ pick it at the top of Xcode, choose your personal team in Signing, press ▶ Run
 
 ## Next steps
 
-1. **Client app on the server** (needs email for login links: Resend), then push
-   notifications for reminders and new messages.
+1. **Push notifications** for reminders and new messages (the client app is on the server now).
 2. **Apple Health** (steps, sleep) for clients.
 3. **App Store release**: screenshots, description, privacy answers (the app collects name,
    email and what coaches type or say to Assist, for app functionality only; no tracking).

@@ -16,6 +16,10 @@ struct WorkoutExercise {
     var isTimed = false
     let last: Loc
     let swaps: [Loc]
+    /// The server's exercise id (live accounts), sent back when the workout is saved.
+    var serverID: String? = nil
+    /// Each set's own target (live accounts; the coach can set different weights per set).
+    var setTargets: [SetEntry]? = nil
 }
 
 struct SetEntry: Equatable {
@@ -48,6 +52,12 @@ struct FoodItem: Identifiable {
     let carbs: Double
     let fat: Double
     var source: Loc?
+    /// Live accounts: grams and the food database reference, so the server can check the numbers.
+    var grams: Double? = nil
+    var foodRef: String? = nil
+    var confidence: String? = nil
+    /// Live accounts: the saved entry (or favorite) this row stands for.
+    var entryID: String? = nil
 
     /// The same food at a different portion ("2 × 1 cup").
     func scaled(_ multiplier: Double) -> FoodItem {
@@ -55,7 +65,8 @@ struct FoodItem: Identifiable {
             ? quantity
             : Loc("\(Fmt.trimmed(multiplier)) × \(quantity.en)", "\(Fmt.trimmed(multiplier)) × \(quantity.es)")
         return FoodItem(name: name, quantity: quantityText, kcal: kcal * multiplier, protein: protein * multiplier,
-                        carbs: carbs * multiplier, fat: fat * multiplier, source: source)
+                        carbs: carbs * multiplier, fat: fat * multiplier, source: source,
+                        grams: grams.map { $0 * multiplier }, foodRef: foodRef, confidence: confidence, entryID: entryID)
     }
 }
 
@@ -130,6 +141,50 @@ struct ChatMessage: Identifiable {
     /// A voice message recorded on this phone (playable).
     var audioURL: URL?
     var seconds: Int?
+    /// Live accounts: the message's id on the server (to play its audio).
+    var serverID: String? = nil
+}
+
+// MARK: - Live account
+
+/// Someone shown in the client app: the client themself or their coach.
+struct ClientPerson: Equatable {
+    var name: String
+    var first: String
+    var initials: String
+    var photoURL: String?
+
+    static let demoCoach = ClientPerson(name: "Alex Rivera", first: "Alex", initials: "AR", photoURL: nil)
+    static let demoMe = ClientPerson(name: "Maya Chen", first: "Maya", initials: "MC", photoURL: nil)
+
+    init(name: String, first: String? = nil, initials: String? = nil, photoURL: String? = nil) {
+        self.name = name
+        self.first = first ?? (name.split(separator: " ").first.map(String.init) ?? name)
+        self.initials = initials ?? ClientPerson.initials(of: name)
+        self.photoURL = photoURL
+    }
+
+    static func initials(of name: String) -> String {
+        let parts = name.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }
+        return parts.isEmpty ? "?" : parts.joined().uppercased()
+    }
+}
+
+/// Daily calorie and macro targets (nil when the coach coaches habits or hides numbers).
+struct MacroTargets: Equatable {
+    var kcal: Double
+    var protein: Double
+    var carbs: Double
+    var fat: Double
+
+    static let demo = MacroTargets(kcal: ClientData.kcalTarget, protein: ClientData.proteinTarget, carbs: ClientData.carbsTarget, fat: ClientData.fatTarget)
+}
+
+/// A private progress photo on the server.
+struct ProgressPhotoItem: Identifiable, Equatable {
+    let id: String
+    let url: String
+    let date: Loc
 }
 
 // MARK: - Check-in, booking, settings

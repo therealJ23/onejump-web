@@ -288,7 +288,7 @@ struct RetentionRadarCard: View {
                     store.push(.client(entry.clientID))
                 } label: {
                     HStack(spacing: 12) {
-                        Avatar(initials: c.initials, color: c.avatarColor, size: 36)
+                        Avatar(initials: c.initials, color: c.avatarColor, size: 36, photoURL: c.photoURL)
                         TitleSub(c.name, sub: entry.why(lang))
                         Text("\(entry.score)")
                             .font(.archivo(20, .heavy))

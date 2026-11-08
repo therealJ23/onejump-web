@@ -53,7 +53,7 @@ struct ClientDetailView: View {
 
     private func profile(_ c: CoachClient) -> some View {
         VStack(spacing: 8) {
-            Avatar(initials: c.initials, color: c.avatarColor, size: 84)
+            Avatar(initials: c.initials, color: c.avatarColor, size: 84, photoURL: c.photoURL)
                 .overlay(Circle().stroke(Palette.surface, lineWidth: 5))
                 .shadow(color: Palette.shadow, radius: 8)
             Text(c.name).font(OJFont.h3).foregroundStyle(Palette.ink)

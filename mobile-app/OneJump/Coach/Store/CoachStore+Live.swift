@@ -359,3 +359,49 @@ extension NutritionDraftResponse {
         return NutritionDraftResponse(draft: draft, notes: [], scopeReminder: es ? "En algunos estados, los planes de comidas personalizados requieren licencia de nutricionista." : "In some states, individualized meal plans require a dietitian license. Check your state’s rules, or refer to a registered dietitian.", estimate: nil)
     }
 }
+
+// MARK: - Profile photo
+
+extension CoachStore {
+    /// Uploads a new profile photo (clients see it in their app).
+    func changeProfilePhoto(_ image: UIImage) {
+        guard live else {
+            toast.show(CT.editProfileToast(lang))
+            return
+        }
+        pendingProfilePhoto = image
+        uploadingPhoto = true
+        Task { @MainActor [weak self] in
+            let jpeg = await Task.detached(priority: .userInitiated) { image.jpegForUpload(maxSide: 640, quality: 0.85) }.value
+            guard let self else { return }
+            defer {
+                self.uploadingPhoto = false
+                self.pendingProfilePhoto = nil
+            }
+            guard let jpeg else { return }
+            struct Saved: Decodable { let photoUrl: String? }
+            do {
+                let r: Saved = try await APIClient.shared.upload("/api/account/photo", field: "photo", file: jpeg, filename: "photo.jpg", mimeType: "image/jpeg")
+                if let url = r.photoUrl { PhotoCache.shared.store(image, for: url) }
+                self.data.me.photoURL = r.photoUrl
+                self.toast.show(CL.photoSaved(self.lang))
+            } catch {
+                self.showError(error)
+            }
+        }
+    }
+
+    func removeProfilePhoto() {
+        guard live else { return }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let _: APIClient.Empty = try await APIClient.shared.delete("/api/account/photo")
+                self.data.me.photoURL = nil
+                self.toast.show(CL.photoRemoved(self.lang))
+            } catch {
+                self.showError(error)
+            }
+        }
+    }
+}

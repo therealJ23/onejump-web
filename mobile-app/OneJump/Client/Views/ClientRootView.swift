@@ -4,12 +4,41 @@ import SwiftUI
 struct ClientRootView: View {
     @State private var store: ClientStore
     @Environment(\.lang) private var lang
+    @Environment(\.scenePhase) private var scenePhase
 
-    init(settings: AppSettings) {
-        _store = State(initialValue: ClientStore(settings: settings))
+    init(settings: AppSettings, live: Bool = false) {
+        _store = State(initialValue: ClientStore(settings: settings, live: live))
     }
 
     var body: some View {
+        Group {
+            if store.live && !store.loaded {
+                LiveLoadingView()
+            } else {
+                tabs
+            }
+        }
+        .environment(store)
+        .task {
+            guard store.live else { return }
+            await store.loadLive()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Back in the app: pick up anything the coach changed.
+            if phase == .active, store.live, store.loaded { Task { await store.loadLive() } }
+        }
+        .task(id: store.live && store.tab == .coach) {
+            // While the chat is open, check for new messages every 20 seconds.
+            guard store.live && store.tab == .coach else { return }
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 20_000_000_000)
+                if Task.isCancelled { break }
+                await store.refreshThread()
+            }
+        }
+    }
+
+    private var tabs: some View {
         TabView(selection: tabSelection) {
             NavigationStack(path: $store.todayPath) {
                 ClientTodayView().clientDestinations()
@@ -97,5 +126,43 @@ extension View {
             case .me: MeView()
             }
         }
+    }
+}
+
+/// A signed-in client's app while it loads (or when it couldn't load).
+private struct LiveLoadingView: View {
+    @Environment(ClientStore.self) private var store
+    @Environment(\.lang) private var lang
+    @State private var busy = false
+
+    var body: some View {
+        VStack(spacing: 18) {
+            OneJumpWordmark(height: 24)
+            if let error = store.loadError {
+                Text(error)
+                    .font(OJFont.body)
+                    .foregroundStyle(Palette.ink)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 300)
+                Button(CLT.tryAgain(lang)) {
+                    guard !busy else { return }
+                    busy = true
+                    Task { @MainActor in
+                        await store.loadLive()
+                        busy = false
+                    }
+                }
+                .buttonStyle(.oj(.primary))
+                .disabled(busy)
+                Button(CLT.logOut(lang)) { Task { await store.logOut() } }
+                    .buttonStyle(.oj(.ghost))
+            } else {
+                ProgressView().controlSize(.large).tint(Palette.progressGreen)
+                SubText(CLT.loadingAccount(lang))
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Palette.bg.ignoresSafeArea())
     }
 }

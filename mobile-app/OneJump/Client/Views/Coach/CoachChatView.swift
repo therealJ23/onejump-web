@@ -12,12 +12,16 @@ struct CoachChatView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 12) {
-                        Avatar(initials: "AR", color: Palette.volt)
-                        TitleSub("Alex Rivera", sub: CLT.coachSub(lang))
+                        Avatar(initials: store.coachPerson.initials, color: Palette.volt, photoURL: store.coachPerson.photoURL)
+                        TitleSub(store.coachPerson.name.isEmpty ? CLT.yourCoach(lang) : store.coachPerson.name, sub: store.live ? CLT.coachSubLive(lang) : CLT.coachSub(lang))
                     }
                     .padding(.top, 8)
 
-                    if lang != .english {
+                    if store.live && store.allChat.isEmpty {
+                        EmptyStateCard(systemImage: "message", title: CLT.yourCoach(lang), message: CLT.noMessages(lang))
+                    }
+
+                    if lang != .english && !store.live {
                         HStack(alignment: .top, spacing: 10) {
                             Image(systemName: "globe").foregroundStyle(Palette.info)
                             Text(CLT.translationNote(lang)).font(OJFont.sub).fixedSize(horizontal: false, vertical: true)
@@ -36,7 +40,7 @@ struct CoachChatView: View {
                             Text("“\(VoiceNoteRecorder.shared.transcript)”")
                         }
                     }
-                    SubText(CLT.realPerson(lang))
+                    SubText(store.live ? CLT.realPersonLive(store.coachPerson.first)(lang) : CLT.realPerson(lang))
                         .frame(maxWidth: .infinity)
                         .multilineTextAlignment(.center)
                         .padding(.top, 6)
@@ -51,6 +55,10 @@ struct CoachChatView: View {
             .onChange(of: store.chatExtra.count) { _, _ in
                 withAnimation(.snappy) { proxy.scrollTo("bottom", anchor: .bottom) }
             }
+            .onChange(of: store.chatBase.count) { _, _ in
+                withAnimation(.snappy) { proxy.scrollTo("bottom", anchor: .bottom) }
+            }
+            .refreshable { await store.refreshThread() }
             .onAppear {
                 store.readCoach = true
                 proxy.scrollTo("bottom", anchor: .bottom)
@@ -59,7 +67,7 @@ struct CoachChatView: View {
         .background(Palette.bg.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
-                quickAsks
+                if !store.live { quickAsks }
                 composer
             }
         }
@@ -71,7 +79,11 @@ struct CoachChatView: View {
         let showingOriginal = store.showOriginal.contains(message.id)
         return ChatBubble(fromMe: message.fromMe) {
             if message.isVoice {
-                if let url = message.audioURL {
+                if store.live, message.audioURL != nil || message.serverID != nil {
+                    VoiceMessageRow(id: message.serverID ?? message.id.uuidString, seconds: message.seconds ?? 0, fromMe: message.fromMe) {
+                        await store.voiceMessageURL(message)
+                    }
+                } else if let url = message.audioURL {
                     VoiceMessageRow(id: message.id.uuidString, seconds: message.seconds ?? 0, fromMe: message.fromMe) { url }
                 } else {
                     VoiceNoteRow(label: message.duration ?? "0:10")
@@ -125,7 +137,7 @@ struct CoachChatView: View {
             if recording {
                 RecordingStrip()
             } else {
-                TextField(CLT.messageAlex(lang), text: $store.chatInput)
+                TextField(store.live ? CLT.messageTo(store.coachPerson.first.isEmpty ? CLT.yourCoach(lang).lowercased() : store.coachPerson.first)(lang) : CLT.messageAlex(lang), text: $store.chatInput)
                     .font(.archivo(15))
                     .padding(.horizontal, 10)
                     .frame(minHeight: 44)
@@ -145,10 +157,14 @@ struct CoachChatView: View {
                 ComposerButton(systemName: "arrow.up", label: CLT.send(lang), style: .send) {
                     store.sendChat()
                 }
-            } else {
+            } else if !store.live || store.voiceNotes {
                 ComposerButton(systemName: "mic.fill", label: SharedText.recordVoiceMessage(lang), style: .send) {
                     focused = false
                     store.startVoiceMessage()
+                }
+            } else {
+                ComposerButton(systemName: "arrow.up", label: CLT.send(lang), style: .send) {
+                    store.sendChat()
                 }
             }
         }
