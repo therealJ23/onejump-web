@@ -8,7 +8,9 @@ export function avatar(p, size = '') {
   const ini = n.split(' ').map(s => s[0]).slice(0, 2).join('').toUpperCase();
   const tone = AV_TONES[(p.tone ?? n.length) % AV_TONES.length];
   const ring = p.risk && p.risk.level === 'HIGH' ? '<span class="ring"></span>' : '';
-  return `<span class="av ${size}" style="background:${tone}" aria-hidden="true">${esc(ini)}${ring}</span>`;
+  // A profile photo when there is one (signed link from the server); initials otherwise.
+  const face = p.photoUrl ? `<img src="${esc(p.photoUrl)}" alt="" loading="lazy" decoding="async">` : esc(ini);
+  return `<span class="av ${size}${p.photoUrl ? ' has-photo' : ''}" style="background:${tone}" aria-hidden="true">${face}${ring}</span>`;
 }
 export function riskPill(r, short = false) {
   if (!r) return '<span class="pill">New</span>';

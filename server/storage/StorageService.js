@@ -55,14 +55,14 @@ export const StorageService = {
     return existsSync(p) ? readFileSync(p) : null;
   },
 
-  /** A URL that works for 5 minutes. Only call after the caller's access to the file was checked. */
-  async signedUrl(key) {
+  /** A URL that works for 5 minutes (or `ttl` seconds). Only call after the caller's access to the file was checked. */
+  async signedUrl(key, ttl = TTL_SECONDS) {
     if (useR2()) {
       const { GetObjectCommand } = await import('@aws-sdk/client-s3');
       const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
-      return getSignedUrl(await r2(), new GetObjectCommand({ Bucket: config.storage.r2Bucket, Key: key }), { expiresIn: TTL_SECONDS });
+      return getSignedUrl(await r2(), new GetObjectCommand({ Bucket: config.storage.r2Bucket, Key: key }), { expiresIn: ttl });
     }
-    const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
+    const exp = Math.floor(Date.now() / 1000) + ttl;
     const sig = hmac(`${key}|${exp}`, 'file');
     return `/files/${encodeURIComponent(key)}?exp=${exp}&sig=${sig}`;
   },

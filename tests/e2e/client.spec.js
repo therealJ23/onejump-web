@@ -31,3 +31,26 @@ test('client sends a weekly check-in and a message @phone', async ({ page }) => 
   await page.getByRole('button', { name: 'Send' }).click();
   await expect(page.locator('.bubble.me').last()).toContainText('See you Thursday!');
 });
+
+test('client changes their profile photo and the coach sees it @phone', async ({ page, browser }) => {
+  const done = watchErrors(page);
+  await clientLogin(page);
+  await page.goto('/client/me');
+  await page.locator('input[data-change="photo"]').setInputFiles('tests/fixtures/face.jpg');
+  await expect(page.locator('.av.has-photo img')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Remove', exact: true })).toBeVisible();
+  // The coach's client list shows the photo.
+  const coach = await browser.newPage();
+  await coach.goto('/login');
+  await coach.locator('body[data-ready="1"]').waitFor();
+  await coach.getByLabel('Email', { exact: true }).fill('dani@reyesstrength.com');
+  await coach.getByLabel('Password').fill('onejump-demo-2026');
+  await coach.getByRole('button', { name: 'Log in' }).click();
+  await coach.waitForURL('**/app');
+  await coach.goto('/app/clients');
+  await expect(coach.locator('.av.has-photo img').first()).toBeVisible();
+  await coach.close();
+  await page.getByRole('button', { name: 'Remove', exact: true }).click();
+  await expect(page.locator('.av.has-photo')).toHaveCount(0);
+  done();
+});

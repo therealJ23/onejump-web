@@ -9,6 +9,7 @@ import { state, hasPlan } from '../state.js';
 import { migration, importCsv } from '../modals.js';
 import { renderShell } from '../shell.js';
 import { LANGS, getLang, setLang } from '../../shared/i18n.js';
+import { resizeToJpeg } from '../../shared/media.js';
 
 const TABS = [['profile', 'Profile'], ['business', 'Business & branding'], ['assist', 'Assist'], ['notifications', 'Notifications'], ['switch', 'Switch from another app'], ['team', 'Team'], ['integrations', 'Integrations'], ['security', 'Security & privacy']];
 const COLORS = ['#D6FF3D', '#7FD1C1', '#F4B942', '#F28C6B', '#A7B8FF'];
@@ -20,7 +21,10 @@ const owner = () => state.me.role === 'OWNER';
 const T = {
   profile(d) {
     const p = d.profile;
-    return `<form class="card pad stack s16" data-form="profile" novalidate><div class="row">${avatar({ name: p.name }, 'lg')}<div class="stack s4"><div class="strong">${esc(p.name)}</div><div class="small muted">${esc(p.email)}</div></div></div>
+    const photo = state.me.user?.photoUrl || null;
+    return `<form class="card pad stack s16" data-form="profile" novalidate><div class="photo-edit">${avatar({ name: p.name, tone: 0, photoUrl: photo }, 'lg')}<div class="stack s4 grow"><div class="strong">${esc(p.name)}</div><div class="small muted">${esc(p.email)}</div>
+        <div class="row wrap" style="margin-top:6px"><label class="btn sm" style="cursor:pointer">${icon('upload')} ${photo ? 'Change photo' : 'Add a photo'}<input type="file" accept="image/*" data-change="profilePhoto" class="sr"></label>${photo ? '<button type="button" class="btn ghost sm" data-act="profilePhotoRemove">Remove</button>' : ''}</div>
+        <span class="tiny muted">Your clients see it in their app, next to your messages.</span></div></div>
       <div class="grid g2"><div class="field"><label for="sp-n">Name</label><input class="input" id="sp-n" name="name" value="${esc(p.name)}" maxlength="120" required></div><div class="field"><label for="sp-t">Title</label><input class="input" id="sp-t" name="title" value="${esc(p.title)}" maxlength="80" placeholder="e.g. Strength coach, NASM-CPT"></div></div>
       <div class="field"><label for="sp-b">Bio (shown on your booking page)</label><textarea class="textarea" id="sp-b" name="bio" rows="4" maxlength="1000">${esc(p.bio)}</textarea></div>
       <div><button class="btn primary" type="submit">Save</button></div></form>
@@ -122,6 +126,17 @@ export default {
     async notifPref(el, _e, ctx) {
       const on = !el.classList.contains('on');
       try { await api.put('/api/settings/preferences', { notifications: { [el.dataset.k]: on } }); el.classList.toggle('on', on); el.setAttribute('aria-pressed', on); ctx.data.notifications[el.dataset.k] = on; toast('Saved'); } catch (e) { toastError(e); }
+    },
+    async profilePhoto(el, _e, ctx) {
+      const f = el.files?.[0]; if (!f) return;
+      try {
+        const fd = new FormData(); fd.append('photo', await resizeToJpeg(f, 640, 0.85), 'photo.jpg');
+        const r = await api('POST', '/api/account/photo', fd);
+        state.me.user.photoUrl = r.photoUrl; renderShell(); ctx.rerender(); toast('Photo updated');
+      } catch (e) { toastError(e); }
+    },
+    async profilePhotoRemove(_el, _e, ctx) {
+      try { await api.del('/api/account/photo'); state.me.user.photoUrl = null; renderShell(); ctx.rerender(); toast('Photo removed'); } catch (e) { toastError(e); }
     },
     async logoUpload(el, _e, ctx) {
       const f = el.files?.[0]; if (!f) return;

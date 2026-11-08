@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { config } from './config.js';
 import { MySqlSessionStore } from './auth/sessionStore.js';
-import { loadAuth, csrfProtect, requireCoach, requireOwner, requireClient, requirePlatformAdmin } from './auth/middleware.js';
+import { loadAuth, csrfProtect, requireCoach, requireOwner, requireClient, requirePlatformAdmin, requireUser } from './auth/middleware.js';
 import { HttpError } from './lib/errors.js';
 import { TenantAccessError } from './db/tenant.js';
 import { StorageService } from './storage/StorageService.js';
@@ -41,6 +41,7 @@ import { router as foodRoutes } from './routes/foods.js';
 import { router as voiceRoutes } from './routes/voice.js';
 import { router as briefingRoutes } from './routes/briefing.js';
 import { router as mobileRoutes } from './routes/mobile.js';
+import { router as accountRoutes } from './routes/account.js';
 import { unauthorized } from './lib/errors.js';
 
 const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
@@ -92,6 +93,7 @@ export function createApp({ sessionStore } = {}) {
 
   app.get('/api/health', (_req, res) => res.json({ ok: true, ai: config.ai.provider, payments: config.payments.provider, email: config.email.provider, storage: StorageService.provider(), voice: config.voice.provider, tts: config.voice.tts === 'deepgram' && config.voice.deepgramKey ? 'deepgram' : 'browser' }));
   app.use('/api/auth', authRoutes);
+  app.use('/api/account', requireUser, accountRoutes);
   app.use('/api/join', joinRoutes);
   app.use('/api/onboarding', requireOwner, onboardingRoutes);
   app.use('/api/clients', requireCoach, clientNutritionRoutes, clientRoutes);

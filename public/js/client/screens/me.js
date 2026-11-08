@@ -4,7 +4,8 @@ import { api } from '../../shared/api.js';
 import { esc, money, fmtDate, interval } from '../../shared/format.js';
 import { icon, wordmark } from '../../shared/icons.js';
 import { avatar, payPill } from '../../shared/components.js';
-import { toast, toastError } from '../../shared/ui.js';
+import { toast, toastError, confirmDialog } from '../../shared/ui.js';
+import { resizeToJpeg } from '../../shared/media.js';
 
 const per = p => (p.interval === 'once' ? 'one-time' : `per ${p.interval}`);
 
@@ -17,7 +18,8 @@ export default {
     const failed = d.payments.find(p => p.status === 'failed');
     const unpaid = d.plan && d.plan.priceCents && !d.subscription && d.client.payStatus !== 'paid';
     return `<div class="row between" style="padding-top:4px"><span class="h2">Me</span></div>
-    <div class="row" style="gap:14px">${avatar({ name: d.client.name, tone: 1 }, 'lg')}<div><div class="h2">${esc(d.client.name)}</div><div class="small muted">Coached by ${esc(d.coach.name)}</div></div></div>
+    <div class="row" style="gap:14px">${avatar({ name: d.client.name, tone: 1, photoUrl: d.client.photoUrl }, 'lg')}<div class="stack s4"><div class="h2">${esc(d.client.name)}</div><div class="small muted">Coached by ${esc(d.coach.name)}</div>
+      <div class="row wrap" style="gap:8px"><label class="btn sm" style="cursor:pointer">${icon('upload')} ${d.client.photoUrl ? 'Change photo' : 'Add a photo'}<input type="file" accept="image/*" data-change="photo" class="sr"></label>${d.client.photoUrl ? '<button type="button" class="btn ghost sm" data-act="removePhoto">Remove</button>' : ''}</div></div></div>
     ${d.client.goal ? `<div class="card pad stack s4"><span class="eyebrow">Goal</span><span>${esc(d.client.goal)}</span></div>` : ''}
     <section class="card pad stack s16" aria-labelledby="bill-h"><div class="row between"><div class="h3" id="bill-h">Billing</div>${payPill(d.client.payStatus)}</div>
       ${failed ? `<div class="notice small">${icon('alert')}<span><b>Your last payment didn’t go through.</b> ${esc(failed.failureReason || '')} Update your card and your coach will retry it.</span></div>` : ''}
@@ -29,13 +31,33 @@ export default {
     <section class="card list">
       <a class="li click" href="/client/progress">${icon('chart')}<div class="grow"><div class="strong small">Progress and photos</div><div class="tiny muted">Private to you and your coach</div></div>${icon('chevR')}</a>
       <a class="li click" href="/api/me/export" download>${icon('download')}<div class="grow"><div class="strong small">Download my data</div><div class="tiny muted">Workouts, check-ins, messages and measurements (JSON)</div></div>${icon('chevR')}</a>
-      <a class="li click" href="mailto:hello@onejumpfit.com?subject=Delete%20my%20OneJump%20account">${icon('shield')}<div class="grow"><div class="strong small">Delete my account</div><div class="tiny muted">Ask your coach, or email us and we’ll remove everything</div></div>${icon('chevR')}</a>
+      <button class="li click" style="width:100%;border:0;background:none;text-align:left" data-act="deleteAccount">${icon('shield')}<div class="grow"><div class="strong small">Delete my account</div><div class="tiny muted">Removes your logs, messages and photos with ${esc(d.coach.name)}</div></div>${icon('chevR')}</button>
       <button class="li click" style="width:100%;border:0;background:none;text-align:left" data-act="logout">${icon('logout')}<div class="grow"><div class="strong small">Log out</div></div></button>
     </section>
     <div class="row tiny faint" style="justify-content:center;gap:6px">Powered by ${wordmark('height:12px;width:auto;color:var(--faint)')}</div>
     <div class="row tiny faint" style="justify-content:center;gap:12px"><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div>`;
   },
   actions: {
+    async photo(el, _e, ctx) {
+      const f = el.files?.[0]; if (!f) return;
+      try {
+        const fd = new FormData(); fd.append('photo', await resizeToJpeg(f, 640, 0.85), 'photo.jpg');
+        const r = await api('POST', '/api/account/photo', fd);
+        ctx.data.client.photoUrl = r.photoUrl; ctx.rerender(); toast('Photo updated. Your coach sees it too.');
+      } catch (e) { toastError(e); }
+    },
+    async removePhoto(_el, _e, ctx) {
+      try { await api.del('/api/account/photo'); ctx.data.client.photoUrl = null; ctx.rerender(); toast('Photo removed'); } catch (e) { toastError(e); }
+    },
+    async deleteAccount() {
+      const typed = await confirmDialog({
+        title: 'Delete your account?', danger: true, confirm: 'Delete my account',
+        body: '<p class="small">This removes your workouts, check-ins, food log, messages and photos, and lets your coach know. It can’t be undone. If you pay for a plan, cancel it first.</p>',
+        input: { label: 'Type DELETE to confirm', placeholder: 'DELETE' },
+      });
+      if (!typed) return;
+      try { await api.post('/api/me/delete-account', { confirm: typed }); location.href = '/'; } catch (e) { toastError(e); }
+    },
     async pay(el) {
       el.disabled = true;
       try { const r = await api.post('/api/me/billing/checkout', { clientPlanId: el.dataset.plan }); location.href = r.url; } catch (e) { el.disabled = false; toastError(e); }

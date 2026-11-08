@@ -4,10 +4,11 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { randomUUID } from 'node:crypto';
-import { audit, memberships } from '../db/system.js';
+import { audit, memberships, users, sessions } from '../db/system.js';
+import { photoUrl } from '../core/avatars.js';
 import { dbForBusiness } from '../db/tenant.js';
 import { body, z, score10 } from '../lib/validate.js';
-import { must, badRequest, conflict } from '../lib/errors.js';
+import { must, badRequest, conflict, HttpError } from '../lib/errors.js';
 import { todayKey, addDays, weekStart, DAY } from '../lib/time.js';
 import { exerciseMap, programWeek } from '../core/training.js';
 import { refreshClientStats, weightSeries, keyLift, personalBests } from '../core/stats.js';
@@ -16,7 +17,7 @@ import { checkText } from '../ai/safety.js';
 import { enqueue } from '../jobs/nightly.js';
 import { runAutomations } from '../core/automations.js';
 import { StorageService, sniffImage } from '../storage/StorageService.js';
-import { exportClientData } from '../core/clientData.js';
+import { exportClientData, deleteClientData } from '../core/clientData.js';
 import { payments } from '../payments/PaymentService.js';
 import { raiseFlag } from '../nutrition/flags.js';
 import { voiceFields } from '../voice/voiceNotes.js';
@@ -90,9 +91,9 @@ router.get('/today', async (req, res) => {
   const w = weights.map(x => x.value);
   const checkinThisWeek = lastCheckin && new Date(lastCheckin.submittedAt) >= addDays(today, -6);
   res.json({
-    client: { name: client.name, first: client.name.split(' ')[0], goal: client.goal, targetWeight: client.targetWeight },
+    client: { name: client.name, first: client.name.split(' ')[0], goal: client.goal, targetWeight: client.targetWeight, photoUrl: await photoUrl(await users.avatarKey(req.auth.userId)) },
     business: { name: b.name, brandColor: b.brandColor, logoUrl: b.logoUrl ? await StorageService.signedUrl(b.logoUrl) : null },
-    coach: { name: coachInfo?.name || b.name, first: (coachInfo?.name || b.name).split(' ')[0] },
+    coach: { name: coachInfo?.name || b.name, first: (coachInfo?.name || b.name).split(' ')[0], photoUrl: await photoUrl(coachInfo?.avatarKey) },
     program: program ? { name: program.name, week: Math.min(program.weeks, programWeek(client) || 1), weeks: program.weeks } : null,
     streak,
     today: await withWorkout(todays),
@@ -178,7 +179,8 @@ router.get('/thread', async (req, res) => {
     await req.db.message.updateMany({ where: { senderRole: 'COACH', readAt: null }, data: { readAt: new Date() } });
   }
   const b = await req.db.business.findFirst({ select: { plan: true, planStatus: true, trialEndsAt: true } });
-  res.json({ messages: msgs.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'me' : 'coach', body: m.body, at: m.createdAt, ...voiceFields(m) })), features: { voiceNotes: isPro(effectivePlan(b)), voiceProvider: VoiceService.provider } });
+  const coachInfo = await memberships.coachNameFor(req.auth.businessId);
+  res.json({ messages: msgs.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'me' : 'coach', body: m.body, at: m.createdAt, ...voiceFields(m) })), coach: { name: coachInfo?.name || '', photoUrl: await photoUrl(coachInfo?.avatarKey) }, features: { voiceNotes: isPro(effectivePlan(b)), voiceProvider: VoiceService.provider } });
 });
 
 router.post('/messages', body(z.object({ body: z.string().trim().min(1).max(3000) })), async (req, res) => {
@@ -240,7 +242,7 @@ router.get('/account', async (req, res) => {
     req.db.payment.findMany({ orderBy: { createdAt: 'desc' }, take: 6, select: { id: true, amountCents: true, status: true, paidAt: true, createdAt: true, failureReason: true } }),
   ]);
   const plan = client.clientPlanId ? plans.find(p => p.id === client.clientPlanId) || await req.db.clientPlan.findFirst({ where: { id: client.clientPlanId }, select: { id: true, name: true, priceCents: true, interval: true, description: true } }) : null;
-  res.json({ client: { name: client.name, email: client.email, goal: client.goal, payStatus: client.payStatus }, coach: { name: coachInfo?.name || b.name }, business: { name: b.name }, plan, subscription: sub ? { status: sub.status, currentPeriodEnd: sub.currentPeriodEnd, cancelAtPeriodEnd: sub.cancelAtPeriodEnd } : null, plans, payments: recent, provider: payments().name });
+  res.json({ client: { name: client.name, email: client.email, goal: client.goal, payStatus: client.payStatus, photoUrl: await photoUrl(await users.avatarKey(req.auth.userId)) }, coach: { name: coachInfo?.name || b.name, photoUrl: await photoUrl(coachInfo?.avatarKey) }, business: { name: b.name }, plan, subscription: sub ? { status: sub.status, currentPeriodEnd: sub.currentPeriodEnd, cancelAtPeriodEnd: sub.cancelAtPeriodEnd } : null, plans, payments: recent, provider: payments().name });
 });
 
 router.post('/billing/checkout', body(z.object({ clientPlanId: z.string().max(64).optional() })), async (req, res) => {
@@ -278,4 +280,21 @@ router.get('/export', async (req, res) => {
   audit({ businessId: req.auth.businessId, actorUserId: req.auth.userId, action: 'client_self_export', target: req.auth.clientId });
   res.set('Content-Disposition', 'attachment; filename="my-onejump-data.json"');
   res.json(data);
+});
+
+// The client deletes their own account (required for the App Store): everything they logged
+// with this coach is removed, the coach is told, and the login goes too if it's not used elsewhere.
+router.post('/delete-account', body(z.object({ confirm: z.string().trim().refine(v => v.toUpperCase() === 'DELETE', 'Type DELETE to confirm.') })), async (req, res) => {
+  const { coach, client } = await ctx(req);
+  const billing = await req.db.subscription.findFirst({ where: { status: { in: ['active', 'trialing', 'past_due'] }, cancelAtPeriodEnd: false } });
+  if (billing) throw new HttpError(409, 'Cancel your plan first (Me → Plan and billing → Manage), then delete your account.', { code: 'cancel_plan_first' });
+  const { userId, businessId } = req.auth;
+  await notify(coach, { kind: 'client', title: `${client.name} deleted their account`, body: 'Their logs, messages and photos were removed.', link: '/app/clients' });
+  await deleteClientData(coach, client.id);
+  await memberships.removeClient(userId, businessId);
+  const photoKey = await users.avatarKey(userId);
+  if (await users.deleteIfUnused(userId).catch(() => false) && photoKey) await StorageService.remove(photoKey).catch(() => null);
+  audit({ businessId, actorUserId: null, action: 'client_self_deleted', target: client.id });
+  await sessions.destroyForUser(userId).catch(() => null);
+  req.session.destroy(() => res.json({ ok: true, redirect: '/' }));
 });

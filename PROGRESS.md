@@ -1,8 +1,16 @@
 # Progress
 
-_Last updated: October 25, 2026_
+_Last updated: November 7, 2026_
 
-## Now building: Voice + Nutrition (approved Oct 8)
+## Nov 7: client accounts on the iPhone + profile photos
+
+- [x] **Client login code:** the login email has a link (web) and a 6-digit code (iPhone app); `POST /api/auth/magic-code`. Single use, 30 minutes, 5 tries, newest email wins.
+- [x] **Profile photos:** coaches (Settings → Profile, web and iPhone) and clients (Me, web and iPhone) add, change or remove a photo; coaches see client photos in every list, clients see their coach’s photo.
+- [x] **Clients delete their own account** (web and iPhone), after cancelling a paid plan.
+- [x] **iPhone client app on real data** (`ios-app`, build 6): “I’m a client” on the login screen.
+- **Tests:** `npm test` → **230 API tests pass** (new: `tests/accounts.test.js`). `npm run test:e2e` → **44 browser tests pass** (new: profile photos for coach and client).
+
+## Voice + Nutrition (approved Oct 8)
 
 Spec: `03-voice-and-nutrition-spec.md`. Everything runs on mock voice, AI and food data until the keys below exist.
 

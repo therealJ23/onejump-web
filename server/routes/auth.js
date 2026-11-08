@@ -9,7 +9,9 @@ import { newSecret, verifyCode, setupPayload } from '../auth/totp.js';
 import { csrfToken, requireUser, effectivePlan } from '../auth/middleware.js';
 import { body, z, email, name, password } from '../lib/validate.js';
 import { badRequest, conflict, unauthorized, HttpError } from '../lib/errors.js';
-import { randomToken, sha256, encrypt, decrypt } from '../lib/crypto.js';
+import { randomToken, sha256, encrypt, decrypt, safeEqual } from '../lib/crypto.js';
+import { randomInt } from 'node:crypto';
+import { photoUrl } from '../core/avatars.js';
 import { EmailService } from '../email/EmailService.js';
 import { ensureAutomations } from '../core/automationTemplates.js';
 
@@ -62,6 +64,7 @@ router.get('/me', async (req, res) => {
   if (!req.auth) return res.json({ user: null, csrfToken: token });
   const user = await users.publicById(req.auth.userId);
   if (!user) { req.session.destroy(() => {}); return res.json({ user: null, csrfToken: token }); }
+  user.photoUrl = await photoUrl(await users.avatarKey(user.id));
   let business = null, client = null;
   if (req.db) {
     const b = await req.db.business.findFirst();
@@ -139,19 +142,28 @@ router.post('/magic-link', limiter(8), body(z.object({ email, slug: z.string().m
   if (user) {
     const list = (await memberships.forUser(user.id)).filter(m => m.role === 'CLIENT' && (!req.body.slug || m.business.slug === req.body.slug));
     const m = list[0];
-    if (m) {
-      const token = randomToken();
-      await magicLinks.create({ userId: user.id, businessId: m.businessId, tokenHash: sha256(token) });
-      await EmailService.sendMagicLink({ to: user.email, name: user.name, businessName: m.business.name, link: `${config.appUrl}/login/magic?token=${token}` });
-    }
+    if (m) await sendClientLogin(user, m.businessId, m.business.name);
   }
   // Same answer whether or not the email exists.
   res.json({ ok: true, message: 'If that email belongs to a client account, a login link is on its way.' });
 });
 
-router.post('/magic', limiter(20), body(z.object({ token: z.string().min(20).max(200) })), async (req, res) => {
-  const link = await magicLinks.consume(sha256(req.body.token));
-  if (!link || !link.businessId) throw unauthorized('That link has expired or was already used. Ask for a new one.');
+/**
+ * The client login email: a link (web) and a 6-digit code (typed in the iPhone app). Both are
+ * single use and expire together; a new email retires the previous code.
+ */
+export async function sendClientLogin(user, businessId, businessName, ttlMinutes = 30) {
+  const token = randomToken();
+  const tokenHash = sha256(token);
+  const code = String(randomInt(0, 1e6)).padStart(6, '0');
+  await magicLinks.create({ userId: user.id, businessId, tokenHash, codeHash: codeHashFor(tokenHash, code), ttlMinutes });
+  await EmailService.sendMagicLink({ to: user.email, name: user.name, businessName, link: `${config.appUrl}/login/magic?token=${token}`, code, minutes: ttlMinutes });
+}
+const codeHashFor = (tokenHash, code) => sha256(`${tokenHash}:${code}`);
+const CODE_TRIES = 5;
+
+/** Finishes a client login (link or code) in a fresh session. */
+async function finishClientLogin(req, link, how) {
   const user = await users.byId(link.userId);
   const m = await memberships.find(link.userId, link.businessId);
   if (!user || !m) throw unauthorized('That account no longer has access.');
@@ -159,7 +171,32 @@ router.post('/magic', limiter(20), body(z.object({ token: z.string().min(20).max
   if (!client) throw unauthorized('That account no longer has access.');
   await establish(req, user, m, { clientId: client.id });
   if (!user.emailVerifiedAt) await users.update(user.id, { emailVerifiedAt: new Date() });
-  audit({ businessId: link.businessId, actorUserId: user.id, action: 'login_magic_link', target: user.email, ip: req.ip });
+  audit({ businessId: link.businessId, actorUserId: user.id, action: how, target: user.email, ip: req.ip });
+}
+
+// The 6-digit code from the login email (the iPhone app). Five wrong tries and the code is dead.
+router.post('/magic-code', limiter(20), body(z.object({ email, code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code from the email.') })), async (req, res) => {
+  const user = await users.byEmail(req.body.email);
+  const link = user ? await magicLinks.latestCode(user.id) : null;
+  const dead = !link || !link.businessId || link.usedAt || link.expiresAt < new Date() || link.attempts >= CODE_TRIES;
+  if (dead) {
+    if (!user) await burnTime(req.body.code);
+    throw new HttpError(401, 'That code has expired. Ask for a new one.', { code: 'code_expired' });
+  }
+  if (!safeEqual(codeHashFor(link.tokenHash, req.body.code), link.codeHash)) {
+    const { attempts } = await magicLinks.failedCode(link.id);
+    audit({ businessId: link.businessId, actorUserId: user.id, action: 'login_code_failed', target: user.email, ip: req.ip });
+    throw new HttpError(401, attempts >= CODE_TRIES ? 'Too many wrong codes. Ask for a new one.' : 'That code didn’t match. Check the email and try again.', { code: attempts >= CODE_TRIES ? 'code_expired' : 'code_wrong' });
+  }
+  if (!(await magicLinks.consumeById(link.id))) throw new HttpError(401, 'That code was already used. Ask for a new one.', { code: 'code_expired' });
+  await finishClientLogin(req, link, 'login_code');
+  res.json({ ok: true, redirect: '/client', csrfToken: csrfToken(req) });
+});
+
+router.post('/magic', limiter(20), body(z.object({ token: z.string().min(20).max(200) })), async (req, res) => {
+  const link = await magicLinks.consume(sha256(req.body.token));
+  if (!link || !link.businessId) throw unauthorized('That link has expired or was already used. Ask for a new one.');
+  await finishClientLogin(req, link, 'login_magic_link');
   res.json({ ok: true, redirect: '/client', csrfToken: csrfToken(req) });
 });
 

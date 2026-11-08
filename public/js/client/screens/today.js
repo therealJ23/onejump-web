@@ -2,6 +2,7 @@
 import { api } from '../../shared/api.js';
 import { esc, fmtDay, fmtKey, plural } from '../../shared/format.js';
 import { icon } from '../../shared/icons.js';
+import { avatar } from '../../shared/components.js';
 import { state } from '../main.js';
 
 export function brandRow(d) {
@@ -30,7 +31,7 @@ export default {
     <div class="stack s4"><h1 class="h1" style="font-size:1.7rem">${hello()}, ${esc(d.client.first)}</h1><div class="row small muted wrap" style="gap:6px">${d.streak > 1 ? `<span style="color:var(--warn);display:grid">${icon('flame')}</span>${d.streak}-day streak · ` : ''}${d.program ? `Week ${d.program.week} of ${d.program.weeks}` : esc(fmtDay(new Date()))}</div></div>
     ${d.paymentProblem ? `<a class="card pad row" href="/client/me" style="gap:12px;border-color:var(--crit);text-decoration:none;color:inherit"><span class="q-icon crit">${icon('card')}</span><div class="grow"><div class="strong small">Your last payment didn’t go through</div><div class="tiny muted">Update your card in Me → Billing.</div></div>${icon('chevR')}</a>` : ''}
     ${main}
-    ${d.coachNote ? `<div class="card pad stack s8" style="border-left:3px solid var(--volt-deep)"><div class="row" style="gap:8px"><span class="av xs" style="background:var(--volt);color:#12281F" aria-hidden="true">${esc(d.coach.first[0] || '')}</span><span class="tiny strong">Note from ${esc(d.coach.first)}</span></div><div class="small">${esc(d.coachNote.text)}</div>${t?.note ? '' : `<a class="tiny" href="/client/chat">Reply</a>`}</div>` : ''}
+    ${d.coachNote ? `<div class="card pad stack s8" style="border-left:3px solid var(--volt-deep)"><div class="row" style="gap:8px">${d.coach.photoUrl ? avatar({ name: d.coach.name, photoUrl: d.coach.photoUrl }, 'xs') : `<span class="av xs" style="background:var(--volt);color:#12281F" aria-hidden="true">${esc(d.coach.first[0] || '')}</span>`}<span class="tiny strong">Note from ${esc(d.coach.first)}</span></div><div class="small">${esc(d.coachNote.text)}</div>${t?.note ? '' : `<a class="tiny" href="/client/chat">Reply</a>`}</div>` : ''}
     ${d.checkin.doneThisWeek ? `<div class="card pad row" style="gap:12px"><span class="q-icon good">${icon('check')}</span><div class="grow small"><b>Check-in sent.</b> Next one due Sunday.</div></div>` : `<a class="card pad row" style="gap:12px;text-decoration:none;color:inherit" href="/client/checkin"><span class="q-icon assist">${icon('clipboard')}</span><div class="grow"><div class="strong">Weekly check-in</div><div class="tiny muted">Due Sunday · about 2 minutes</div></div>${icon('chevR')}</a>`}
     ${goalCard(d)}
     ${nutritionCard(d.nutrition)}

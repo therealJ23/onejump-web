@@ -3,6 +3,7 @@ import { api } from '../../shared/api.js';
 import { micButton } from '../../shared/dictation.js';
 import { esc, fmtTime, fmtDate, daysAgo } from '../../shared/format.js';
 import { icon } from '../../shared/icons.js';
+import { avatar } from '../../shared/components.js';
 import { toast, toastError } from '../../shared/ui.js';
 import { voiceNoteButton, voiceNoteBody, recordVoiceNote } from '../../shared/voiceNote.js';
 import { brandRow } from './today.js';
@@ -21,7 +22,7 @@ export default {
   title: () => 'Messages',
   load: () => api.get('/api/me/thread'),
   render(d) {
-    return `<div class="row between" style="padding-top:4px">${brandRow()}<span class="strong">Your coach</span></div>
+    return `<div class="row between" style="padding-top:4px">${brandRow()}<span class="row" style="gap:8px">${d.coach?.photoUrl ? avatar({ name: d.coach.name, photoUrl: d.coach.photoUrl }, 'sm') : ''}<span class="strong">${d.coach?.name ? esc(d.coach.name) : 'Your coach'}</span></span></div>
     <div class="stack s8" id="msgs" aria-live="polite">${d.messages.length ? bubbles(d.messages) : `<div class="empty">${icon('message')}<div class="h3" style="color:var(--ink)">Say hi</div><p>Questions about a workout, how you’re feeling, anything. Your coach usually replies within a day.</p></div>`}</div>
     <form class="row cchat" data-form="send"><label class="grow"><span class="sr">Message your coach</span><input class="input" id="cchat-in" name="body" placeholder="Message your coach" autocomplete="off" maxlength="3000" style="border-radius:999px"></label>${micButton('cchat-in')}${d.features?.voiceNotes ? voiceNoteButton() : ''}<button class="btn primary icon" type="submit" aria-label="Send">${icon('send')}</button></form>
     ${d.features?.voiceNotes ? '<p class="tiny faint" style="text-align:center;margin:0">Voice notes: your coach gets the audio and a written transcript.</p>' : ''}`;

@@ -2,16 +2,15 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { config } from '../config.js';
-import { invites, businesses, users, memberships, magicLinks, audit } from '../db/system.js';
+import { invites, businesses, users, memberships, audit } from '../db/system.js';
 import { dbForBusiness } from '../db/tenant.js';
 import { body, z, email, name } from '../lib/validate.js';
 import { notFound, conflict, HttpError } from '../lib/errors.js';
-import { sha256, randomToken } from '../lib/crypto.js';
-import { establish } from './auth.js';
+import { sha256 } from '../lib/crypto.js';
+import { establish, sendClientLogin } from './auth.js';
 import { csrfToken, effectivePlan } from '../auth/middleware.js';
 import { CLIENT_CAPS } from '../core/invites.js';
 import { ensureThread, notify } from '../core/messaging.js';
-import { EmailService } from '../email/EmailService.js';
 import { StorageService } from '../storage/StorageService.js';
 
 export const router = Router();
@@ -82,9 +81,7 @@ router.post('/link/:slug', limiter, body(z.object({ name, email, goal: z.string(
   else if (client.userId !== user.id) return res.json({ ok: true, message: 'Check your email for a login link.' });
   await memberships.addClient(user.id, b.id);
   // Always verify the email by link: typing someone's email must never log you in as them.
-  const token = randomToken();
-  await magicLinks.create({ userId: user.id, businessId: b.id, tokenHash: sha256(token), ttlMinutes: 60 });
-  await EmailService.sendMagicLink({ to: user.email, name: user.name, businessName: b.name, link: `${config.appUrl}/login/magic?token=${token}` });
+  await sendClientLogin(user, b.id, b.name, 60);
   res.json({ ok: true, message: 'Check your email for a link to open your app.' });
 });
 

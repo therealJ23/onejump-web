@@ -134,6 +134,9 @@ body.no-stage .stage { display: none; }
 .av { --s: 36px; width: var(--s); height: var(--s); flex: none; border-radius: 50%; display: grid; place-items: center; font-weight: 750; font-size: calc(var(--s) * .36); color: #12281F; letter-spacing: .01em; position: relative; }
 .av.lg { --s: 64px; } .av.md { --s: 44px; } .av.sm { --s: 28px; } .av.xs { --s: 22px; font-size: 9px; }
 .av .ring { position: absolute; inset: -3px; border-radius: 50%; border: 2px solid var(--crit); }
+.av > img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.av.xl { --s: 88px; }
+.photo-edit { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .av .ring.warn { border-color: var(--warn); }
 
 /* ---------- the Assist mark (the logo's jump arc) ---------- */

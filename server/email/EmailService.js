@@ -18,6 +18,12 @@ function button(href, label) {
   return `<p style="margin:20px 0"><a href="${escapeHtml(href)}" style="display:inline-block;background:#12281F;color:#F4F6F1;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px">${escapeHtml(label)}</a></p><p style="font-size:12px;color:#56685E;word-break:break-all">Or paste this link: ${escapeHtml(href)}</p>`;
 }
 
+/** "Get the iPhone app" line, once the app has a public link (IOS_APP_URL). */
+function appLine() {
+  if (!config.iosAppUrl) return '';
+  return `<p style="font-size:13px;color:#56685E">On iPhone? <a href="${escapeHtml(config.iosAppUrl)}" style="color:#2F5D4E;font-weight:700">Get the OneJump Fit app</a> and log in with this email.</p>`;
+}
+
 async function deliver(msg) {
   if (config.email.provider === 'resend' && config.email.resendKey) {
     const res = await fetch('https://api.resend.com/emails', {
@@ -45,15 +51,16 @@ export const EmailService = {
     return deliver({
       to, link, subject: `${coachName} invited you to ${businessName}`,
       text: `Hi ${first}, ${coachName} set up your coaching app. Open it here: ${link}`,
-      html: layout(`You’re invited, ${first}`, `<p>${escapeHtml(coachName)} set up your coaching app with ${escapeHtml(businessName)}. Your program, check-ins and messages live there.</p>${button(link, 'Open my app')}<p style="font-size:13px;color:#56685E">This link works once and expires in 14 days.</p>`, businessName),
+      html: layout(`You’re invited, ${first}`, `<p>${escapeHtml(coachName)} set up your coaching app with ${escapeHtml(businessName)}. Your program, check-ins and messages live there.</p>${button(link, 'Open my app')}<p style="font-size:13px;color:#56685E">This link works once and expires in 14 days.</p>${appLine()}`, businessName),
     });
   },
-  sendMagicLink({ to, name, businessName, link }) {
+  sendMagicLink({ to, name, businessName, link, code, minutes = 30 }) {
     const first = (name || '').split(' ')[0] || 'there';
+    const codeHtml = code ? `<p style="margin:18px 0 6px">Using the OneJump Fit iPhone app? Type this code:</p><p style="font-size:30px;font-weight:800;letter-spacing:.18em;margin:0 0 6px">${escapeHtml(code)}</p>` : '';
     return deliver({
-      to, link, subject: `Your login link for ${businessName || 'OneJump'}`,
-      text: `Hi ${first}, here's your login link (valid 30 minutes): ${link}`,
-      html: layout(`Log in, ${first}`, `<p>Tap the button to open your coaching app. The link works once and expires in 30 minutes.</p>${button(link, 'Log in')}<p style="font-size:13px;color:#56685E">Didn’t ask for this? You can ignore it.</p>`, businessName || 'OneJump'),
+      to, link, code, subject: code ? `${code} is your login code for ${businessName || 'OneJump'}` : `Your login link for ${businessName || 'OneJump'}`,
+      text: `Hi ${first}, here's your login link (valid ${minutes} minutes): ${link}${code ? `\n\nOn the iPhone app, type this code instead: ${code}` : ''}`,
+      html: layout(`Log in, ${first}`, `<p>Tap the button to open your coaching app. The link works once and expires in ${minutes} minutes.</p>${button(link, 'Log in')}${codeHtml}${appLine()}<p style="font-size:13px;color:#56685E">Didn’t ask for this? You can ignore it.</p>`, businessName || 'OneJump'),
     });
   },
   sendCoachMessage({ to, businessName, subject, text }) {

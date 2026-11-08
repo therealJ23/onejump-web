@@ -21,6 +21,22 @@ export const users = {
   setTotp: (id, totpSecret, totpEnabled) => db().user.update({ where: { id }, data: { totpSecret, totpEnabled }, select: { id: true } }),
   totpSecret: async id => (await db().user.findUnique({ where: { id }, select: { totpSecret: true } }))?.totpSecret || null,
   touchLogin: id => db().user.update({ where: { id }, data: { lastLoginAt: new Date() }, select: { id: true } }),
+  /** Deletes a login that belongs to no workspace any more (and its login links). Returns true if deleted. */
+  deleteIfUnused: async id => {
+    if (await db().membership.count({ where: { userId: id } })) return false;
+    await db().magicLink.deleteMany({ where: { userId: id } });
+    await db().user.delete({ where: { id } });
+    return true;
+  },
+  avatarKey: async id => (await db().user.findUnique({ where: { id }, select: { avatarKey: true } }))?.avatarKey || null,
+  setAvatar: (id, avatarKey) => db().user.update({ where: { id }, data: { avatarKey }, select: { id: true } }),
+  /** Profile photo keys for a list of users (only the ones that have a photo). */
+  avatarKeys: async ids => {
+    const list = [...new Set(ids.filter(Boolean))];
+    if (!list.length) return new Map();
+    const rows = await db().user.findMany({ where: { id: { in: list }, avatarKey: { not: null } }, select: { id: true, avatarKey: true } });
+    return new Map(rows.map(r => [r.id, r.avatarKey]));
+  },
 };
 
 // ------------------------------------------------------------- memberships
@@ -38,9 +54,11 @@ export const memberships = {
   }),
   /** Owners and coaches of a workspace (for the morning briefing). */
   coachesFor: async businessId => (await db().membership.findMany({ where: { businessId, role: { in: ['OWNER', 'COACH'] } }, select: { userId: true, user: { select: { name: true, email: true } } } })).map(m => ({ userId: m.userId, name: m.user.name, email: m.user.email })),
+  /** A client leaving a workspace (they deleted their account). Coach memberships can't be removed here. */
+  removeClient: (userId, businessId) => db().membership.deleteMany({ where: { userId, businessId, role: 'CLIENT' } }),
   coachNameFor: async businessId => {
-    const m = await db().membership.findFirst({ where: { businessId, role: 'OWNER' }, select: { title: true, bio: true, user: { select: { name: true, email: true } } } });
-    return m ? { name: m.user.name, email: m.user.email, title: m.title, bio: m.bio } : null;
+    const m = await db().membership.findFirst({ where: { businessId, role: 'OWNER' }, select: { userId: true, title: true, bio: true, user: { select: { name: true, email: true, avatarKey: true } } } });
+    return m ? { userId: m.userId, name: m.user.name, email: m.user.email, title: m.title, bio: m.bio, avatarKey: m.user.avatarKey || null } : null;
   },
 };
 
@@ -62,8 +80,13 @@ export const businesses = {
 
 // ------------------------------------------------------------- tokens
 export const magicLinks = {
-  create: ({ userId, businessId, tokenHash, ttlMinutes = 30, purpose = 'login' }) =>
-    db().magicLink.create({ data: { userId, businessId, tokenHash, purpose, expiresAt: new Date(Date.now() + ttlMinutes * 60e3) } }),
+  create: ({ userId, businessId, tokenHash, codeHash = null, ttlMinutes = 30, purpose = 'login' }) =>
+    db().magicLink.create({ data: { userId, businessId, tokenHash, codeHash, purpose, expiresAt: new Date(Date.now() + ttlMinutes * 60e3) } }),
+  /** The newest unused login code for a user (older codes stop working when a new one is sent). */
+  latestCode: userId => db().magicLink.findFirst({ where: { userId, purpose: 'login', codeHash: { not: null } }, orderBy: { createdAt: 'desc' } }),
+  failedCode: id => db().magicLink.update({ where: { id }, data: { attempts: { increment: 1 } }, select: { attempts: true } }),
+  /** Single use, by id (the code path): marks it used only if nobody else did first. */
+  consumeById: async id => (await db().magicLink.updateMany({ where: { id, usedAt: null }, data: { usedAt: new Date() } })).count === 1,
   /** Single use: returns the link only if it was unused and unexpired, and marks it used atomically. */
   consume: async tokenHash => {
     const link = await db().magicLink.findUnique({ where: { tokenHash } });

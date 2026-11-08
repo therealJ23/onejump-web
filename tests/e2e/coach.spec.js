@@ -143,3 +143,13 @@ test('HQ shows OneJump’s plan-revenue forecast and trends to the platform admi
   await expect(page.getByText('Client names and details hidden')).toBeVisible();
   done();
 });
+
+test('coach changes their profile photo in Settings', async ({ page }) => {
+  await coachLogin(page);
+  await page.goto('/app/settings/profile');
+  await page.locator('input[data-change="profilePhoto"]').setInputFiles('tests/fixtures/face.jpg');
+  await expect(page.locator('form[data-form="profile"] .av.has-photo img')).toBeVisible();
+  await expect(page.locator('.rail .me .av.has-photo img, .me .av.has-photo img').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Remove' }).click();
+  await expect(page.locator('form[data-form="profile"] .av.has-photo')).toHaveCount(0);
+});

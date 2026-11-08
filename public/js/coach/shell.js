@@ -46,7 +46,7 @@ export function renderShell() {
         ${navItem(['settings', '/app/settings', 'settings', 'Settings'], null)}
         ${navItem(['billing', '/app/billing', 'receipt', 'Plan & billing'], null)}
         ${state.me.isPlatformAdmin ? navItem(['admin', '/admin', 'shield', 'OneJump admin'], null) : ''}
-        <div class="me">${avatar({ name: u.name, tone: 0 }, 'sm')}<span class="grow"><span class="strong small" style="display:block">${esc(u.name)}</span><span class="tiny" style="color:var(--rail-muted)">${state.me.role === 'OWNER' ? 'Owner' : 'Coach'}</span></span><button class="btn ghost icon sm" style="color:var(--rail-ink)" data-act="logout" aria-label="Log out" title="Log out">${icon('logout')}</button></div>
+        <div class="me">${avatar({ name: u.name, tone: 0, photoUrl: u.photoUrl }, 'sm')}<span class="grow"><span class="strong small" style="display:block">${esc(u.name)}</span><span class="tiny" style="color:var(--rail-muted)">${state.me.role === 'OWNER' ? 'Owner' : 'Coach'}</span></span><button class="btn ghost icon sm" style="color:var(--rail-ink)" data-act="logout" aria-label="Log out" title="Log out">${icon('logout')}</button></div>
       </div>
     </aside>
     <div class="rail-scrim" data-act="closeRail"></div>

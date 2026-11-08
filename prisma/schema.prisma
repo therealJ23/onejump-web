@@ -86,6 +86,7 @@ model User {
   isPlatformAdmin Boolean      @default(false)
   emailVerifiedAt DateTime?
   lastLoginAt     DateTime?
+  avatarKey       String? // profile photo (private storage key), coaches and clients
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   memberships     Membership[]
@@ -111,6 +112,8 @@ model MagicLink {
   userId     String
   businessId String?
   tokenHash  String    @unique
+  codeHash   String? // the 6-digit code in the same email (typed in the iPhone app)
+  attempts   Int       @default(0)
   purpose    String    @default("login")
   expiresAt  DateTime
   usedAt     DateTime?

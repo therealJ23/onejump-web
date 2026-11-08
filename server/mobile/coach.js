@@ -22,6 +22,7 @@ import { HOWTO } from '../seed/exercises.js';
 import { hiddenExerciseIds } from '../routes/exercises.js';
 import { todayKey, weekStart, addDays, startOfMonthUtc, DAY } from '../lib/time.js';
 import { L, day, time, weekday, when, ago, since, money, plural, firstOf, initials, avatar, spark, signed } from './format.js';
+import { withClientPhotos, photoUrl } from '../core/avatars.js';
 import { voiceFields } from '../voice/voiceNotes.js';
 
 const ACTIVE = ['ACTIVE', 'NEW'];
@@ -122,6 +123,7 @@ export async function coachSnapshot(db, auth, { now = new Date() } = {}) {
     users.publicById(auth.userId), memberships.find(auth.userId, auth.businessId), buildToday(db, { tz, now }), businessCharts(db, now), clientRows(db, { tz, now }),
   ]);
   void member;
+  await withClientPhotos(db, clients);
   const byId = new Map(clients.map(c => [c.id, c]));
   const [threads, checkIns, leads, payments, programs, nutrition, automations, assist, library, sessions] = await Promise.all([
     threadList(db, { tz, now }), checkInLists(db, { tz, now }), pro ? leadList(db, { tz, now }) : { stats: { open: 0, pipeline: '$0', followUps: 0 }, items: [], locked: true },
@@ -149,6 +151,7 @@ export async function coachSnapshot(db, auth, { now = new Date() } = {}) {
       business: b.name, slug: b.slug, bookingUrl: `${config.appUrl.replace(/^https?:\/\//, '')}/coach/${b.slug}`,
       plan, planLabel: PLAN_LABEL[plan] || L(plan), trialDaysLeft: b.plan === 'TRIAL' && b.trialEndsAt ? Math.max(0, Math.ceil((new Date(b.trialEndsAt) - now) / 864e5)) : null,
       pro, totpEnabled: !!user?.totpEnabled, writingStyle: b.writingStyle || 'Supportive',
+      photoUrl: await photoUrl(await users.avatarKey(auth.userId)),
     },
     today: {
       minutesSaved: today.minutesSaved || 0, savedLabel: `${h}h ${String(m).padStart(2, '0')}m`,

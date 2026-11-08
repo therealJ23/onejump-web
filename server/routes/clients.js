@@ -13,6 +13,7 @@ import { weightSeries, keyLift, personalBests } from '../core/stats.js';
 import { scoreClient } from '../core/radar.js';
 import { clientsFromCsv } from '../lib/csv.js';
 import { exportClientData, deleteClientData } from '../core/clientData.js';
+import { withClientPhotos, clientPhotoUrls } from '../core/avatars.js';
 import { progressNote, adjustmentsFor } from '../ai/drafts.js';
 import { applyInsightAction, skipInsightAction } from '../core/actions.js';
 import { StorageService } from '../storage/StorageService.js';
@@ -29,7 +30,7 @@ async function assertCanAdd(db, n = 1) {
   if (count + n > CLIENT_CAPS[plan]) throw paymentRequired(`Your ${plan === 'TRIAL' ? 'trial' : plan.charAt(0) + plan.slice(1).toLowerCase()} plan covers ${CLIENT_CAPS[plan]} active clients. Existing clients keep working; upgrade to add more.`, { upgrade: plan === 'STARTER' ? 'PRO' : 'STUDIO' });
 }
 
-router.get('/', async (req, res) => res.json({ clients: await clientList(req.db, { tz: await tzOf(req.db) }) }));
+router.get('/', async (req, res) => res.json({ clients: await withClientPhotos(req.db, await clientList(req.db, { tz: await tzOf(req.db) })) }));
 
 router.get('/invite-link', async (req, res) => {
   const b = await req.db.business.findFirst({ select: { slug: true } });
@@ -98,6 +99,7 @@ router.post('/import', body(z.object({ rows: z.array(importRow).min(1).max(500),
 router.get('/:id', async (req, res) => {
   const p = await clientProfile(req.db, req.params.id, { tz: await tzOf(req.db) });
   must(p, 'That client');
+  p.client.photoUrl = (await clientPhotoUrls(req.db, [p.client.id])).get(p.client.id) || null;
   res.json(p);
 });
 

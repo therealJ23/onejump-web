@@ -44,6 +44,7 @@ export const config = {
   isProd,
   isTest,
   appUrl: (env.APP_URL || 'http://localhost:3000').replace(/\/$/, ''),
+  iosAppUrl: (env.IOS_APP_URL || '').trim(),
   /** Emails that get OneJump HQ (/admin) access when they log in. Set in the hosting dashboard only. */
   hqAdminEmails: (env.HQ_ADMIN_EMAILS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean),
   port: Number(env.PORT || 3000),
