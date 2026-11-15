@@ -177,6 +177,15 @@ async function finishClientLogin(req, link, how) {
 // The 6-digit code from the login email (the iPhone app). Five wrong tries and the code is dead.
 router.post('/magic-code', limiter(20), body(z.object({ email, code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code from the email.') })), async (req, res) => {
   const user = await users.byEmail(req.body.email);
+  // Apple App Review: one demo client with a fixed code from the hosting dashboard (DECISIONS #100).
+  const review = config.appReview;
+  if (user && review.clientEmail && review.clientCode && user.email.toLowerCase() === review.clientEmail) {
+    if (!safeEqual(req.body.code, review.clientCode)) throw new HttpError(401, 'That code didn’t match. Check the email and try again.', { code: 'code_wrong' });
+    const m = (await memberships.forUser(user.id)).find(x => x.role === 'CLIENT');
+    if (!m) throw unauthorized('That account no longer has access.');
+    await finishClientLogin(req, { userId: user.id, businessId: m.businessId }, 'login_review_code');
+    return res.json({ ok: true, redirect: '/client', csrfToken: csrfToken(req) });
+  }
   const link = user ? await magicLinks.latestCode(user.id) : null;
   const dead = !link || !link.businessId || link.usedAt || link.expiresAt < new Date() || link.attempts >= CODE_TRIES;
   if (dead) {

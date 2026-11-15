@@ -45,6 +45,14 @@ export const config = {
   isTest,
   appUrl: (env.APP_URL || 'http://localhost:3000').replace(/\/$/, ''),
   iosAppUrl: (env.IOS_APP_URL || '').trim(),
+  /**
+   * Apple App Review sign-in for ONE demo client: that email logs in on the iPhone with this fixed
+   * 6-digit code instead of an emailed one. Off unless both are set. Use a client in a demo business.
+   */
+  appReview: {
+    clientEmail: (env.APP_REVIEW_CLIENT_EMAIL || '').trim().toLowerCase(),
+    clientCode: /^\d{6}$/.test(env.APP_REVIEW_CLIENT_CODE || '') ? env.APP_REVIEW_CLIENT_CODE : '',
+  },
   /** Emails that get OneJump HQ (/admin) access when they log in. Set in the hosting dashboard only. */
   hqAdminEmails: (env.HQ_ADMIN_EMAILS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean),
   port: Number(env.PORT || 3000),

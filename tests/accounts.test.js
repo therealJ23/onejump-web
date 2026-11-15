@@ -65,6 +65,26 @@ describe('client login with the emailed code (iPhone app)', () => {
     expect((await b.post('/api/auth/magic-code', { email: 'mike.t@example.com', code: '12ab56' })).status).toBe(400);
   });
 
+  it('the App Review client logs in with the fixed code; nobody else can use it', async () => {
+    const { config } = await import('../server/config.js');
+    const saved = { ...config.appReview };
+    config.appReview.clientEmail = 'mike.t@example.com';
+    config.appReview.clientCode = '482913';
+    try {
+      const b = await browser();
+      expect((await b.post('/api/auth/magic-code', { email: 'mike.t@example.com', code: '000000' })).body.code).toBe('code_wrong');
+      const r = await b.post('/api/auth/magic-code', { email: 'Mike.T@example.com', code: '482913' });
+      expect(r.status).toBe(200);
+      expect((await b.get('/api/auth/me')).body.client.name).toBe('Mike Torres');
+      // reusable (Apple may sign in more than once)
+      expect((await (await browser()).post('/api/auth/magic-code', { email: 'mike.t@example.com', code: '482913' })).status).toBe(200);
+      // the fixed code does nothing for a different account
+      expect((await (await browser()).post('/api/auth/magic-code', { email: 'dani@reyesstrength.com', code: '482913' })).status).toBe(401);
+    } finally { Object.assign(config.appReview, saved); }
+    // off again: the fixed code no longer works
+    expect((await (await browser()).post('/api/auth/magic-code', { email: 'mike.t@example.com', code: '482913' })).status).toBe(401);
+  });
+
   it('a coach email gets no code (coaches use their password)', async () => {
     const before = EmailService.outbox().length;
     await (await browser()).post('/api/auth/magic-link', { email: 'dani@reyesstrength.com' });
