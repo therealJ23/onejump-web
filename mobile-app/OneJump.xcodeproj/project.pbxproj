@@ -204,9 +204,9 @@
 		9A45705680BA1B733A7B6EAD /* ChatMediaViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMediaViews.swift; sourceTree = "<group>"; };
 		4EA2BDC715FC5168A6EF83FB /* ClientCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientCalendarView.swift; sourceTree = "<group>"; };
 		A3F9E9BE816EF9CBBBC01795 /* ClientFoodBuild7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientFoodBuild7.swift; sourceTree = "<group>"; };
-		B337D8F7B7DB0286426179CB /* ClientStore+V7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientStore+V7.swift; sourceTree = "<group>"; };
+		B337D8F7B7DB0286426179CB /* ClientStore+V7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClientStore+V7.swift"; sourceTree = "<group>"; };
 		E83CB7EC0291F9D7BA626775 /* CoachCalendarScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachCalendarScreen.swift; sourceTree = "<group>"; };
-		D97E87F000C699A7ECF34047 /* CoachStore+V7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachStore+V7.swift; sourceTree = "<group>"; };
+		D97E87F000C699A7ECF34047 /* CoachStore+V7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoachStore+V7.swift"; sourceTree = "<group>"; };
 		5323C9D6CDF61E1F0E8F3EC7 /* FluxSTT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxSTT.swift; sourceTree = "<group>"; };
 		E41098343EB1133098DD24F6 /* TodayBuild7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayBuild7.swift; sourceTree = "<group>"; };
 		6371859A692E6B9183F92F3A /* V7Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V7Models.swift; sourceTree = "<group>"; };
