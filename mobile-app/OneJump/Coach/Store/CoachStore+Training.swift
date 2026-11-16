@@ -73,6 +73,13 @@ struct ExerciseDetailDTO: Decodable {
         var mediaType: String?
         var mediaUrl: String?
         var alternatives: [Alt]?
+        /// Build 8: the exercise's picture and who to credit for free photos and demo videos.
+        var imageUrl: String?
+        var imageCredit: Credit?
+        var mediaCredit: Credit?
+    }
+    struct Credit: Decodable { var author: String?; var license: String?
+        var line: String { [author, license, "wger.de"].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ") }
     }
     let exercise: Exercise
 }

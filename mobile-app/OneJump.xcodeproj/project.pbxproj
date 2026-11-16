@@ -107,6 +107,8 @@
 		7FDD937C773D757D57FB86E6 /* TodayBuild7.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41098343EB1133098DD24F6 /* TodayBuild7.swift */; };
 		ABE28184C7AC33324B67C14D /* V7Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6371859A692E6B9183F92F3A /* V7Models.swift */; };
 		A1BFE2337704EEF2C350AE7D /* WeekPlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21260DC04A850332A1D06CBC /* WeekPlannerView.swift */; };
+		A8299ED3FD496789C3568FE4 /* FoodArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F7A85D99A18003853440D2 /* FoodArt.swift */; };
+		1C94B1A7A51597D67BE1D88B /* SamplePrograms.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88489EFD8C0DFCC29C96950 /* SamplePrograms.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -211,6 +213,8 @@
 		E41098343EB1133098DD24F6 /* TodayBuild7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayBuild7.swift; sourceTree = "<group>"; };
 		6371859A692E6B9183F92F3A /* V7Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V7Models.swift; sourceTree = "<group>"; };
 		21260DC04A850332A1D06CBC /* WeekPlannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekPlannerView.swift; sourceTree = "<group>"; };
+		92F7A85D99A18003853440D2 /* FoodArt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodArt.swift; sourceTree = "<group>"; };
+		A88489EFD8C0DFCC29C96950 /* SamplePrograms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SamplePrograms.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -652,6 +656,8 @@
 		539B17ABBE2A56E884C54BC8 /* Build7 */ = {
 			isa = PBXGroup;
 			children = (
+				A88489EFD8C0DFCC29C96950 /* SamplePrograms.swift */,
+				92F7A85D99A18003853440D2 /* FoodArt.swift */,
 				21260DC04A850332A1D06CBC /* WeekPlannerView.swift */,
 				6371859A692E6B9183F92F3A /* V7Models.swift */,
 				E41098343EB1133098DD24F6 /* TodayBuild7.swift */,
@@ -744,6 +750,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1C94B1A7A51597D67BE1D88B /* SamplePrograms.swift in Sources */,
+				A8299ED3FD496789C3568FE4 /* FoodArt.swift in Sources */,
 				A1BFE2337704EEF2C350AE7D /* WeekPlannerView.swift in Sources */,
 				ABE28184C7AC33324B67C14D /* V7Models.swift in Sources */,
 				7FDD937C773D757D57FB86E6 /* TodayBuild7.swift in Sources */,
@@ -967,7 +975,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = J575M856A5;
 				ENABLE_PREVIEWS = YES;
@@ -1004,7 +1012,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = J575M856A5;

@@ -337,6 +337,20 @@ struct LibraryExercise: Identifiable {
     /// A photo of the exercise (wger.de, credited) or OneJump's drawing of its movement pattern.
     var imageURL: String?
     var imageCredit: String?
+    /// OneJump's free demo video (wger) or the coach's own (build 8).
+    var hasVideo = false
+
+    /// The picture to show: the photo, or OneJump's drawing for its muscle group.
+    var picture: String {
+        if let imageURL, !imageURL.isEmpty { return imageURL }
+        switch group {
+        case .legs: return "/img/exercises/squat.jpg"
+        case .push: return "/img/exercises/push.jpg"
+        case .pull: return "/img/exercises/pull.jpg"
+        case .core: return "/img/exercises/core.jpg"
+        case .all: return "/img/exercises/iso.jpg"
+        }
+    }
 }
 
 // MARK: - Nutrition, automations, settings

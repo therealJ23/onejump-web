@@ -76,6 +76,7 @@ extension CoachSnapshot {
         Loc("Who needs me today?", "¿Quién me necesita hoy?"),
         Loc("Who hasn’t checked in this week?", "¿Quién no ha hecho su check-in esta semana?"),
         Loc("How’s my business doing this month?", "¿Cómo va mi negocio este mes?"),
+        Loc("Build me a 4-day program from scratch", "Hazme un programa de 4 días desde cero"),
         Loc("Which clients haven’t paid?", "¿Qué clientes no han pagado?")
     ]
 

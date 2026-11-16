@@ -95,7 +95,7 @@ struct ClientTodayView: View {
         let eyebrow: String = !store.hasWorkout ? CLT.restDay(lang)
             : (store.workoutDay.map { CLT.nextUp($0(lang))(lang) } ?? CLT.todaysWorkout(lang))
         return VStack(alignment: .leading, spacing: 12) {
-            if store.hasWorkout, let img = store.workoutImageURL {
+            if store.hasWorkout, let img = store.workoutImageURL ?? (store.live ? nil : "/img/exercises/squat.jpg") {
                 RemotePhoto(path: img)
                     .frame(height: 150)
                     .frame(maxWidth: .infinity)

@@ -67,7 +67,7 @@ struct FoodView: View {
                 mealCard(meal, items: meals[meal] ?? [])
             }
 
-            if store.live { RecipeCarousel() }
+            RecipeCarousel()
 
             if !store.favoriteFoods.isEmpty {
                 SectionHeader(CLT.quickAdd(lang), note: CLT.yourFavorites(lang))
@@ -128,7 +128,7 @@ struct FoodView: View {
             } else {
                 DividedRows(items) { item in
                     HStack(spacing: 12) {
-                        FoodThumb(path: item.imageURL)
+                        FoodThumb(path: item.imageURL ?? FoodArt.path(item.name(.english) + " " + item.name(lang), meal: meal.rawValue))
                         TitleSub(item.name(lang), sub: item.quantity(lang))
                         if !store.hideNumbers {
                             VStack(alignment: .trailing, spacing: 2) {

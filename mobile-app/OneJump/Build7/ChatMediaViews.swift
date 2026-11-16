@@ -69,6 +69,7 @@ struct AnimatedGIFView: UIViewRepresentable {
         let v = UIImageView()
         v.contentMode = .scaleAspectFill
         v.clipsToBounds = true
+        v.isUserInteractionEnabled = false
         v.backgroundColor = UIColor(Palette.surface3)
         v.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         v.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
@@ -241,7 +242,7 @@ struct AttachMenuButton: View {
         .sheet(isPresented: $showGifs) {
             GifPickerView { gif in
                 showGifs = false
-                onMedia(.gif(gif))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { onMedia(.gif(gif)) }
             }
             .presentationDetents([.medium, .large])
         }
@@ -306,6 +307,7 @@ struct GifPickerView: View {
     @State private var available = true
     @State private var loading = false
     @State private var errorText: String?
+    @State private var picked: String?
     private let chips = ["Let's go", "Gym", "Strong", "Tired", "Thank you", "Yes!", "Party"]
 
     var body: some View {
@@ -341,14 +343,24 @@ struct GifPickerView: View {
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                         ForEach(items) { g in
-                            Button { onPick(g) } label: {
-                                AnimatedGIFView(path: g.previewUrl ?? g.url)
-                                    .frame(height: 104)
-                                    .frame(maxWidth: .infinity)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(Text(g.title ?? "GIF"))
+                            // The animated view is UIKit and would swallow the tap, so it ignores
+                            // touches and the whole tile takes them (build 8 fix).
+                            AnimatedGIFView(path: g.previewUrl ?? g.url)
+                                .allowsHitTesting(false)
+                                .frame(height: 104)
+                                .frame(maxWidth: .infinity)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(picked == g.id ? Palette.volt : Color.clear, lineWidth: 3))
+                                .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .onTapGesture {
+                                    picked = g.id
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    onPick(g)
+                                }
+                                .accessibilityElement()
+                                .accessibilityLabel(Text(g.title ?? "GIF"))
+                                .accessibilityAddTraits(.isButton)
+                                .accessibilityAction { onPick(g) }
                         }
                     }
                     if loading { ProgressView().padding() }

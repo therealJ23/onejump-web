@@ -396,7 +396,7 @@ struct LiveWorkoutEditorView: View {
         if let bound = binding(item.id, blockID: blockID) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
-                    let pic = store.data.library.first { $0.id == item.exerciseID }?.imageURL
+                    let pic = store.data.library.first { $0.id == item.exerciseID }?.picture
                     ExerciseThumb(path: pic)
                         .frame(width: 52, height: 52)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -539,7 +539,8 @@ struct ExercisePickerSheet: View {
         } label: {
             VStack(alignment: .leading, spacing: 0) {
                 ZStack(alignment: .topTrailing) {
-                    ExerciseThumb(path: exercise.imageURL, systemImage: exercise.mediaType == "video" ? "play.rectangle.fill" : "dumbbell")
+                    ExerciseThumb(path: exercise.picture, systemImage: "dumbbell")
+                        .overlay(alignment: .bottomLeading) { if exercise.hasVideo { VideoBadge() } }
                         .frame(height: 104)
                         .frame(maxWidth: .infinity)
                         .clipped()
@@ -879,7 +880,16 @@ struct LiveExerciseDetailView: View {
             } else if custom {
                 EmptyStateCard(systemImage: "video", title: TT.noMedia(lang), message: TT.videoOnlyNote(lang))
             } else {
-                VideoPlaceholder(label: CT.playDemo(lang)) { store.toast.show(CT.toastDemo(lang)) }
+                // No video yet: the exercise's photo (or OneJump's drawing of the movement).
+                ExerciseThumb(path: detail?.imageUrl ?? row?.picture)
+                    .frame(height: 230)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+            }
+            if let credit = (mediaURL != nil ? detail?.mediaCredit : nil) ?? (mediaURL == nil ? detail?.imageCredit : nil) {
+                SubText((lang == .spanish ? "Créditos: " : "Credit: ") + credit.line)
+            } else if mediaURL == nil, let c = row?.imageCredit, !custom {
+                SubText((lang == .spanish ? "Créditos: " : "Credit: ") + c)
             }
 
             if custom {
@@ -975,5 +985,18 @@ struct LiveExerciseDetailView: View {
         } message: {
             Text(custom ? TT.deleteOwnBody(lang) : TT.deleteSharedBody(lang))
         }
+    }
+}
+
+/// "▶ Video" on an exercise picture that has a demo video.
+struct VideoBadge: View {
+    var body: some View {
+        Label("Video", systemImage: "play.fill")
+            .font(.archivo(10, .heavy))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6).padding(.vertical, 3)
+            .background(Color.black.opacity(0.55), in: Capsule())
+            .padding(6)
+            .accessibilityLabel(Text("Has a video"))
     }
 }

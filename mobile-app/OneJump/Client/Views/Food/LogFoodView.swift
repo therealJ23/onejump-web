@@ -473,7 +473,8 @@ private struct SearchFoodsStage: View {
                 ListCard {
                     DividedRows(results) { food in
                         Button { store.addSearchResult(food) } label: {
-                            HStack {
+                            HStack(spacing: 12) {
+                                FoodThumb(path: food.imageURL ?? FoodArt.path(food.name(.english) + " " + food.name(lang)))
                                 TitleSub(food.name(lang), sub: store.hideNumbers ? food.quantity(lang) : CLT.foodLine(food.quantity(lang), Fmt.grouped(Int(food.kcal)), Int(food.protein))(lang))
                                 Image(systemName: "plus")
                                     .font(.system(size: 13, weight: .bold))

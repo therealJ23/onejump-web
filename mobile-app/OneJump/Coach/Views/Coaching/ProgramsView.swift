@@ -29,6 +29,8 @@ struct ProgramsView: View {
             }
             .buttonStyle(.oj(.volt, fullWidth: true))
 
+            SampleProgramsStrip()
+
             if store.live && store.data.programs.isEmpty {
                 EmptyStateCard(systemImage: "square.stack.3d.up", title: TT.noPrograms(lang), message: TT.noProgramsBody(lang))
             }

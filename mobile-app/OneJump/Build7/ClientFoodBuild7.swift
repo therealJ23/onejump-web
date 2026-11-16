@@ -159,9 +159,25 @@ struct RecipeCarousel: View {
 
     @MainActor
     private func load() async {
-        guard store.live else { return }
+        guard store.live else { data = RecipesResponse(recipes: Self.demo, suggestion: nil, hideNumbers: store.hideNumbers); return }
         data = try? await APIClient.shared.get("/api/me/recipes")
     }
+
+    /// The demo's recipe book (the pictures come from OneJump's server).
+    static let demo: [RecipeDTO] = [
+        RecipeDTO(id: "demo-oats", name: "Protein overnight oats", servings: 1, minutes: 5, tags: ["breakfast"], imageUrl: "/img/food/bowl_with_spoon.png",
+                  ingredients: [.init(name: "Rolled oats", grams: 50), .init(name: "Greek yogurt", grams: 150), .init(name: "Blueberries", grams: 60)],
+                  steps: ["Stir everything in a jar.", "Leave it in the fridge overnight."], perServing: .init(calories: 420, proteinG: 32, carbsG: 55, fatG: 8)),
+        RecipeDTO(id: "demo-chicken", name: "Chicken, rice and broccoli", servings: 2, minutes: 25, tags: ["lunch", "meal prep"], imageUrl: "/img/food/poultry_leg.png",
+                  ingredients: [.init(name: "Chicken breast", grams: 300), .init(name: "Rice (dry)", grams: 120), .init(name: "Broccoli", grams: 200)],
+                  steps: ["Cook the rice.", "Season and pan-cook the chicken, 6–7 minutes a side.", "Steam the broccoli and plate it up."], perServing: .init(calories: 520, proteinG: 48, carbsG: 52, fatG: 9)),
+        RecipeDTO(id: "demo-salmon", name: "Salmon with sweet potato", servings: 2, minutes: 30, tags: ["dinner"], imageUrl: "/img/food/fish.png",
+                  ingredients: [.init(name: "Salmon fillets", grams: 300), .init(name: "Sweet potato", grams: 400), .init(name: "Spinach", grams: 100)],
+                  steps: ["Roast the sweet potato at 220 °C for 25 minutes.", "Add the salmon for the last 12 minutes.", "Serve on spinach."], perServing: .init(calories: 560, proteinG: 38, carbsG: 46, fatG: 22)),
+        RecipeDTO(id: "demo-eggs", name: "Veggie egg scramble", servings: 1, minutes: 10, tags: ["breakfast"], imageUrl: "/img/food/egg.png",
+                  ingredients: [.init(name: "Eggs", grams: 150), .init(name: "Peppers and spinach", grams: 100), .init(name: "Toast", grams: 40)],
+                  steps: ["Soften the vegetables in a pan.", "Add the beaten eggs and stir until just set."], perServing: .init(calories: 360, proteinG: 24, carbsG: 22, fatG: 18)),
+    ]
 }
 
 /// One recipe: photo, ingredients and steps.

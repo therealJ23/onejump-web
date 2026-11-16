@@ -31,7 +31,15 @@ struct ExerciseLibraryView: View {
                         store.push(.exercise(exercise.id))
                     } label: {
                         HStack(spacing: 12) {
-                            IconTile(systemName: exercise.mediaType == "video" ? "play.rectangle.fill" : exercise.mediaType == "image" ? "photo" : "play.rectangle")
+                            ExerciseThumb(path: exercise.picture)
+                                .frame(width: 52, height: 52)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(alignment: .bottomTrailing) {
+                                    if exercise.hasVideo || exercise.mediaType == "video" {
+                                        Image(systemName: "play.fill").font(.system(size: 9, weight: .heavy)).foregroundStyle(.white)
+                                            .frame(width: 18, height: 18).background(Circle().fill(Color.black.opacity(0.6))).padding(3)
+                                    }
+                                }
                             TitleSub(exercise.name(lang), sub: "\(exercise.group.label(lang)) · \(exercise.equipment(lang))")
                             if exercise.custom { Pill(TT.yours(lang), tone: .good) }
                             Image(systemName: "chevron.right").foregroundStyle(Palette.muted)
