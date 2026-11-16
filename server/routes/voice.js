@@ -67,12 +67,9 @@ router.post('/stt-token', pro, body(z.object({ lang: z.enum(['en', 'es']).defaul
   if (!r.ok) { console.error('[voice] stt-token', r.status, (await r.text().catch(() => '')).slice(0, 200)); return res.json({ available: false }); }
   const j = await r.json();
   const es = req.body.lang === 'es';
-  res.json({
-    available: true,
-    token: j.access_token,
-    expiresIn: j.expires_in || 120,
-    url: 'wss://api.deepgram.com/v2/listen',
-    // Spanish (and Spanglish) coaches get the multilingual model.
-    query: { model: es ? 'flux-general-multi' : 'flux-general-en', encoding: 'linear16', sample_rate: '16000', eot_threshold: '0.7', eot_timeout_ms: '3000', ...(es ? { language_hint: ['es', 'en'] } : {}) },
-  });
+  // Spanish (and Spanglish) coaches get the multilingual model.
+  const query = { model: es ? 'flux-general-multi' : 'flux-general-en', encoding: 'linear16', sample_rate: '16000', eot_threshold: '0.7', eot_timeout_ms: '3000' };
+  const qs = new URLSearchParams(query);
+  if (es) { qs.append('language_hint', 'es'); qs.append('language_hint', 'en'); }
+  res.json({ available: true, token: j.access_token, expiresIn: j.expires_in || 120, url: 'wss://api.deepgram.com/v2/listen', query, queryString: qs.toString(), sampleRate: 16000 });
 });
