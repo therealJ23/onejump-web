@@ -2,6 +2,14 @@
 
 _Last updated: November 7, 2026_
 
+## Nov 16: iPhone build 7 (compiles ✅, not uploaded yet)
+- Coach: Calendar tab (3-day timeline + month, sessions/calls/consults/blocked time, Assist's free slots, event editor); profile photo on Today opens More; "Ask Assist" bar and an approve-all queue (swipe right to send, pain/medical drafts must be opened first); morning briefing removed.
+- Chat (both sides): photos, videos (up to 3 min), GIFs (GIPHY), emoji reactions (long-press), client photos in the inbox and thread, coach photo for clients.
+- Workouts: exercise picker is a picture grid (pick several at once), warm-up/main/cool-down sections, superset linking, week planner (drag a workout to another day, copy a week).
+- Client: week strip and month calendar (move a coming workout if the coach allows), workout picture on Today, protein ring, food pictures in meals, recipe carousel with Assist's protein pick.
+- Assist voice: Deepgram Flux live speech (answers as soon as you stop talking), falls back to the iPhone's recognizer; ChatGPT-style voice bar with mute.
+- Next: archive build 7 on your Mac and upload it to TestFlight.
+
 ## Nov 7: client accounts on the iPhone + profile photos
 
 - [x] **Client login code:** the login email has a link (web) and a 6-digit code (iPhone app); `POST /api/auth/magic-code`. Single use, 30 minutes, 5 tries, newest email wins.
