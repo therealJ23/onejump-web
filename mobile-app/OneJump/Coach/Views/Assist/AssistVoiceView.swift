@@ -12,20 +12,20 @@ struct AssistVoiceView: View {
             AmbientGlow(level: store.voice.inputLevel, speaking: store.voice.isSpeaking)
                 .ignoresSafeArea()
 
+            // Build 7: like ChatGPT's voice in the chat. What the coach says and what Assist answers
+            // stream into the conversation (cards included); a small bar at the bottom shows Assist
+            // listening, thinking or talking, with mute, keyboard and End.
             VStack(spacing: 0) {
                 header
                 chat
                     .frame(maxHeight: .infinity)
-                GlowingAssistLogo(level: store.voice.inputLevel, speaking: store.voice.isSpeaking, thinking: store.thinking)
-                    .frame(height: 210)
-                    .contentShape(Circle())
-                    .onTapGesture { store.tapOrb() }
-                    .accessibilityLabel(store.voice.isSpeaking ? AVT.stopTalking(lang) : AVT.voiceMode(lang))
                 status
                     .padding(.horizontal, 24)
-                    .frame(minHeight: 64, alignment: .top)
-                controls
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 8)
+                    .frame(minHeight: 30)
+                voiceDock
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 10)
             }
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -65,6 +65,17 @@ struct AssistVoiceView: View {
                         VoiceChatLine(message: pair.element, index: pair.offset)
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
+                    if !store.voice.heard.isEmpty && !store.voice.isSpeaking {
+                        ChatBubble(fromMe: true, faded: true) { Text(store.voice.heard) }
+                            .transition(.opacity)
+                    }
+                    if store.thinking {
+                        HStack(spacing: 8) {
+                            AssistMark(size: 16)
+                            TypingDots()
+                        }
+                        .transition(.opacity)
+                    }
                     Color.clear.frame(height: 1).id("bottom")
                 }
                 .padding(.horizontal, 20)
@@ -78,6 +89,7 @@ struct AssistVoiceView: View {
             .onChange(of: store.assistMessages.count) { _, _ in
                 withAnimation(.snappy) { proxy.scrollTo("bottom", anchor: .bottom) }
             }
+            .onChange(of: store.voice.heard) { _, _ in proxy.scrollTo("bottom", anchor: .bottom) }
             .onAppear { proxy.scrollTo("bottom", anchor: .bottom) }
         }
     }
@@ -88,12 +100,10 @@ struct AssistVoiceView: View {
                 Text(AVT.thinking(lang)).font(.archivo(15, .semibold)).foregroundStyle(Palette.assistInk)
             } else if store.voice.isSpeaking {
                 Text(AVT.speaking(lang)).font(.archivo(15, .semibold)).foregroundStyle(Palette.assistInk)
+            } else if store.voice.micMuted {
+                Text(lang == .spanish ? "Micrófono apagado" : "Mic is off").font(.archivo(14, .semibold)).foregroundStyle(Palette.muted)
             } else if !store.voice.heard.isEmpty {
-                Text("“\(store.voice.heard)”")
-                    .font(.archivo(17, .medium))
-                    .foregroundStyle(Palette.ink)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(3)
+                EmptyView()
             } else {
                 Text(AVT.listening(lang)).font(.archivo(15, .semibold)).foregroundStyle(Palette.assistInk)
             }
@@ -135,6 +145,102 @@ struct AssistVoiceView: View {
             .accessibilityLabel(AVT.endVoice(lang))
         }
         .animation(.snappy, value: store.voice.isSpeaking)
+    }
+}
+
+extension AssistVoiceView {
+    var voiceDock: some View {
+        let es = lang == .spanish
+        return HStack(spacing: 10) {
+            Button {
+                store.voice.setMicMuted(!store.voice.micMuted)
+            } label: {
+                Image(systemName: store.voice.micMuted ? "mic.slash.fill" : "mic.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(store.voice.micMuted ? Color.white : Palette.ink)
+                    .frame(width: 50, height: 50)
+                    .background(Circle().fill(store.voice.micMuted ? Palette.crit : Palette.surface2))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(store.voice.micMuted ? (es ? "Encender micrófono" : "Unmute") : (es ? "Silenciar micrófono" : "Mute")))
+
+            Button { store.tapOrb() } label: {
+                HStack(spacing: 10) {
+                    GlowingAssistLogo(level: store.voice.micMuted ? 0 : store.voice.inputLevel, speaking: store.voice.isSpeaking, thinking: store.thinking)
+                        .frame(width: 220, height: 220)
+                        .scaleEffect(0.2)
+                        .frame(width: 44, height: 44)
+                    VoiceLevelBars(level: store.voice.micMuted ? 0 : store.voice.inputLevel, active: store.voice.isSpeaking || store.thinking)
+                        .frame(height: 22)
+                }
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .background(Capsule().fill(Palette.surface))
+                .overlay(Capsule().strokeBorder(Palette.assistLine, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(store.voice.isSpeaking ? AVT.stopTalking(lang) : AVT.voiceMode(lang))
+
+            Button { store.endVoiceMode() } label: {
+                Image(systemName: "keyboard")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Palette.ink)
+                    .frame(width: 50, height: 50)
+                    .background(Circle().fill(Palette.surface2))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AVT.typeInstead(lang))
+
+            Button { store.endVoiceMode() } label: {
+                Text(es ? "Terminar" : "End")
+                    .font(.archivo(15, .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18)
+                    .frame(height: 50)
+                    .background(Capsule().fill(Palette.crit))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AVT.endVoice(lang))
+        }
+    }
+}
+
+/// Little bars that move with the coach's voice (and gently while Assist talks or thinks).
+struct VoiceLevelBars: View {
+    let level: Float
+    let active: Bool
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 20)) { ctx in
+            let t = ctx.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 3) {
+                ForEach(0..<14, id: \.self) { i in
+                    let wave = (sin(t * 6 + Double(i) * 0.7) + 1) / 2
+                    let base = active ? 0.25 + 0.35 * wave : 0.12
+                    let h = max(base, Double(level) * (0.5 + 0.5 * wave))
+                    Capsule().fill(active ? Palette.assistInk : Palette.ink.opacity(0.7))
+                        .frame(width: 3, height: max(3, CGFloat(h) * 22))
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// "• • •" while Assist works on an answer.
+struct TypingDots: View {
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / 15)) { ctx in
+            let t = ctx.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 4) {
+                ForEach(0..<3, id: \.self) { i in
+                    Circle().fill(Palette.assistInk)
+                        .frame(width: 7, height: 7)
+                        .opacity(0.35 + 0.65 * (sin(t * 5 - Double(i) * 0.8) + 1) / 2)
+                }
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 

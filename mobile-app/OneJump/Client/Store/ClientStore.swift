@@ -6,7 +6,7 @@ enum ClientTab: Hashable {
 
 /// Screens pushed inside a client tab.
 enum ClientRoute: Hashable {
-    case checkIn, book, me
+    case checkIn, book, me, calendar
 }
 
 /// What the app is listening for right now.
@@ -50,6 +50,8 @@ final class ClientStore {
     var workout: [WorkoutExercise] = ClientData.workout
     var bestWeight: [Int: Double] = ClientData.bestWeight
     var workoutTitle: Loc = CLT.workoutName
+    /// The picture for today's workout (build 7).
+    var workoutImageURL: String?
     var workoutMeta: Loc = CLT.workoutMeta
     var workoutNote: Loc? = CLT.coachNote
     /// Live: the workout's day when it isn't today ("Monday"); nil = today.
@@ -1032,7 +1034,7 @@ enum LiveAPI {
     struct Today: Decodable {
         struct Client: Decodable { let name: String; let first: String; let goal: String?; let targetWeight: Double?; let photoUrl: String? }
         struct Program: Decodable { let name: String; let week: Int; let weeks: Int }
-        struct Planned: Decodable { let id: String; let name: String; let estMinutes: Int?; let count: Int; let first: String? }
+        struct Planned: Decodable { let id: String; let name: String; let estMinutes: Int?; let count: Int; let first: String?; var imageUrl: String? }
         struct Slot: Decodable { let assignmentId: String; let date: String; let status: String; let note: String?; let workout: Planned }
         struct Week: Decodable { let done: Int; let planned: Int }
         struct CheckIn: Decodable { let doneThisWeek: Bool }
@@ -1065,7 +1067,7 @@ enum LiveAPI {
 
     struct Nutrition: Decodable {
         struct Item: Decodable { let name: String; let grams: Double?; let portionText: String? }
-        struct Entry: Decodable { let id: String; let meal: String; let title: String?; let source: String?; let totals: Macros?; let items: [Item]? }
+        struct Entry: Decodable { let id: String; let meal: String; let title: String?; let source: String?; let totals: Macros?; let items: [Item]?; var imageUrl: String? }
         struct HabitRow: Decodable { let id: String; let title: String; let done: Bool; let streak: Int? }
         struct Favorite: Decodable { let id: String; let title: String }
         struct Features: Decodable { let photo: Bool?; let voice: Bool? }
@@ -1083,7 +1085,7 @@ enum LiveAPI {
 
     struct Thread: Decodable {
         struct Voice: Decodable { let durationS: Double? }
-        struct Message: Decodable { let id: String; let from: String; let body: String?; let at: String; let voice: Voice? }
+        struct Message: Decodable { let id: String; let from: String; let body: String?; let at: String; let voice: Voice?; var attachments: [ChatAttachment]?; var reactions: [ChatReaction]? }
         struct Features: Decodable { let voiceNotes: Bool? }
         let messages: [Message]
         let coach: Person?
@@ -1316,6 +1318,7 @@ extension ClientStore {
         }
         hasWorkout = slot != nil
         workoutDone = slot?.status == "completed"
+        workoutImageURL = slot?.workout.imageUrl
         if let slot {
             workoutTitle = Loc(same: slot.workout.name)
             var en = slot.workout.count == 1 ? "1 exercise" : "\(slot.workout.count) exercises"
@@ -1350,7 +1353,7 @@ extension ClientStore {
             }
             let item = FoodItem(name: Loc(same: e.title ?? items.first?.name ?? "Food"), quantity: quantity,
                                 kcal: e.totals?.calories ?? 0, protein: e.totals?.proteinG ?? 0,
-                                carbs: e.totals?.carbsG ?? 0, fat: e.totals?.fatG ?? 0, entryID: e.id)
+                                carbs: e.totals?.carbsG ?? 0, fat: e.totals?.fatG ?? 0, entryID: e.id, imageURL: e.imageUrl)
             meals[LiveAPI.meal(e.meal), default: []].append(item)
         }
         if yesterday {
@@ -1388,6 +1391,8 @@ extension ClientStore {
         chatBase = th.messages.map { m in
             var message = ChatMessage(fromMe: m.from == "me", text: Loc(same: m.body ?? ""), time: LiveAPI.time(m.at))
             message.serverID = m.id
+            message.attachments = m.attachments ?? []
+            message.reactions = m.reactions ?? []
             if let v = m.voice {
                 message.isVoice = true
                 message.seconds = Int((v.durationS ?? 0).rounded())

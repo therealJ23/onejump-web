@@ -86,7 +86,7 @@ struct LiveCoachDTO: Decodable {
         let items: [Item]; let runs: [Run]
     }
     struct Assist: Decodable { let requests: String; let approvedAsIs: String; let timeSaved: String }
-    struct Exercise: Decodable { let id: String; let name: LocDTO; let group: String; let equipment: LocDTO; let howTo: [LocDTO]; let alternatives: [LocDTO]; var custom: Bool?; var mediaType: String? }
+    struct Exercise: Decodable { let id: String; let name: LocDTO; let group: String; let equipment: LocDTO; let howTo: [LocDTO]; let alternatives: [LocDTO]; var custom: Bool?; var mediaType: String?; var imageUrl: String?; var imageCredit: String? }
 
     let me: Me
     let today: Today
@@ -197,7 +197,7 @@ extension CoachSnapshot {
         }
         library = d.library.map {
             LibraryExercise(id: $0.id, name: $0.name.loc, group: MuscleGroup(rawValue: $0.group) ?? .core, equipment: $0.equipment.loc,
-                            howTo: $0.howTo.map(\.loc), alternatives: $0.alternatives.map(\.loc), custom: $0.custom ?? false, mediaType: $0.mediaType)
+                            howTo: $0.howTo.map(\.loc), alternatives: $0.alternatives.map(\.loc), custom: $0.custom ?? false, mediaType: $0.mediaType, imageURL: $0.imageUrl, imageCredit: $0.imageCredit)
         }
         nutritionStats = d.nutrition.stats.map { KPI(value: $0.value, label: $0.label.loc, note: "") }
         nutritionSummary = d.nutrition.summary.loc
@@ -274,6 +274,7 @@ struct LiveThreadDTO: Decodable {
     struct Message: Decodable {
         let id: String; let fromMe: Bool; let text: String; let time: LocDTO; let isVoice: Bool
         var durationS: Int?; var summary: String?; var flag: String?
+        var attachments: [ChatAttachment]?; var reactions: [ChatReaction]?
     }
     let id: String
     let messages: [Message]
@@ -285,6 +286,8 @@ struct LiveThreadDTO: Decodable {
             t.seconds = m.durationS
             t.summary = m.summary
             t.flag = m.flag
+            t.attachments = m.attachments ?? []
+            t.reactions = m.reactions ?? []
             return t
         }
     }

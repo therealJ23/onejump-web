@@ -187,6 +187,9 @@ struct ThreadMessage: Identifiable {
     var flag: String?
     /// Still being sent.
     var pending = false
+    /// Build 7: photos, videos and GIFs on the message, and emoji reactions.
+    var attachments: [ChatAttachment] = []
+    var reactions: [ChatReaction] = []
 }
 
 struct CoachThread {
@@ -331,6 +334,9 @@ struct LibraryExercise: Identifiable {
     var custom = false
     /// "image" or "video" when the coach added their own photo or video.
     var mediaType: String?
+    /// A photo of the exercise (wger.de, credited) or OneJump's drawing of its movement pattern.
+    var imageURL: String?
+    var imageCredit: String?
 }
 
 // MARK: - Nutrition, automations, settings

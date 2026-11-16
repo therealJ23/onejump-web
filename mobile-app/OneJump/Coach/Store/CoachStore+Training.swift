@@ -34,7 +34,7 @@ struct ProgramDetailDTO: Decodable {
 struct WorkoutDTO: Decodable {
     struct SetDTO: Decodable { var reps: String?; var load: String?; var rpe: String?; var rest: String? }
     struct Item: Decodable { var id: String?; let exerciseId: String; var tempo: String?; var notes: String?; let sets: [SetDTO] }
-    struct Block: Decodable { var id: String?; let kind: String; let items: [Item] }
+    struct Block: Decodable { var id: String?; let kind: String; let items: [Item]; var section: String? }
     struct Workout: Decodable { let id: String; let name: String; var programId: String?; var day: Int?; let blocks: [Block]; var estMinutes: Int? }
     struct Ex: Decodable { let id: String; var name: String?; var equipment: String? }
     struct Program: Decodable { let id: String; let name: String }
@@ -100,6 +100,8 @@ struct EditableBlock: Identifiable, Equatable {
     var id: String
     var kind: String
     var items: [EditableItem]
+    /// warmup | main | cooldown (build 7).
+    var section: String = "main"
 }
 
 extension WorkoutDTO {
@@ -113,7 +115,7 @@ extension WorkoutDTO {
                     setCount: max(1, it.sets.count), reps: it.sets.first?.reps ?? "10", rest: it.sets.first?.rest ?? "60",
                     tempo: it.tempo ?? "", notes: it.notes ?? ""
                 )
-            })
+            }, section: b.section ?? "main")
         }
     }
 }
@@ -123,7 +125,7 @@ extension Array where Element == EditableBlock {
     var json: [[String: Any]] {
         filter { !$0.items.isEmpty }.map { b in
             [
-                "id": b.id, "kind": b.items.count > 1 ? b.kind : "single",
+                "id": b.id, "kind": b.items.count > 1 ? b.kind : "single", "section": b.section,
                 "items": b.items.map { it -> [String: Any] in
                     let set: [String: Any] = ["reps": it.reps, "load": "", "rpe": "", "rest": it.rest]
                     return ["id": it.id, "exerciseId": it.exerciseID, "tempo": it.tempo, "notes": it.notes,

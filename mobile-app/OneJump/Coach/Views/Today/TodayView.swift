@@ -9,10 +9,18 @@ struct TodayView: View {
         ScreenScroll {
             ScreenHeader(eyebrow: store.live ? CL.todayDate()(lang) : CT.date(lang),
                          title: store.live ? CL.greeting(store.me.first, hour: Calendar.current.component(.hour, from: Date()))(lang) : CT.greeting(lang)) {
-                ThemeToggleButton()
+                // Build 7: the profile photo opens what used to be the More tab.
+                Button { store.push(.moreMenu) } label: {
+                    Avatar(initials: store.me.initials, color: Palette.volt, size: 44, photoURL: store.me.photoURL, localImage: store.pendingProfilePhoto)
+                        .overlay(Circle().strokeBorder(Palette.surface, lineWidth: 2))
+                        .shadow(color: Palette.shadow, radius: 6, x: 0, y: 3)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(lang == .spanish ? "Perfil y más" : "Profile and more"))
             }
+            AskAssistBar()
+            QueueEntryCard()
             TimeSavedCard(label: store.data.minutesSavedLabel, sub: store.data.savedSub(lang))
-            MorningBriefingCard()
             tiles
             NeedsYouSection()
             sessions

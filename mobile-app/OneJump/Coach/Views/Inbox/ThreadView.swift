@@ -19,7 +19,7 @@ struct ThreadView: View {
                         translationNote
                     }
                     ForEach(Array(messages.enumerated()), id: \.element.id) { pair in
-                        bubble(pair.element, key: "\(threadID):\(pair.offset)")
+                        messageRow(pair.element, key: "\(threadID):\(pair.offset)")
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                     if let suggestion = thread?.suggestion, !store.usedSuggestion.contains(threadID) {
@@ -51,7 +51,7 @@ struct ThreadView: View {
     private var header: some View {
         let person = store.person(threadID)
         return HStack(spacing: 10) {
-            Avatar(initials: person.initials, color: Color(hex: person.avatar), size: 32)
+            Avatar(initials: person.initials, color: Color(hex: person.avatar), size: 34, photoURL: store.clientPhoto(threadID))
             VStack(alignment: .leading, spacing: 0) {
                 Text(person.name).font(OJFont.title).foregroundStyle(Palette.ink)
                 Text(person.sub(lang)).font(.archivo(11)).foregroundStyle(Palette.muted).lineLimit(1)
@@ -73,6 +73,32 @@ struct ThreadView: View {
         .background(Palette.infoTint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
+    /// A message with the client's photo beside it, its reactions under it, and a long-press menu to react.
+    private func messageRow(_ m: ThreadMessage, key: String) -> some View {
+        let person = store.person(threadID)
+        return VStack(alignment: m.fromMe ? .trailing : .leading, spacing: 4) {
+            HStack(alignment: .bottom, spacing: 8) {
+                if !m.fromMe {
+                    Avatar(initials: person.initials, color: Color(hex: person.avatar), size: 26, photoURL: store.clientPhoto(threadID))
+                }
+                bubble(m, key: key)
+                    .contextMenu {
+                        if m.serverID != nil && store.live {
+                            ReactionMenu(mine: m.myReaction) { emoji in
+                                Task { await store.react(emoji, to: m, in: threadID) }
+                            }
+                        }
+                        if !m.text(lang).isEmpty {
+                            Button { UIPasteboard.general.string = m.text(lang) } label: { Label(lang == .spanish ? "Copiar" : "Copy", systemImage: "doc.on.doc") }
+                        }
+                    }
+            }
+            ReactionChipsRow(reactions: m.reactions)
+                .padding(m.fromMe ? .trailing : .leading, m.fromMe ? 8 : 42)
+        }
+        .frame(maxWidth: .infinity, alignment: m.fromMe ? .trailing : .leading)
+    }
+
     private func bubble(_ m: ThreadMessage, key: String) -> some View {
         let showingOriginal = store.showOriginal.contains(key)
         let originalText: String? = m.fromMe ? m.outgoingTranslation : (showingOriginal ? m.original : nil)
@@ -82,7 +108,12 @@ struct ThreadView: View {
             if m.isVoice {
                 voiceMessage(m)
             } else {
-                Text(m.text(lang)).fixedSize(horizontal: false, vertical: true)
+                ForEach(Array(m.attachments.enumerated()), id: \.offset) { pair in
+                    AttachmentView(attachment: pair.element, maxWidth: 220)
+                }
+                if !m.text(lang).trimmingCharacters(in: .whitespaces).isEmpty {
+                    Text(m.text(lang)).fixedSize(horizontal: false, vertical: true)
+                }
             }
             if let originalText {
                 Divider().overlay(m.fromMe ? Palette.onPrimary.opacity(0.3) : Palette.line)
@@ -162,6 +193,9 @@ struct ThreadView: View {
             if recording {
                 RecordingStrip()
             } else {
+                AttachMenuButton { media in
+                    Task { await store.sendMedia(media, to: threadID) }
+                }
                 TextField(placeholder, text: $store.threadReply)
                     .font(.archivo(15))
                     .padding(.horizontal, 10)

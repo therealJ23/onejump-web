@@ -330,6 +330,10 @@ extension CoachStore {
     func askServer(_ question: String, history: [[String: String]], proposalID: String?, token: Int) async {
         var body: [String: Any] = ["question": question, "voice": voiceOn, "history": history, "lang": lang == .spanish ? "es" : "en"]
         if let proposalID { body["pendingProposalId"] = proposalID }
+        if voiceOn {
+            body["sttProvider"] = voice.sttProvider
+            body["audioMs"] = max(0, min(120_000, voice.lastUtteranceMs))
+        }
         // Screenshots and tests without a server use the one-shot answer.
         if Fixtures.isOn || streamUnavailable {
             await askServerOnce(body, token: token)
@@ -430,12 +434,6 @@ extension CoachStore {
     private func finishAnswer(_ r: AskResponse, streamedSpeech: Bool) {
         withAnimation(.snappy) { thinking = false }
         if let d = r.decided { markProposal(d.id, confirmed: d.confirmed, message: d.message) }
-        if r.action == "briefing" {
-            pushAssistant(AssistMessage(fromMe: false, text: CL.startingBriefing(lang), say: ""))
-            go(.today)
-            after(0.4) { [weak self] in self?.toggleBriefing() }
-            return
-        }
         var m = message(from: r)
         if streamedSpeech { m.say = "" } // already said, sentence by sentence
         pushAssistant(m)
@@ -484,7 +482,8 @@ extension CoachStore {
                 case "automations": self.go(.more); self.push(.automations)
                 case "settings": self.go(.more); self.push(.settings)
                 case "billing": self.go(.more); self.push(.billing)
-                case "more": self.go(.more)
+                case "more": self.go(.today); self.push(.moreMenu)
+                case "calendar": self.go(.more)
                 default: break
                 }
             }

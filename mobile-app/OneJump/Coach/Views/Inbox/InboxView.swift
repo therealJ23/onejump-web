@@ -50,12 +50,18 @@ struct InboxView: View {
         let person = store.person(id)
         let all = store.threadMessages(id)
         let last = all.last
-        let lastText = last.map { $0.isVoice ? CT.voiceNote(lang) : $0.text(lang) } ?? ""
+        let lastText = last.map { m -> String in
+            if m.isVoice { return CT.voiceNote(lang) }
+            if m.text(lang).trimmingCharacters(in: .whitespaces).isEmpty, let a = m.attachments.first {
+                return a.kind == "video" ? (lang == .spanish ? "🎥 Video" : "🎥 Video") : a.kind == "gif" ? "GIF" : (lang == .spanish ? "📷 Foto" : "📷 Photo")
+            }
+            return m.text(lang)
+        } ?? ""
         let prefix = (last?.fromMe ?? false) ? CT.youPrefix(lang) : ""
         let unread = (thread?.unread ?? false) && !store.readThreads.contains(id)
 
         return HStack(spacing: 12) {
-            Avatar(initials: person.initials, color: Color(hex: person.avatar))
+            Avatar(initials: person.initials, color: Color(hex: person.avatar), photoURL: store.clientPhoto(id))
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(person.name).font(OJFont.title).foregroundStyle(Palette.ink)

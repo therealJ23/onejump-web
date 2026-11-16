@@ -8,6 +8,7 @@ struct ClientTodayView: View {
     var body: some View {
         ScreenScroll {
             header
+            ClientWeekStrip()
             if store.live && store.paymentProblem {
                 Button { store.push(.me) } label: {
                     HStack(spacing: 12) {
@@ -31,7 +32,7 @@ struct ClientTodayView: View {
                 .buttonStyle(.plain)
             }
             if !store.habitList.isEmpty { habitsCard }
-            foodCard
+            ProteinHeroCard()
             ListCard {
                 if !store.live {
                     HStack(spacing: 12) {
@@ -94,6 +95,20 @@ struct ClientTodayView: View {
         let eyebrow: String = !store.hasWorkout ? CLT.restDay(lang)
             : (store.workoutDay.map { CLT.nextUp($0(lang))(lang) } ?? CLT.todaysWorkout(lang))
         return VStack(alignment: .leading, spacing: 12) {
+            if store.hasWorkout, let img = store.workoutImageURL {
+                RemotePhoto(path: img)
+                    .frame(height: 150)
+                    .frame(maxWidth: .infinity)
+                    .background(Palette.green)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(alignment: .bottomTrailing) {
+                        if store.workoutDone {
+                            Image(systemName: "checkmark").font(.system(size: 16, weight: .heavy)).foregroundStyle(Palette.deep)
+                                .frame(width: 36, height: 36).background(Circle().fill(Palette.volt)).padding(10)
+                        }
+                    }
+                    .accessibilityHidden(true)
+            }
             HStack {
                 Eyebrow(eyebrow, color: Palette.volt)
                 Spacer()

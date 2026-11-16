@@ -44,6 +44,25 @@ final class VoiceConversation {
     private var tapInstalled = false
     private var lastLevelSent = Date.distantPast
     private var observers: [NSObjectProtocol] = []
+    // Build 7: Deepgram Flux live speech when the server has it set up; the iPhone's recognizer otherwise.
+    private let fluxBox = FluxBox()
+    private var flux: FluxSTT?
+    private var fluxToken = 0
+    /// "deepgram-flux" or "apple": what heard the last sentence (sent with the question).
+    private(set) var sttProvider = "apple"
+    /// When the coach started the sentence that was just handed on (to time how long they spoke).
+    private(set) var lastUtteranceMs = 0
+    private var turnStarted: Date?
+    /// Flux bills for every second streamed, silence too: time streamed since the last hand-off.
+    private var fluxSince: Date?
+    /// The coach muted the microphone (Assist still talks; nothing is heard).
+    var isMuted: Bool {
+        get { fluxBox.isMuted }
+        set {
+            fluxBox.setMuted(newValue)
+            if newValue { silenceWork?.cancel(); lastPartial = ""; onPartial?("") }
+        }
+    }
 
     // MARK: Start and stop
 
@@ -77,8 +96,11 @@ final class VoiceConversation {
         guard format.sampleRate > 0, format.channelCount > 0 else { return false }
         if tapInstalled { input.removeTap(onBus: 0) }
         let box = self.box
+        let fluxBox = self.fluxBox
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
+            if fluxBox.isMuted { return }
             box.append(buffer)
+            fluxBox.send(buffer)
             self?.meter(buffer)
         }
         tapInstalled = true
@@ -93,7 +115,88 @@ final class VoiceConversation {
         isRunning = true
         observe()
         startTask()
+        connectFlux(language: language)
         return true
+    }
+
+    // MARK: Live speech (Deepgram Flux)
+
+    /// Opens Flux in the background; once it's connected it takes over from the iPhone's
+    /// recognizer (which keeps listening until then, so nothing is missed).
+    private func connectFlux(language: AppLanguage) {
+        fluxToken += 1
+        let token = fluxToken
+        Task { [weak self] in
+            guard let grant = await FluxSTT.token(lang: language) else { return }
+            await MainActor.run {
+                guard let self, self.isRunning, token == self.fluxToken, let stt = FluxSTT(token: grant) else { return }
+                stt.onOpen = { [weak self, weak stt] in
+                    guard let self, let stt, self.isRunning, token == self.fluxToken else { stt?.close(); return }
+                    // Flux is listening: stop the iPhone's recognizer.
+                    self.taskToken += 1
+                    self.task?.cancel()
+                    self.task = nil
+                    self.box.set(nil)
+                    self.idleWork?.cancel()
+                    self.silenceWork?.cancel()
+                    self.lastPartial = ""
+                    self.onPartial?("")
+                    self.sttProvider = "deepgram-flux"
+                    self.fluxSince = Date()
+                    self.fluxBox.set(stt)
+                }
+                stt.onEvent = { [weak self] event in
+                    guard let self, self.isRunning, token == self.fluxToken else { return }
+                    self.fluxHeard(event)
+                }
+                stt.onClose = { [weak self] in
+                    guard let self, token == self.fluxToken else { return }
+                    self.fluxBox.set(nil)
+                    self.flux = nil
+                    guard self.isRunning, self.sttProvider == "deepgram-flux" else { return }
+                    // Dropped: go back to the iPhone's recognizer right away.
+                    self.sttProvider = "apple"
+                    self.startTask()
+                }
+                self.flux = stt
+                stt.connect()
+            }
+        }
+    }
+
+    private func fluxHeard(_ event: FluxSTT.Event) {
+        switch event {
+        case .startOfTurn(let text):
+            turnStarted = Date()
+            if !text.isEmpty { fluxPartial(text) }
+        case .partial(let text):
+            if turnStarted == nil { turnStarted = Date() }
+            fluxPartial(text)
+        case .endOfTurn(let text):
+            let clean = withoutEcho(text.isEmpty ? lastPartial : text).trimmingCharacters(in: .whitespacesAndNewlines)
+            lastUtteranceMs = min(120_000, Int(Date().timeIntervalSince(fluxSince ?? turnStarted ?? Date()) * 1000))
+            fluxSince = Date()
+            turnStarted = nil
+            lastPartial = ""
+            bargedIn = false
+            onPartial?("")
+            // While Assist talks, only real words from the coach count (not Assist's own echo).
+            if isSpeaking && !isCoachTalking(clean) { return }
+            if !clean.isEmpty { onUtterance?(clean) }
+        }
+    }
+
+    private func fluxPartial(_ text: String) {
+        if isSpeaking && !bargedIn {
+            guard isCoachTalking(text) else { return }
+            bargedIn = true
+            stopSpeaking()
+            onBargeIn?()
+        }
+        let clean = withoutEcho(text)
+        guard !clean.isEmpty, clean != lastPartial else { return }
+        lastPartial = clean
+        onPartial?(clean)
     }
 
     /// Stops listening and speaking.
@@ -115,12 +218,19 @@ final class VoiceConversation {
         observers.forEach(NotificationCenter.default.removeObserver)
         observers = []
         lastPartial = ""
+        fluxToken += 1
+        fluxBox.set(nil)
+        flux?.close()
+        flux = nil
+        sttProvider = "apple"
+        fluxBox.setMuted(false)
     }
 
     // MARK: Listening
 
     private func startTask() {
-        guard isRunning, let recognizer else { return }
+        guard isRunning, let recognizer, fluxBox.stt == nil else { return }
+        turnStarted = nil
         taskToken += 1
         let token = taskToken
         task?.cancel()
@@ -163,6 +273,7 @@ final class VoiceConversation {
         }
         let clean = withoutEcho(text)
         guard !clean.isEmpty else { return }
+        if turnStarted == nil { turnStarted = Date() }
         if clean != lastPartial {
             lastPartial = clean
             onPartial?(clean)
@@ -188,6 +299,7 @@ final class VoiceConversation {
         guard token == taskToken else { return }
         silenceWork?.cancel()
         let text = lastPartial.trimmingCharacters(in: .whitespacesAndNewlines)
+        lastUtteranceMs = turnStarted.map { Int(Date().timeIntervalSince($0) * 1000) } ?? 0
         box.set(nil)
         startTask()
         onPartial?("")

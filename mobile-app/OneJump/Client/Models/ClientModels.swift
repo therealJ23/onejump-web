@@ -58,6 +58,8 @@ struct FoodItem: Identifiable {
     var confidence: String? = nil
     /// Live accounts: the saved entry (or favorite) this row stands for.
     var entryID: String? = nil
+    /// A picture of the food (build 7: OneJump's food illustrations).
+    var imageURL: String? = nil
 
     /// The same food at a different portion ("2 × 1 cup").
     func scaled(_ multiplier: Double) -> FoodItem {
@@ -143,6 +145,9 @@ struct ChatMessage: Identifiable {
     var seconds: Int?
     /// Live accounts: the message's id on the server (to play its audio).
     var serverID: String? = nil
+    /// Build 7: photos, videos and GIFs on the message, and emoji reactions.
+    var attachments: [ChatAttachment] = []
+    var reactions: [ChatReaction] = []
 }
 
 // MARK: - Live account

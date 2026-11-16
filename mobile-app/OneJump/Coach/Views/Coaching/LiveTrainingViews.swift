@@ -110,6 +110,17 @@ struct LiveProgramDetailView: View {
                 }
             }
 
+            Button { store.push(.planner(programID)) } label: {
+                HStack(spacing: 12) {
+                    IconTile(systemName: "calendar", size: 40)
+                    TitleSub(lang == .spanish ? "Planear por semana" : "Plan by week",
+                             sub: lang == .spanish ? "Mueve días y copia una semana entera" : "Move days and copy a whole week")
+                    Image(systemName: "chevron.right").foregroundStyle(Palette.muted)
+                }
+                .card(padding: 12)
+            }
+            .buttonStyle(.plain)
+
             SectionHeader(TT.workouts(lang), link: TT.addWorkout(lang)) {
                 Task { await store.addWorkout(to: programID) }
             }
@@ -229,8 +240,14 @@ struct LiveWorkoutEditorView: View {
                 if rows.isEmpty {
                     EmptyStateCard(systemImage: "dumbbell", title: TT.noExercises(lang), message: TT.noExercisesBody(lang))
                 } else {
-                    ForEach(rows) { row in
-                        itemCard(row.item, blockID: row.blockID, number: row.number)
+                    ForEach(["warmup", "main", "cooldown"], id: \.self) { section in
+                        let inSection = rows.filter { $0.section == section }
+                        if !inSection.isEmpty {
+                            SectionHeader(Self.sectionName(section, lang))
+                            ForEach(inSection) { row in
+                                itemCard(row.item, blockID: row.blockID, number: row.number)
+                            }
+                        }
                     }
                 }
 
@@ -311,15 +328,55 @@ struct LiveWorkoutEditorView: View {
         let blockID: String
         let item: EditableItem
         let number: Int
+        let section: String
         var id: String { item.id }
     }
 
     private var editorRows: [EditorRow] {
         var out: [EditorRow] = []
-        for b in blocks {
-            for it in b.items { out.append(EditorRow(blockID: b.id, item: it, number: out.count + 1)) }
+        for section in ["warmup", "main", "cooldown"] {
+            for b in blocks where b.section == section {
+                for it in b.items { out.append(EditorRow(blockID: b.id, item: it, number: out.count + 1, section: section)) }
+            }
         }
         return out
+    }
+
+    static func sectionName(_ s: String, _ lang: AppLanguage) -> String {
+        switch s {
+        case "warmup": return lang == .spanish ? "Calentamiento" : "Warm-up"
+        case "cooldown": return lang == .spanish ? "Enfriamiento" : "Cool-down"
+        default: return lang == .spanish ? "Principal" : "Main"
+        }
+    }
+
+    /// Moves an exercise to another section.
+    private func move(_ itemID: String, from blockID: String, to section: String) {
+        guard let b = blocks.firstIndex(where: { $0.id == blockID }), let i = blocks[b].items.firstIndex(where: { $0.id == itemID }) else { return }
+        withAnimation(.snappy) {
+            let item = blocks[b].items.remove(at: i)
+            if blocks[b].items.isEmpty { blocks.remove(at: b) }
+            blocks.append(EditableBlock(id: "b_" + UUID().uuidString.prefix(8).lowercased(), kind: "single", items: [item], section: section))
+        }
+        dirty = true
+    }
+
+    /// Joins an exercise with the one after it as a superset, or splits it back out.
+    private func toggleSuperset(_ blockID: String) {
+        guard let b = blocks.firstIndex(where: { $0.id == blockID }) else { return }
+        withAnimation(.snappy) {
+            if blocks[b].items.count > 1 {
+                let rest = blocks[b].items.dropFirst().map { EditableBlock(id: "b_" + UUID().uuidString.prefix(8).lowercased(), kind: "single", items: [$0], section: blocks[b].section) }
+                blocks[b].items = [blocks[b].items[0]]
+                blocks[b].kind = "single"
+                blocks.insert(contentsOf: rest, at: b + 1)
+            } else if let next = blocks.indices.first(where: { $0 > b && blocks[$0].section == blocks[b].section }) {
+                blocks[b].items.append(contentsOf: blocks[next].items)
+                blocks[b].kind = "superset"
+                blocks.remove(at: next)
+            }
+        }
+        dirty = true
     }
 
     private func binding(_ itemID: String, blockID: String) -> Binding<EditableItem>? {
@@ -339,11 +396,43 @@ struct LiveWorkoutEditorView: View {
         if let bound = binding(item.id, blockID: blockID) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
-                    Text("\(number)")
-                        .font(.archivo(13, .heavy))
-                        .frame(width: 28, height: 28)
-                        .background(Palette.surface3, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                    Text(item.name).font(OJFont.title).foregroundStyle(Palette.ink)
+                    let pic = store.data.library.first { $0.id == item.exerciseID }?.imageURL
+                    ExerciseThumb(path: pic)
+                        .frame(width: 52, height: 52)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(alignment: .topLeading) {
+                            Text("\(number)")
+                                .font(.archivo(11, .heavy))
+                                .foregroundStyle(Palette.bone)
+                                .frame(width: 20, height: 20)
+                                .background(Circle().fill(Palette.deep))
+                                .offset(x: -6, y: -6)
+                        }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.name).font(OJFont.title).foregroundStyle(Palette.ink)
+                        let block = blocks.first { $0.id == blockID }
+                        HStack(spacing: 6) {
+                            Menu {
+                                ForEach(["warmup", "main", "cooldown"], id: \.self) { sec in
+                                    Button(Self.sectionName(sec, lang)) { move(item.id, from: blockID, to: sec) }
+                                }
+                            } label: {
+                                Label(Self.sectionName(block?.section ?? "main", lang), systemImage: "chevron.up.chevron.down")
+                                    .font(.archivo(11.5, .semibold)).foregroundStyle(Palette.muted)
+                                    .padding(.horizontal, 8).frame(height: 24)
+                                    .background(Capsule().fill(Palette.surface2))
+                            }
+                            Button { toggleSuperset(blockID) } label: {
+                                Label((block?.items.count ?? 1) > 1 ? (lang == .spanish ? "Superserie" : "Superset") : (lang == .spanish ? "Unir" : "Link"), systemImage: "link")
+                                    .font(.archivo(11.5, .semibold))
+                                    .foregroundStyle((block?.items.count ?? 1) > 1 ? Palette.deep : Palette.muted)
+                                    .padding(.horizontal, 8).frame(height: 24)
+                                    .background(Capsule().fill((block?.items.count ?? 1) > 1 ? Palette.volt : Palette.surface2))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Text(lang == .spanish ? "Superserie con el siguiente" : "Superset with the next one"))
+                        }
+                    }
                     Spacer(minLength: 0)
                     Button {
                         withAnimation(.snappy) {
@@ -392,7 +481,7 @@ struct LiveWorkoutEditorView: View {
     }
 }
 
-/// Pick one exercise from the library (search + muscle group).
+/// Pick exercises from the library as a picture grid: tap several, then "Add". Search and muscle groups filter.
 struct ExercisePickerSheet: View {
     let onPick: (LibraryExercise) -> Void
     @Environment(CoachStore.self) private var store
@@ -400,6 +489,7 @@ struct ExercisePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
     @State private var group: MuscleGroup = .all
+    @State private var chosen: [String] = []
 
     var body: some View {
         NavigationStack {
@@ -410,20 +500,12 @@ struct ExercisePickerSheet: View {
                         Chip(label: g.label(lang), isOn: group == g) { withAnimation(.snappy) { group = g } }
                     }
                 }
-                ListCard {
-                    DividedRows(filtered) { exercise in
-                        Button {
-                            onPick(exercise)
-                            dismiss()
-                        } label: {
-                            HStack(spacing: 12) {
-                                IconTile(systemName: exercise.mediaType == "video" ? "play.rectangle.fill" : exercise.mediaType == "image" ? "photo" : "dumbbell")
-                                TitleSub(exercise.name(lang), sub: "\(exercise.group.label(lang)) · \(exercise.equipment(lang))")
-                                Image(systemName: "plus.circle.fill").foregroundStyle(Palette.good)
-                            }
-                            .rowPadding()
-                        }
-                        .buttonStyle(.row)
+                if filtered.isEmpty {
+                    EmptyStateCard(systemImage: "magnifyingglass", title: lang == .spanish ? "Nada con ese nombre" : "No exercise by that name")
+                }
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                    ForEach(filtered) { exercise in
+                        tile(exercise)
                     }
                 }
             }
@@ -431,13 +513,84 @@ struct ExercisePickerSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button(TT.cancel(lang)) { dismiss() } }
             }
+            .safeAreaInset(edge: .bottom) {
+                if !chosen.isEmpty {
+                    Button {
+                        let byID = Dictionary(store.data.library.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+                        for id in chosen { if let x = byID[id] { onPick(x) } }
+                        dismiss()
+                    } label: {
+                        Text(lang == .spanish ? "Añadir \(chosen.count)" : "Add \(chosen.count)")
+                    }
+                    .buttonStyle(.oj(.primary, size: .large, fullWidth: true))
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.snappy, value: chosen)
         }
+    }
+
+    private func tile(_ exercise: LibraryExercise) -> some View {
+        let n = chosen.firstIndex(of: exercise.id).map { $0 + 1 }
+        return Button {
+            if let i = chosen.firstIndex(of: exercise.id) { chosen.remove(at: i) } else { chosen.append(exercise.id) }
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack(alignment: .topTrailing) {
+                    ExerciseThumb(path: exercise.imageURL, systemImage: exercise.mediaType == "video" ? "play.rectangle.fill" : "dumbbell")
+                        .frame(height: 104)
+                        .frame(maxWidth: .infinity)
+                        .clipped()
+                    Group {
+                        if let n {
+                            Text("\(n)").font(.archivo(13, .heavy)).foregroundStyle(Palette.deep)
+                                .frame(width: 28, height: 28).background(Circle().fill(Palette.volt))
+                        } else {
+                            Image(systemName: "plus").font(.system(size: 13, weight: .bold)).foregroundStyle(Palette.ink)
+                                .frame(width: 28, height: 28).background(Circle().fill(Palette.surface.opacity(0.92)))
+                        }
+                    }
+                    .padding(8)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(exercise.name(lang)).font(.archivo(13.5, .bold)).foregroundStyle(Palette.ink).lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("\(exercise.group.label(lang)) · \(exercise.equipment(lang))").font(.archivo(11.5)).foregroundStyle(Palette.muted).lineLimit(1)
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Palette.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(n != nil ? Palette.green : Palette.line, lineWidth: n != nil ? 2 : 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(exercise.name(lang)))
+        .accessibilityAddTraits(n != nil ? .isSelected : [])
     }
 
     private var filtered: [LibraryExercise] {
         let q = search.trimmingCharacters(in: .whitespaces).lowercased()
         return store.data.library.filter { x in
             (group == .all || x.group == group) && (q.isEmpty || x.name(lang).lowercased().contains(q) || x.equipment(lang).lowercased().contains(q))
+        }
+    }
+}
+
+/// An exercise's picture, or an icon while there isn't one.
+struct ExerciseThumb: View {
+    let path: String?
+    var systemImage = "dumbbell"
+    var body: some View {
+        ZStack {
+            Palette.surface3
+            if let path, !path.isEmpty {
+                RemotePhoto(path: path)
+            } else {
+                Image(systemName: systemImage).font(.system(size: 26, weight: .semibold)).foregroundStyle(Palette.muted)
+            }
         }
     }
 }

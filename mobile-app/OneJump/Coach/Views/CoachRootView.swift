@@ -83,10 +83,12 @@ struct CoachRootView: View {
             .badge(store.unreadCount + store.openCheckInCount)
             .tag(CoachTab.inbox)
 
+            // Build 7: the fifth tab is the Calendar (the More menu opens from the profile photo
+            // on Today, or the grid button here). Screens Assist opens "in More" stack on it.
             NavigationStack(path: $store.morePath) {
-                MoreView().coachDestinations()
+                CoachCalendarScreen().coachDestinations()
             }
-            .tabItem { Label(CT.more(lang), systemImage: "square.grid.2x2") }
+            .tabItem { Label(lang == .spanish ? "Calendario" : "Calendar", systemImage: "calendar") }
             .tag(CoachTab.more)
         }
         .overlay {
@@ -197,6 +199,9 @@ private struct CoachDestination: View {
         case .library: ExerciseLibraryView()
         case .exercise(let id): ExerciseDetailView(exerciseID: id)
         case .workout(let id): LiveWorkoutEditorView(workoutID: id)
+        case .moreMenu: MoreView()
+        case .planner(let id): WeekPlannerView(programID: id)
+        case .queue: ApproveQueueView()
         case .nutrition: NutritionView()
         case .automations: AutomationsView()
         case .settings: CoachSettingsView()

@@ -32,7 +32,7 @@ struct CoachChatView: View {
                     }
 
                     ForEach(store.allChat) { message in
-                        bubble(message)
+                        messageRow(message)
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                     if store.recordingVoiceMessage, !VoiceNoteRecorder.shared.transcript.isEmpty {
@@ -74,6 +74,28 @@ struct CoachChatView: View {
         .toolbar(.hidden, for: .navigationBar)
     }
 
+    /// The coach's photo beside their messages, reactions under each one, long-press to react.
+    private func messageRow(_ message: ChatMessage) -> some View {
+        VStack(alignment: message.fromMe ? .trailing : .leading, spacing: 4) {
+            HStack(alignment: .bottom, spacing: 8) {
+                if !message.fromMe {
+                    Avatar(initials: store.coachPerson.initials, color: Palette.volt, size: 26, photoURL: store.coachPerson.photoURL)
+                }
+                bubble(message)
+                    .contextMenu {
+                        if store.live, message.serverID != nil {
+                            ReactionMenu(mine: message.myReaction) { emoji in
+                                Task { await store.react(emoji, to: message) }
+                            }
+                        }
+                    }
+            }
+            ReactionChipsRow(reactions: message.reactions)
+                .padding(message.fromMe ? .trailing : .leading, message.fromMe ? 8 : 42)
+        }
+        .frame(maxWidth: .infinity, alignment: message.fromMe ? .trailing : .leading)
+    }
+
     private func bubble(_ message: ChatMessage) -> some View {
         let translated = lang != .english && !message.fromMe && message.original != nil
         let showingOriginal = store.showOriginal.contains(message.id)
@@ -92,7 +114,12 @@ struct CoachChatView: View {
                     Text("“\(message.text(lang))”").font(.archivo(13)).opacity(0.85).fixedSize(horizontal: false, vertical: true)
                 }
             } else {
-                Text(message.text(lang)).fixedSize(horizontal: false, vertical: true)
+                ForEach(Array(message.attachments.enumerated()), id: \.offset) { pair in
+                    AttachmentView(attachment: pair.element, maxWidth: 220)
+                }
+                if !message.text(lang).trimmingCharacters(in: .whitespaces).isEmpty {
+                    Text(message.text(lang)).fixedSize(horizontal: false, vertical: true)
+                }
             }
             if translated, showingOriginal, let original = message.original {
                 Divider()
@@ -137,6 +164,11 @@ struct CoachChatView: View {
             if recording {
                 RecordingStrip()
             } else {
+                if store.live {
+                    AttachMenuButton { media in
+                        Task { await store.sendMedia(media) }
+                    }
+                }
                 TextField(store.live ? CLT.messageTo(store.coachPerson.first.isEmpty ? CLT.yourCoach(lang).lowercased() : store.coachPerson.first)(lang) : CLT.messageAlex(lang), text: $store.chatInput)
                     .font(.archivo(15))
                     .padding(.horizontal, 10)

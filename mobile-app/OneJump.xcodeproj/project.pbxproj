@@ -96,6 +96,17 @@
 		4D36C6C2AFB110F9CAC9D9D8 /* Archivo-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3F7EB6DB846506433EC77F07 /* Archivo-SemiBold.ttf */; };
 		5DDBF56ADE2A3FA417AF0D28 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0DB7571B8334F5E7680A9B20 /* Assets.xcassets */; };
 		5F1E99A52A8A46D7F225CE0C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B9E5847DAA7318B9D0B61665 /* PrivacyInfo.xcprivacy */; };
+		9B017EE256DA1BF4E750ECA8 /* ApproveQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3806B67F39D95EBC8266F602 /* ApproveQueueView.swift */; };
+		8F66E2BF1D0204987F713C2A /* ChatMediaViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A45705680BA1B733A7B6EAD /* ChatMediaViews.swift */; };
+		3F03BBC5A39259E7D4BB2880 /* ClientCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EA2BDC715FC5168A6EF83FB /* ClientCalendarView.swift */; };
+		D394D8E0B2E8ECB5344C0227 /* ClientFoodBuild7.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F9E9BE816EF9CBBBC01795 /* ClientFoodBuild7.swift */; };
+		2383DE9B551777AF78CE75C4 /* ClientStore+V7.swift in Sources */ = {isa = PBXBuildFile; fileRef = B337D8F7B7DB0286426179CB /* ClientStore+V7.swift */; };
+		CF943B6A6CC841C7FC4B9C53 /* CoachCalendarScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E83CB7EC0291F9D7BA626775 /* CoachCalendarScreen.swift */; };
+		8E3B7C0FCA8A8EF37D817DFC /* CoachStore+V7.swift in Sources */ = {isa = PBXBuildFile; fileRef = D97E87F000C699A7ECF34047 /* CoachStore+V7.swift */; };
+		0D36DD7AF6C4A17A3640BBCE /* FluxSTT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5323C9D6CDF61E1F0E8F3EC7 /* FluxSTT.swift */; };
+		7FDD937C773D757D57FB86E6 /* TodayBuild7.swift in Sources */ = {isa = PBXBuildFile; fileRef = E41098343EB1133098DD24F6 /* TodayBuild7.swift */; };
+		ABE28184C7AC33324B67C14D /* V7Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6371859A692E6B9183F92F3A /* V7Models.swift */; };
+		A1BFE2337704EEF2C350AE7D /* WeekPlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21260DC04A850332A1D06CBC /* WeekPlannerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -189,6 +200,17 @@
 		3F7EB6DB846506433EC77F07 /* Archivo-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Archivo-SemiBold.ttf"; sourceTree = "<group>"; };
 		0DB7571B8334F5E7680A9B20 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B9E5847DAA7318B9D0B61665 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		3806B67F39D95EBC8266F602 /* ApproveQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApproveQueueView.swift; sourceTree = "<group>"; };
+		9A45705680BA1B733A7B6EAD /* ChatMediaViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMediaViews.swift; sourceTree = "<group>"; };
+		4EA2BDC715FC5168A6EF83FB /* ClientCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientCalendarView.swift; sourceTree = "<group>"; };
+		A3F9E9BE816EF9CBBBC01795 /* ClientFoodBuild7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientFoodBuild7.swift; sourceTree = "<group>"; };
+		B337D8F7B7DB0286426179CB /* ClientStore+V7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientStore+V7.swift; sourceTree = "<group>"; };
+		E83CB7EC0291F9D7BA626775 /* CoachCalendarScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachCalendarScreen.swift; sourceTree = "<group>"; };
+		D97E87F000C699A7ECF34047 /* CoachStore+V7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachStore+V7.swift; sourceTree = "<group>"; };
+		5323C9D6CDF61E1F0E8F3EC7 /* FluxSTT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluxSTT.swift; sourceTree = "<group>"; };
+		E41098343EB1133098DD24F6 /* TodayBuild7.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayBuild7.swift; sourceTree = "<group>"; };
+		6371859A692E6B9183F92F3A /* V7Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V7Models.swift; sourceTree = "<group>"; };
+		21260DC04A850332A1D06CBC /* WeekPlannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekPlannerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -226,6 +248,7 @@
 				167D583AA012AB12C91158C0 /* Coach */,
 				35D315DEBBF45F223B169A61 /* Core */,
 				887A6F90336FF23D95C3914B /* Resources */,
+				539B17ABBE2A56E884C54BC8 /* Build7 */,
 			);
 			path = OneJump;
 			sourceTree = "<group>";
@@ -626,6 +649,24 @@
 			path = Fonts;
 			sourceTree = "<group>";
 		};
+		539B17ABBE2A56E884C54BC8 /* Build7 */ = {
+			isa = PBXGroup;
+			children = (
+				21260DC04A850332A1D06CBC /* WeekPlannerView.swift */,
+				6371859A692E6B9183F92F3A /* V7Models.swift */,
+				E41098343EB1133098DD24F6 /* TodayBuild7.swift */,
+				5323C9D6CDF61E1F0E8F3EC7 /* FluxSTT.swift */,
+				D97E87F000C699A7ECF34047 /* CoachStore+V7.swift */,
+				E83CB7EC0291F9D7BA626775 /* CoachCalendarScreen.swift */,
+				B337D8F7B7DB0286426179CB /* ClientStore+V7.swift */,
+				A3F9E9BE816EF9CBBBC01795 /* ClientFoodBuild7.swift */,
+				4EA2BDC715FC5168A6EF83FB /* ClientCalendarView.swift */,
+				9A45705680BA1B733A7B6EAD /* ChatMediaViews.swift */,
+				3806B67F39D95EBC8266F602 /* ApproveQueueView.swift */,
+			);
+			path = Build7;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -703,6 +744,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1BFE2337704EEF2C350AE7D /* WeekPlannerView.swift in Sources */,
+				ABE28184C7AC33324B67C14D /* V7Models.swift in Sources */,
+				7FDD937C773D757D57FB86E6 /* TodayBuild7.swift in Sources */,
+				0D36DD7AF6C4A17A3640BBCE /* FluxSTT.swift in Sources */,
+				8E3B7C0FCA8A8EF37D817DFC /* CoachStore+V7.swift in Sources */,
+				CF943B6A6CC841C7FC4B9C53 /* CoachCalendarScreen.swift in Sources */,
+				2383DE9B551777AF78CE75C4 /* ClientStore+V7.swift in Sources */,
+				D394D8E0B2E8ECB5344C0227 /* ClientFoodBuild7.swift in Sources */,
+				3F03BBC5A39259E7D4BB2880 /* ClientCalendarView.swift in Sources */,
+				8F66E2BF1D0204987F713C2A /* ChatMediaViews.swift in Sources */,
+				9B017EE256DA1BF4E750ECA8 /* ApproveQueueView.swift in Sources */,
 				F30DED1EBA42C0BC05F91D8C /* AppSettings.swift in Sources */,
 				28827A7DF5973C7B86B616C4 /* OneJumpApp.swift in Sources */,
 				E778BEAA207CC8A8B11361D2 /* RootView.swift in Sources */,
@@ -915,7 +967,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = J575M856A5;
 				ENABLE_PREVIEWS = YES;
@@ -952,7 +1004,7 @@
 				CODE_SIGN_IDENTITY = "Apple Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 6;
+				CURRENT_PROJECT_VERSION = 7;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = J575M856A5;

@@ -124,6 +124,7 @@ extension View {
             case .checkIn: WeeklyCheckInView()
             case .book: BookSessionView()
             case .me: MeView()
+            case .calendar: ClientCalendarView()
             }
         }
     }

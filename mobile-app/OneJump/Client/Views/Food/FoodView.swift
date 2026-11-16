@@ -20,7 +20,9 @@ struct FoodView: View {
                 selection: $store.foodDay
             )
 
-            if let targets = store.targets {
+            if store.targets != nil && !store.hideNumbers && store.foodDay == .today {
+                ProteinHeroCard(tappable: false)
+            } else if let targets = store.targets {
                 HStack(spacing: 16) {
                     CalorieRing(eaten: totals.kcal, target: targets.kcal)
                     VStack(alignment: .leading, spacing: 10) {
@@ -64,6 +66,8 @@ struct FoodView: View {
             ForEach(Meal.allCases, id: \.self) { meal in
                 mealCard(meal, items: meals[meal] ?? [])
             }
+
+            if store.live { RecipeCarousel() }
 
             if !store.favoriteFoods.isEmpty {
                 SectionHeader(CLT.quickAdd(lang), note: CLT.yourFavorites(lang))
@@ -123,7 +127,8 @@ struct FoodView: View {
                 SubText(CLT.nothingYet(lang))
             } else {
                 DividedRows(items) { item in
-                    HStack {
+                    HStack(spacing: 12) {
+                        FoodThumb(path: item.imageURL)
                         TitleSub(item.name(lang), sub: item.quantity(lang))
                         if !store.hideNumbers {
                             VStack(alignment: .trailing, spacing: 2) {
@@ -150,5 +155,22 @@ struct FoodView: View {
             }
         }
         .card(padding: 14)
+    }
+}
+
+/// A food's picture in a meal row (or a fork and knife while it has none).
+struct FoodThumb: View {
+    let path: String?
+    var body: some View {
+        ZStack {
+            Palette.surface2
+            if let path, !path.isEmpty {
+                RemotePhoto(path: path).padding(4)
+            } else {
+                Image(systemName: "fork.knife").font(.system(size: 14, weight: .semibold)).foregroundStyle(Palette.muted)
+            }
+        }
+        .frame(width: 44, height: 44)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

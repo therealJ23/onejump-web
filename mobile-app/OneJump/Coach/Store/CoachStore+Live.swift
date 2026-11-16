@@ -32,8 +32,7 @@ extension CoachStore {
                 pendingLink = nil
                 open(link: link)
             }
-            // The briefing and its voice get ready in the background, so play starts right away.
-            Task { @MainActor [weak self] in await self?.prepareBriefing() }
+            // (The morning briefing was removed in build 7: nothing to prepare.)
             // Assist gets ready too: speech recognition expects these names, the server primes
             // the AI, and Assist's common lines are fetched so they play without waiting.
             updateSpeechHints()

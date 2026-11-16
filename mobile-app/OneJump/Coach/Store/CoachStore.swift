@@ -15,6 +15,11 @@ enum CoachRoute: Hashable {
     case exercise(String)
     /// One workout of a program (live): its exercises, sets and reps.
     case workout(String)
+    /// Build 7: the old More tab's menu (opened from the profile photo), the week planner of a
+    /// program, and the approve-all queue. The fifth tab is now the Calendar.
+    case moreMenu
+    case planner(String)
+    case queue
 }
 
 enum InboxSegment: Hashable { case messages, checkIns }
@@ -216,7 +221,9 @@ final class CoachStore {
         case "assist": go(.assist)
         case "inbox": go(.inbox)
         case "checkins": openInbox(.checkIns)
-        case "more": go(.more)
+        case "more": go(.today); push(.moreMenu)
+        case "calendar": go(.more)
+        case "queue": go(.today); push(.queue)
         case "client": go(.clients); push(.client(id))
         case "food", "plan":
             let clientID = id.isEmpty || id == "first" ? (data.clients.first?.id ?? "") : id

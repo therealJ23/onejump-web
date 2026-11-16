@@ -249,8 +249,21 @@ final class VoiceService {
         }
     }
 
+    /// Which speech recognizer heard the last sentence ("deepgram" for Flux, else "apple").
+    var sttProvider: String { conversation.sttProvider == "deepgram-flux" ? "deepgram" : "apple" }
+    /// Audio behind the last sentence, in ms (Flux: streamed since the last one).
+    var lastUtteranceMs: Int { conversation.lastUtteranceMs }
+    /// The coach muted the microphone in voice mode.
+    private(set) var micMuted = false
+    func setMicMuted(_ on: Bool) {
+        conversation.isMuted = on
+        micMuted = on
+        if on { heard = ""; inputLevel = 0 }
+    }
+
     func stopConversation() {
         guard isConversing || conversation.isRunning else { return }
+        micMuted = false
         conversation.stop()
         isConversing = false
         isListening = false
