@@ -19,6 +19,7 @@ import { AI } from '../ai/AIService.js';
 import { splitFoods } from '../../public/js/shared/parse.js';
 import { startOfMonthUtc } from '../lib/time.js';
 import { guardClientTranscript } from '../voice/voiceNotes.js';
+import { ensureStarterRecipes, shapeRecipe, bestForProtein } from '../nutrition/recipes.js';
 
 export const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 6 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
@@ -68,6 +69,24 @@ router.get('/nutrition/today', query(dayParam), async (req, res) => {
     features: { photo: pro, voice: pro },
     credits: [CREDITS.usda, CREDITS.off],
   }));
+});
+
+// ---------------------------------------------------------------- the coach's recipe book
+// Recipes are coach-owned (clients can't read the table), so this reads them through the coach's
+// scope and only returns the shared ones. Hide-numbers plans get no macros or grams.
+router.get('/recipes', async (req, res) => {
+  const { client, plan, tz, coach } = await ctx(req);
+  await ensureStarterRecipes(coach);
+  const hide = !!plan.hideNumbers || plan.approach === 'habits';
+  const list = await Promise.all((await coach.recipe.findMany({ where: { shared: true }, orderBy: { name: 'asc' }, take: 60 })).map(r => shapeRecipe(r, { hideNumbers: hide })));
+  let suggestion = null;
+  if (!hide && plan.proteinG) {
+    const items = (await entriesBetween(req.db, client.id, dayKey(tz), dayKey(tz))).flatMap(e => e.items);
+    const remaining = Math.round(plan.proteinG - sumItems(items).proteinG);
+    const best = bestForProtein(list, remaining);
+    if (best) suggestion = { recipeId: best.id, remainingProteinG: remaining, text: `${remaining} g of protein to go. ${best.name} has ${Math.round(best.perServing.proteinG)} g.` };
+  }
+  res.json({ recipes: list, suggestion, hideNumbers: hide });
 });
 
 // ---------------------------------------------------------------- habits

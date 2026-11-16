@@ -750,6 +750,11 @@ model Recipe {
   ingredients Json // [{ name, grams, foodRef? }]
   steps       Json // [text]
   perServing  Json // { calories, proteinG, carbsG, fatG }
+  photoKey    String? // the coach's own photo (private storage)
+  art         String? // built-in picture key (public/img/food/<art>.png) when there's no photo
+  minutes     Int?
+  tags        Json? // ["High protein", "Breakfast"]
+  shared      Boolean  @default(true) // in the clients' recipe book
   createdAt   DateTime @default(now())
 
   @@index([businessId])

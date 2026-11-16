@@ -4,6 +4,7 @@ import { foods, nutrientsFor } from './foods.js';
 import { todayKey, addDays, localParts, dateToYmd } from '../lib/time.js';
 import { weightSeries } from '../core/stats.js';
 import { badRequest } from '../lib/errors.js';
+import { foodArtUrl } from './foodArt.js';
 
 export const MEALS = ['breakfast', 'lunch', 'dinner', 'snack'];
 export const APPROACHES = ['habits', 'targets', 'meal_plan'];
@@ -158,7 +159,7 @@ export async function saveEntry(db, { clientId, meal, title, source, note = null
 }
 
 export function shapeEntry(e, { photoUrl = null } = {}) {
-  return { id: e.id, meal: e.meal, title: e.title, source: e.source, note: e.note, day: dateToYmd(e.day), loggedAt: e.loggedAt, photoUrl, totals: sumItems(e.items || []), items: (e.items || []).map(i => ({ id: i.id, name: i.name, grams: i.grams, portionText: i.portionText, calories: i.calories, proteinG: i.proteinG, carbsG: i.carbsG, fatG: i.fatG, confidence: i.confidence })) };
+  return { id: e.id, meal: e.meal, title: e.title, source: e.source, note: e.note, day: dateToYmd(e.day), loggedAt: e.loggedAt, photoUrl, imageUrl: photoUrl || foodArtUrl([e.title, ...(e.items || []).map(i => i.name)].filter(Boolean), e.meal), totals: sumItems(e.items || []), items: (e.items || []).map(i => ({ id: i.id, name: i.name, grams: i.grams, portionText: i.portionText, calories: i.calories, proteinG: i.proteinG, carbsG: i.carbsG, fatG: i.fatG, confidence: i.confidence })) };
 }
 
 /** A short line for lists: "Chicken & rice bowl · 2 items". */

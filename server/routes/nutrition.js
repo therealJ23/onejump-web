@@ -13,6 +13,9 @@ import { stripJpegMetadata, sniffImage } from '../storage/StorageService.js';
 import { foods, nutrientsFor, CREDITS } from '../nutrition/foods.js';
 import { flagReplyDraft } from '../nutrition/flags.js';
 import { audit } from '../db/system.js';
+import { ensureStarterRecipes, shapeRecipe } from '../nutrition/recipes.js';
+import { StorageService } from '../storage/StorageService.js';
+import { randomUUID } from 'node:crypto';
 
 export const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 6 * 1024 * 1024, files: 1, fields: 4, fieldSize: 1024 } });
@@ -81,6 +84,10 @@ const recipeBody = z.object({
   name: z.string().trim().min(2).max(80), servings: z.coerce.number().int().min(1).max(50),
   ingredients: z.array(z.object({ name: z.string().trim().min(1).max(120), grams: z.coerce.number().min(0).max(5000), foodRef: z.string().max(80).nullable().optional() })).min(1).max(40),
   steps: z.array(z.string().trim().min(1).max(600)).max(30),
+  minutes: z.coerce.number().int().min(1).max(600).nullable().optional(),
+  tags: z.array(z.string().trim().min(1).max(30)).max(6).optional(),
+  shared: z.boolean().optional(),
+  art: z.string().regex(/^[a-z_]{2,40}$/).nullable().optional(),
 });
 async function perServing(ingredients, servings) {
   const t = { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 };
@@ -92,13 +99,30 @@ async function perServing(ingredients, servings) {
   }
   return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, Math.round(v / servings * 10) / 10]));
 }
-router.get('/recipes', async (req, res) => res.json({ recipes: await req.db.recipe.findMany({ orderBy: { name: 'asc' } }) }));
+router.get('/recipes', async (req, res) => {
+  await ensureStarterRecipes(req.db);
+  const list = await req.db.recipe.findMany({ orderBy: { name: 'asc' } });
+  res.json({ recipes: await Promise.all(list.map(r => shapeRecipe(r))) });
+});
+// The coach's own photo for a recipe (replaces the built-in picture).
+router.post('/recipes/:id/photo', upload.single('photo'), async (req, res) => {
+  const r = must(await req.db.recipe.findFirst({ where: { id: req.params.id } }), 'That recipe');
+  const type = req.file?.buffer ? sniffImage(req.file.buffer) : null;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(type)) throw badRequest('Choose a JPEG, PNG or WebP photo.');
+  const buf = type === 'image/jpeg' ? stripJpegMetadata(req.file.buffer) : req.file.buffer;
+  const key = `recipes/${req.auth.businessId}/${randomUUID()}.${type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg'}`;
+  await StorageService.put(key, buf, type);
+  if (r.photoKey) StorageService.remove(r.photoKey).catch(() => null);
+  res.json({ recipe: await shapeRecipe(await req.db.recipe.update({ where: { id: r.id }, data: { photoKey: key } })) });
+});
 router.post('/recipes', pro, body(recipeBody), async (req, res) => {
-  res.status(201).json({ recipe: await req.db.recipe.create({ data: { ...req.body, perServing: await perServing(req.body.ingredients, req.body.servings) } }) });
+  res.status(201).json({ recipe: await shapeRecipe(await req.db.recipe.create({ data: { ...req.body, perServing: await perServing(req.body.ingredients, req.body.servings) } })) });
 });
 router.put('/recipes/:id', pro, body(recipeBody), async (req, res) => {
   const r = must(await req.db.recipe.findFirst({ where: { id: req.params.id } }), 'That recipe');
-  res.json({ recipe: await req.db.recipe.update({ where: { id: r.id }, data: { ...req.body, perServing: await perServing(req.body.ingredients, req.body.servings) } }) });
+  // Starter recipes have no food links, so recomputing gives zeros: keep their estimates then.
+  const computed = await perServing(req.body.ingredients, req.body.servings);
+  res.json({ recipe: await shapeRecipe(await req.db.recipe.update({ where: { id: r.id }, data: { ...req.body, perServing: computed.calories ? computed : r.perServing } })) });
 });
 router.delete('/recipes/:id', async (req, res) => {
   const r = must(await req.db.recipe.findFirst({ where: { id: req.params.id } }), 'That recipe');
