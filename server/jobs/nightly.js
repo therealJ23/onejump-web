@@ -8,7 +8,7 @@ import { dbForBusiness } from '../db/tenant.js';
 import { runRadar } from '../core/radar.js';
 import { runAutomations } from '../core/automations.js';
 import { runNutrition } from '../nutrition/nightly.js';
-import { foodCache } from '../db/system.js';
+import { foodCache, assistRuns } from '../db/system.js';
 import { CACHE_DAYS } from '../nutrition/foods.js';
 import { checkinSummary } from '../ai/drafts.js';
 import { localParts } from '../lib/time.js';
@@ -55,7 +55,10 @@ export async function hourly(now = new Date(), { forceRadar = false } = {}) {
       summary.automationRuns += (await runAutomations(db, { tz: b.timezone, now })).runs;
     } catch (e) { console.error(`[jobs] business ${b.id}:`, e.message); }
   }
-  if (forceRadar || now.getUTCHours() === 7) await foodCache.prune(new Date(now.getTime() - CACHE_DAYS * 864e5)).catch(() => null);
+  if (forceRadar || now.getUTCHours() === 7) {
+    await foodCache.prune(new Date(now.getTime() - CACHE_DAYS * 864e5)).catch(() => null);
+    await assistRuns.prune(new Date(now.getTime() - 30 * 864e5)).catch(() => null);
+  }
   return summary;
 }
 
@@ -68,8 +71,8 @@ export function startJobs() {
   const tasks = [
     cron.schedule('*/5 * * * *', () => processJobs().catch(e => console.error('[jobs]', e.message))),
     cron.schedule('7 * * * *', () => hourly().catch(e => console.error('[jobs] hourly', e.message))),
-    cron.schedule('*/15 * * * *', () => briefings().catch(e => console.error('[jobs] briefings', e.message))),
   ];
-  console.log('[jobs] scheduled: queued jobs every 5 min, automations hourly, radar nightly at 2 AM local, morning briefings at 6:30/7:00 local');
+  // The morning briefing was removed (owner's request, Nov 15): briefings() is no longer scheduled.
+  console.log('[jobs] scheduled: queued jobs every 5 min, automations hourly, radar nightly at 2 AM local');
   return { stop: () => tasks.forEach(t => t.stop()) };
 }

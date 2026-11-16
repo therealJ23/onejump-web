@@ -138,6 +138,9 @@ export const jobs = {
 };
 
 // ------------------------------------------------------------- internal admin (aggregates only)
+/** Assist's command log is kept 30 days. */
+export const assistRuns = { prune: before => db().assistRun.deleteMany({ where: { createdAt: { lt: before } } }) };
+
 export const admin = {
   /** Business-level numbers. Never returns client names, check-ins or messages. */
   businesses: async () => {
@@ -153,6 +156,15 @@ export const admin = {
     return list.map(b => ({ ...b, owner: b.members[0]?.user?.name || '—', lastActiveAt: b.members[0]?.user?.lastLoginAt || null, members: undefined, activeClients: cc[b.id] || 0, failedClientPayments: fc[b.id] || 0 }));
   },
   aiUsageSince: since => db().aIUsage.groupBy({ by: ['kind'], where: { createdAt: { gte: since } }, _count: { _all: true }, _sum: { costMicros: true } }),
+  /** Assist reliability: outcomes and error types per day. No questions (they can name clients). */
+  assistRunsSince: async since => {
+    const [byOutcome, errors, slow] = await Promise.all([
+      db().assistRun.groupBy({ by: ['outcome'], where: { createdAt: { gte: since } }, _count: { _all: true }, _avg: { ms: true } }),
+      db().assistRun.findMany({ where: { createdAt: { gte: since }, outcome: { in: ['error', 'truncated', 'step_limit'] } }, select: { outcome: true, error: true, model: true, tools: true, voice: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 50 }),
+      db().assistRun.aggregate({ where: { createdAt: { gte: since } }, _avg: { ms: true }, _count: { _all: true } }),
+    ]);
+    return { total: slow._count._all, avgMs: Math.round(slow._avg.ms || 0), byOutcome: byOutcome.map(o => ({ outcome: o.outcome, count: o._count._all, avgMs: Math.round(o._avg.ms || 0) })), recentProblems: errors.map(e => ({ ...e, error: e.error ? String(e.error).replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '[email]').slice(0, 300) : null })) };
+  },
   aiDecisionsSince: since => db().aIInsight.groupBy({ by: ['status'], where: { createdAt: { gte: since } }, _count: { _all: true } }),
   totalClients: () => db().client.count({ where: { status: { in: ['NEW', 'ACTIVE'] } } }),
   openSupport: () => db().supportRequest.findMany({ where: { status: 'open' }, select: { id: true, kind: true, createdAt: true, businessId: true }, orderBy: { createdAt: 'desc' }, take: 20 }),

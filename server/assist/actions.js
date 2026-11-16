@@ -18,6 +18,7 @@ import { effectivePlan } from '../auth/middleware.js';
 import { checkText } from '../ai/safety.js';
 import { checkNutritionLanguage } from '../nutrition/language.js';
 import { hiddenExerciseIds, createExercise, removeExercise, PATTERNS } from '../routes/exercises.js';
+import { payments } from '../payments/PaymentService.js';
 
 const TTL_MS = 10 * 60e3;
 const firstOf = n => String(n || '').split(' ')[0];
@@ -333,6 +334,46 @@ export const ACTION_PROPOSE = {
     return { proposal: await save(db, auth, { type: 'set_automation', summary: T(lang, `Automation: ${label}`, `Automatización: ${label}`), payload: { automationId: hit.id, key: hit.key, name: label, changes, lines, button: T(lang, 'Save', 'Guardar'), voiceOk: true, say: T(lang, `I’ll ${changes.enabled === false ? 'turn off' : changes.enabled ? 'turn on' : 'update'} ${label}. Should I do it?`, `Voy a ${changes.enabled === false ? 'apagar' : changes.enabled ? 'encender' : 'actualizar'} ${label}. ¿Lo hago?`) }, source }) };
   },
 
+  // Packages and prices (what clients buy). Creating or changing one is confirmed by the coach;
+  // charging, refunds and moving money are never done by Assist.
+  async create_package(db, auth, a, { source, lang }) {
+    if (auth.role !== 'OWNER') return { error: T(lang, 'Only the workspace owner can set up packages.', 'Solo el dueño puede crear paquetes.') };
+    const name = clean(a.name).slice(0, 80);
+    const price = Number(a.price);
+    if (!name) return { error: T(lang, 'What should the package be called?', '¿Cómo se llama el paquete?') };
+    if (!Number.isFinite(price) || price < 0 || price > 100000) return { error: T(lang, 'What price should it be?', '¿Qué precio tiene?') };
+    const interval = ['month', 'week', 'once'].includes(a.interval) ? a.interval : 'month';
+    const includes = (Array.isArray(a.includes) ? a.includes : String(a.includes || '').split(/[,;\n]+/)).map(clean).filter(Boolean).slice(0, 8);
+    const minMonths = Number.isInteger(a.minimum_months) && a.minimum_months > 0 && a.minimum_months <= 24 ? a.minimum_months : null;
+    const description = [clean(a.description), includes.length ? includes.join(' · ') : '', minMonths ? `${minMonths}-month minimum` : ''].filter(Boolean).join(' — ').slice(0, 190) || null;
+    const taken = (await db.clientPlan.findMany({ where: { active: true }, select: { name: true } })).some(p => norm(p.name) === norm(name));
+    if (taken) return { error: T(lang, `You already have a package called ${name}. Want me to change that one instead?`, `Ya tienes un paquete llamado ${name}. ¿Quieres que cambie ese?`) };
+    const per = interval === 'once' ? '' : interval === 'week' ? T(lang, ' a week', ' a la semana') : T(lang, ' a month', ' al mes');
+    const lines = [T(lang, `Price: $${price}${per}`, `Precio: $${price}${per}`), ...(minMonths ? [T(lang, `Minimum: ${minMonths} months`, `Mínimo: ${minMonths} meses`)] : []), ...includes.map(i => `✓ ${i}`), ...(a.sessions_included ? [T(lang, `${a.sessions_included} sessions included`, `${a.sessions_included} sesiones incluidas`)] : [])];
+    return { proposal: await save(db, auth, { type: 'create_package', summary: T(lang, `New package: ${name}`, `Paquete nuevo: ${name}`), payload: {
+      name, priceCents: Math.round(price * 100), interval, description, sessionsIncluded: Number.isInteger(a.sessions_included) ? a.sessions_included : null, includes, minMonths, lines,
+      button: T(lang, 'Create package', 'Crear paquete'), voiceOk: true, say: T(lang, `${name}, $${price}${per}. Should I create it?`, `${name}, $${price}${per}. ¿Lo creo?`) }, source }) };
+  },
+  async update_package(db, auth, a, { source, lang }) {
+    if (auth.role !== 'OWNER') return { error: T(lang, 'Only the workspace owner can change packages.', 'Solo el dueño puede cambiar paquetes.') };
+    const plans = await db.clientPlan.findMany({ where: { active: true } });
+    const { hits } = bestMatch(plans, a.package_name);
+    if (!hits.length) return { error: T(lang, `I couldn’t find a package called “${clean(a.package_name)}”.`, `No encontré un paquete llamado “${clean(a.package_name)}”.`) };
+    if (hits.length > 1) return { error: T(lang, `Which one: ${hits.map(h => h.name).join(' or ')}?`, `¿Cuál: ${hits.map(h => h.name).join(' o ')}?`) };
+    const p = hits[0];
+    const changes = {}, lines = [];
+    if (clean(a.new_name)) { changes.name = clean(a.new_name).slice(0, 80); lines.push(T(lang, `Name: ${changes.name}`, `Nombre: ${changes.name}`)); }
+    if (a.price != null && Number.isFinite(Number(a.price))) {
+      const cents = Math.round(Number(a.price) * 100);
+      if (cents < 0 || cents > 10000000) return { error: T(lang, 'That price doesn’t look right.', 'Ese precio no se ve bien.') };
+      if (cents !== p.priceCents) { changes.priceCents = cents; lines.push(T(lang, `Price: $${p.priceCents / 100} → $${cents / 100} (new sign-ups; current clients keep their price)`, `Precio: $${p.priceCents / 100} → $${cents / 100} (nuevos clientes; los actuales mantienen su precio)`)); }
+    }
+    if (['month', 'week', 'once'].includes(a.interval) && a.interval !== p.interval) { changes.interval = a.interval; lines.push(T(lang, `Billing: every ${a.interval}`, `Cobro: cada ${a.interval}`)); }
+    if (clean(a.description)) { changes.description = clean(a.description).slice(0, 190); lines.push(T(lang, `Details: ${changes.description}`, `Detalles: ${changes.description}`)); }
+    if (typeof a.active === 'boolean' && a.active === false) { changes.active = false; lines.push(T(lang, 'Hide it from new sign-ups', 'Ocultarlo para nuevos clientes')); }
+    if (!Object.keys(changes).length) return { error: T(lang, `What should I change about ${p.name}?`, `¿Qué cambio de ${p.name}?`) };
+    return { proposal: await save(db, auth, { type: 'update_package', summary: T(lang, `Change ${p.name}`, `Cambiar ${p.name}`), payload: { planId: p.id, name: p.name, changes, lines, button: T(lang, 'Save changes', 'Guardar cambios'), voiceOk: true, say: T(lang, `I’ll change ${p.name}: ${lines.join(', ')}. Should I save it?`, `Voy a cambiar ${p.name}: ${lines.join(', ')}. ¿Lo guardo?`) }, source }) };
+  },
   async update_settings(db, auth, a, { source, lang }) {
     if (auth.role !== 'OWNER') return { error: T(lang, 'Only the workspace owner can change business settings.', 'Solo el dueño del espacio puede cambiar la configuración del negocio.') };
     const changes = {};
@@ -483,6 +524,24 @@ export const ACTION_EXECUTE = {
     await db.automation.update({ where: { id: p.automationId }, data: p.changes });
     return { message: `${p.name} is ${p.changes.enabled === false ? 'off' : p.changes.enabled ? 'on' : 'updated'}.` };
   },
+  async create_package(db, auth, p) {
+    if (auth.role !== 'OWNER') throw conflict('Only the workspace owner can set up packages.');
+    let plan = await db.clientPlan.create({ data: { name: p.name, priceCents: p.priceCents, interval: p.interval, description: p.description, sessionsIncluded: p.sessionsIncluded } });
+    try { plan = await payments().syncPlan(db, plan); } catch (e) { console.error('[payments] syncPlan', e.message); }
+    audit({ businessId: auth.businessId, actorUserId: auth.userId, action: 'package_created', target: plan.id, meta: { via: 'assist' } });
+    return { planId: plan.id, navigate: { screen: 'payments' }, message: `${p.name} is ready in your packages.` };
+  },
+  async update_package(db, auth, p) {
+    if (auth.role !== 'OWNER') throw conflict('Only the workspace owner can change packages.');
+    const plan = must(await db.clientPlan.findFirst({ where: { id: p.planId } }), 'That package');
+    const data = { ...p.changes };
+    // Stripe prices can't change: a new price is made for new sign-ups; current subscriptions keep theirs.
+    if (data.priceCents != null || data.interval) data.stripePriceId = null;
+    let updated = await db.clientPlan.update({ where: { id: plan.id }, data });
+    if (data.stripePriceId === null) { try { updated = await payments().syncPlan(db, updated); } catch (e) { console.error('[payments] syncPlan', e.message); } }
+    audit({ businessId: auth.businessId, actorUserId: auth.userId, action: 'package_updated', target: plan.id, meta: { via: 'assist', fields: Object.keys(p.changes) } });
+    return { planId: plan.id, navigate: { screen: 'payments' }, message: `${updated.name} is updated.` };
+  },
   async update_settings(db, auth, p) {
     if (auth.role !== 'OWNER') throw conflict('Only the workspace owner can change business settings.');
     const b = await db.business.findFirst({ select: { id: true } });
@@ -493,7 +552,7 @@ export const ACTION_EXECUTE = {
 };
 
 /** Where the coach finishes it by hand if confirming fails. */
-export const ACTION_SCREEN = { create_program: 'Programs', update_program: 'Programs', delete_program: 'Programs', duplicate_program: 'Programs', save_workout: 'the program', delete_workout: 'the program', create_exercise: 'the Exercise library', delete_exercise: 'the Exercise library', restore_exercise: 'the Exercise library', add_client: 'Clients', update_client: 'the client’s profile', message_clients: 'Messages', review_checkin: 'Check-ins', payment_reminder: 'Payments', update_lead: 'Leads', convert_lead: 'Leads', set_automation: 'Automations', update_settings: 'Settings' };
+export const ACTION_SCREEN = { create_program: 'Programs', update_program: 'Programs', delete_program: 'Programs', duplicate_program: 'Programs', save_workout: 'the program', delete_workout: 'the program', create_exercise: 'the Exercise library', delete_exercise: 'the Exercise library', restore_exercise: 'the Exercise library', add_client: 'Clients', update_client: 'the client’s profile', message_clients: 'Messages', review_checkin: 'Check-ins', payment_reminder: 'Payments', update_lead: 'Leads', convert_lead: 'Leads', set_automation: 'Automations', update_settings: 'Settings', create_package: 'Payments', update_package: 'Payments' };
 
 const ex = { type: 'array', description: 'Exercises in order, by their names in the library (check exercise_library).', items: { type: 'object', properties: { exercise: { type: 'string' }, sets: { type: 'integer' }, reps: { type: 'string', description: 'e.g. "8-10", "12", "30s"' }, rest_seconds: { type: 'integer' }, notes: { type: 'string' } }, required: ['exercise'] } };
 
@@ -518,6 +577,8 @@ export function actionToolDefinitions() {
     P('update_lead', 'Move a lead to another stage (new, contacted, consult, trial, active, retained, lost) or change their goal or contact.', { lead_name: { type: 'string' }, stage: { type: 'string', enum: ['new', 'contacted', 'consult', 'trial', 'active', 'retained', 'lost'] }, goal: { type: 'string' }, contact: { type: 'string' } }, ['lead_name']),
     P('convert_lead', 'Turn a lead into a client (emails their invite if there’s an email).', { lead_name: { type: 'string' }, email: { type: 'string' } }, ['lead_name']),
     P('set_automation', 'Turn an automation on or off, or change its message (check-in reminder, failed payment, missed workouts, milestones, gone quiet).', { automation: { type: 'string' }, enabled: { type: 'boolean' }, message: { type: 'string' } }, ['automation']),
+    P('create_package', 'Set up a new package clients can buy (name, price, billing, what’s included). It shows on the coach’s booking page.', { name: { type: 'string' }, price: { type: 'number', description: 'In US dollars, e.g. 199' }, interval: { type: 'string', enum: ['month', 'week', 'once'] }, minimum_months: { type: 'integer' }, sessions_included: { type: 'integer' }, includes: { type: 'array', items: { type: 'string' }, description: 'What’s included, short phrases' }, description: { type: 'string' } }, ['name', 'price']),
+    P('update_package', 'Change one of the coach’s packages: name, price (applies to new sign-ups), billing, details, or hide it from new sign-ups (active=false).', { package_name: { type: 'string' }, new_name: { type: 'string' }, price: { type: 'number' }, interval: { type: 'string', enum: ['month', 'week', 'once'] }, description: { type: 'string' }, active: { type: 'boolean' } }, ['package_name']),
     P('update_settings', 'Change the business name, Assist’s writing style (Supportive, Direct, Data-driven, Playful) or the time zone.', { business_name: { type: 'string' }, writing_style: { type: 'string', enum: ['Supportive', 'Direct', 'Data-driven', 'Playful'] }, timezone: { type: 'string' } }),
   ];
 }
@@ -592,7 +653,6 @@ export function uiToolDefinitions() {
   return [
     { name: 'open_screen', description: 'Open a screen in the OneJump app for the coach (they can keep talking to you). For one client, program or exercise, pass its name.', input_schema: { type: 'object', properties: { screen: { type: 'string', enum: SCREENS }, name: { type: 'string', description: 'The client, program or exercise to open' } }, required: ['screen'] } },
     { name: 'set_assist_mode', description: 'Switch Assist to voice (always listening, answers out loud) or text (typed, silent). Use when the coach asks to talk, use voice, or go back to typing.', input_schema: { type: 'object', properties: { mode: { type: 'string', enum: ['voice', 'text'] } }, required: ['mode'] } },
-    { name: 'start_briefing', description: 'Play the coach’s morning briefing on the Today screen.', input_schema: { type: 'object', properties: {} } },
   ];
 }
 

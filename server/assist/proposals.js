@@ -26,6 +26,26 @@ import { ACTION_PROPOSE, ACTION_EXECUTE, ACTION_SCREEN, actionToolDefinitions } 
 export const speakableText = t => !checkText(t).flagged && !checkNutritionLanguage(t).flagged;
 
 export const PROPOSAL_TTL_MS = 10 * 60e3;
+
+/**
+ * Changes that only touch the coach's own workspace (nothing a client sees or gets): Assist does
+ * them right away unless the coach turned auto-approve off (Business.settings.assistAutoApprove).
+ */
+export const AUTO_APPROVE = new Set(['add_note', 'create_lead', 'update_lead', 'create_program', 'update_program', 'duplicate_program', 'save_workout', 'create_exercise', 'restore_exercise']);
+
+/** Estimated minutes the coach would have spent doing it by hand (for the "time saved" card). */
+export const MINUTES_SAVED = {
+  send_message: 3, reply_checkin: 6, send_reminders: 5, add_note: 2, assign_program: 5, nutrition_plan: 20,
+  create_program: 30, update_program: 3, duplicate_program: 5, save_workout: 10, delete_program: 1, delete_workout: 1,
+  create_exercise: 4, delete_exercise: 1, restore_exercise: 1, add_client: 4, update_client: 2, message_clients: 8,
+  review_checkin: 4, payment_reminder: 3, update_lead: 2, convert_lead: 4, set_automation: 6, update_settings: 2,
+  create_package: 8, update_package: 4, create_lead: 3, create_event: 2, move_event: 1,
+  checkin_reply: 6, message_draft: 3,
+};
+export function recordSaving(db, auth, kind, minutes = MINUTES_SAVED[kind] ?? 2) {
+  if (!minutes) return;
+  db.assistSaving.create({ data: { userId: auth?.userId || null, kind, minutes } }).catch(() => null);
+}
 const firstOf = n => String(n || '').split(' ')[0];
 const SENDABLE = ['risk', 'automation', 'message_draft', 'checkin_summary'];
 
@@ -201,6 +221,8 @@ export async function confirmProposal(db, auth, id, { text, via = 'tap' } = {}) 
     const result = await EXECUTE[p.type](db, auth, p.payload, { text: text == null ? null : String(text) });
     await db.assistProposal.update({ where: { id }, data: { result } });
     audit({ businessId: auth.businessId, actorUserId: auth.userId, action: `assist_${p.type}_confirmed`, target: p.id, meta: { source: p.source, via } });
+    // Drafts that went through an AIInsight already count their minutes there.
+    if (!(p.payload?.insightId && ['send_message', 'reply_checkin'].includes(p.type))) recordSaving(db, auth, p.type, p.type === 'create_program' ? 20 + 8 * ((p.payload?.workouts || []).length) : undefined);
     return { status: 'confirmed', ...result };
   } catch (e) {
     // Part of it may already have happened (e.g. some reminders sent), so it is never re-armed:

@@ -20,7 +20,7 @@ const CLIENT_OWNED = new Set(['CheckIn', 'WorkoutSession', 'WorkoutAssignment', 
   'NutritionPlan', 'Habit', 'HabitCheck', 'FoodEntry', 'FoodEntryItem', 'FoodFavorite']);
 /** Coach-only tables: a CLIENT session can't read or write them. */
 const CLIENT_DENIED = new Set(['Lead', 'AIInsight', 'Automation', 'AutomationRun', 'AuditLog', 'ClientEvent', 'Note', 'Invite', 'Notification', 'AIUsage', 'SupportRequest', 'Membership',
-  'VoiceInteraction', 'AssistProposal', 'Briefing', 'NutritionFlag', 'MealPlanTemplate', 'Recipe']);
+  'VoiceInteraction', 'AssistProposal', 'Briefing', 'NutritionFlag', 'MealPlanTemplate', 'Recipe', 'AssistRun', 'AssistSaving']);
 /** What a CLIENT session may change. Everything else is read-only for clients. */
 const CLIENT_WRITABLE = new Set(['CheckIn', 'WorkoutSession', 'WorkoutAssignment', 'Measurement', 'ProgressPhoto', 'Message', 'Thread', 'Client',
   'HabitCheck', 'FoodEntry', 'FoodEntryItem', 'FoodFavorite']);

@@ -16,7 +16,8 @@ export async function minutesSavedThisWeek(db, tz = 'UTC', now = new Date()) {
   const decided = await db.aIInsight.findMany({ where: { status: { in: ['approved', 'edited'] }, decidedAt: { gte: since } }, select: { minutesSaved: true } });
   const applied = await db.aIInsight.findMany({ where: { createdAt: { gte: addDays(since, -7) }, kind: { in: ['checkin_summary', 'adjustment'] } }, select: { draft: true } });
   const sent = await db.automationRun.count({ where: { outcome: { in: ['sent', 'notified'] }, createdAt: { gte: since } } });
-  return decided.reduce((n, i) => n + (i.minutesSaved || 0), 0) + applied.reduce((n, i) => n + (i.draft?.appliedMinutes || 0), 0) + sent * 2;
+  const actions = await db.assistSaving.aggregate({ where: { createdAt: { gte: since } }, _sum: { minutes: true } });
+  return decided.reduce((n, i) => n + (i.minutesSaved || 0), 0) + applied.reduce((n, i) => n + (i.draft?.appliedMinutes || 0), 0) + sent * 2 + (actions._sum.minutes || 0);
 }
 
 export async function buildToday(db, { tz = 'UTC', now = new Date() } = {}) {

@@ -46,3 +46,33 @@ router.post('/speak', pro, body(z.object({ text: z.string().trim().min(1).max(10
   if (!audio) return res.status(204).end();
   res.set('Content-Type', 'audio/mpeg').set('Cache-Control', 'no-store').send(audio);
 });
+
+// ---------------------------------------------------------------- live speech (Deepgram Flux)
+// The iPhone streams the microphone straight to Deepgram's Flux model, which knows when the
+// coach has finished talking (about a quarter second) instead of waiting for a long silence.
+// The app never holds the Deepgram key: it gets a short-lived token from here and connects with
+// it. Without Deepgram (mock) the app keeps using the iPhone's own speech recognition.
+router.post('/stt-token', pro, body(z.object({ lang: z.enum(['en', 'es']).default('en') })), async (req, res) => {
+  if (config.voice.provider !== 'deepgram' || !config.voice.deepgramKey) return res.json({ available: false });
+  await assertUnderLimit(req.db);
+  let r;
+  try {
+    r = await fetch('https://api.deepgram.com/v1/auth/grant', {
+      method: 'POST',
+      headers: { Authorization: `Token ${config.voice.deepgramKey}`, 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ ttl_seconds: 120 }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch (e) { console.error('[voice] stt-token', e.message); return res.json({ available: false }); }
+  if (!r.ok) { console.error('[voice] stt-token', r.status, (await r.text().catch(() => '')).slice(0, 200)); return res.json({ available: false }); }
+  const j = await r.json();
+  const es = req.body.lang === 'es';
+  res.json({
+    available: true,
+    token: j.access_token,
+    expiresIn: j.expires_in || 120,
+    url: 'wss://api.deepgram.com/v2/listen',
+    // Spanish (and Spanglish) coaches get the multilingual model.
+    query: { model: es ? 'flux-general-multi' : 'flux-general-en', encoding: 'linear16', sample_rate: '16000', eot_threshold: '0.7', eot_timeout_ms: '3000', ...(es ? { language_hint: ['es', 'en'] } : {}) },
+  });
+});

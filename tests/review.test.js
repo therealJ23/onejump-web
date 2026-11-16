@@ -1,5 +1,5 @@
 // Fixes from the independent review of voice + nutrition (each test names the defect it guards).
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { fixtures, loginCoach, loginClient } from './helpers.js';
 import { platePhoto } from '../server/seed/sampleNutrition.js';
 import { AIService } from '../server/ai/AIService.js';
@@ -103,6 +103,7 @@ describe('races', () => {
   });
 
   it('a proposal that fails partway is never re-armed, and cancel can’t overwrite a confirmed one', async () => {
+    await dani.patch('/api/assist/settings', { autoApprove: false });
     const tmp = await f.dbA.client.create({ data: { name: 'Temp Person', email: `tmp.${Date.now()}@example.com`, status: 'ACTIVE' } });
     const p = await dani.post('/api/assist/ask', { question: 'Add a note to Temp: call on Monday' });
     const id = p.body.proposals[0].id;
@@ -117,6 +118,7 @@ describe('races', () => {
     expect((await dani.post(`/api/assist/proposals/${qid}/confirm`)).status).toBe(200);
     expect((await dani.post(`/api/assist/proposals/${qid}/cancel`)).status).toBe(409);
     expect((await f.dbA.assistProposal.findFirst({ where: { id: qid } })).status).toBe('confirmed');
+    await dani.patch('/api/assist/settings', { autoApprove: true });
   });
 });
 

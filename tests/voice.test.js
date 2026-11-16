@@ -53,6 +53,9 @@ describe('Talk to Assist', () => {
 });
 
 describe('proposals: nothing happens until Confirm', () => {
+  // These tests are about the confirm step itself, so internal changes wait for Confirm here too.
+  beforeAll(async () => { await dani.patch('/api/assist/settings', { autoApprove: false }); });
+  afterAll(async () => { await dani.patch('/api/assist/settings', { autoApprove: true }); });
   it('“Send Marcus the drafted message” creates one pending proposal and sends nothing; Confirm sends exactly once', async () => {
     const marcus = await f.dbA.client.findFirst({ where: { name: 'Marcus Johnson' } });
     const msgs = () => f.dbA.message.count({ where: { clientId: marcus.id } });

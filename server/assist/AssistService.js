@@ -9,7 +9,8 @@ import { checkText } from '../ai/safety.js';
 import { coachContext } from '../ai/context.js';
 import { TOOLS, toolDefinitions } from './tools.js';
 import { RENDER, HELP_SUGGESTIONS, esc, speakable, clientLink } from './render.js';
-import { PROPOSE, proposalToolDefinitions, shapeProposal } from './proposals.js';
+import { PROPOSE, proposalToolDefinitions, shapeProposal, confirmProposal, AUTO_APPROVE } from './proposals.js';
+import { users } from '../db/system.js';
 import { route } from './intents.js';
 import { MORE_TOOLS, moreToolDefinitions } from './moreTools.js';
 import { config } from '../config.js';
@@ -25,7 +26,10 @@ const UI_TOOLS = new Set(uiToolDefinitions().map(t => t.name));
 export const FOUNDER = 'Jansell';
 const scrubFounder = s => (typeof s === 'string' ? s.replace(/\bJansell(?:\s+Hiraldo)?(?:\s+Zapata)\b|\bJansell\s+Hiraldo\b/g, FOUNDER) : s);
 
-const MAX_STEPS = 6;
+const MAX_STEPS = 10;
+/** Commands that change something get the thinking model and room to finish; questions stay fast. */
+const ACTION_RE = /\b(create|make|build|add|set ?up|setup|change|update|edit|move|swap|replace|copy|duplicate|send|text|message|tell|remind|assign|start|schedule|book|delete|remove|rename|pause|resume|reply|approve|mark|convert|turn (?:on|off)|write|draft|crea[rl]?|haz(?:me)?|agrega|añade|cambia|mueve|m[aá]nda(?:le|lo|la)?|env[ií]a(?:le|lo|la)?|asigna|programa|borra|elimina|escribe|responde)\b/i;
+export const isActionRequest = q => ACTION_RE.test(String(q || ''));
 const firstOf = n => String(n || '').split(' ')[0];
 
 const refusal = screen => ({ html: `<p>I can’t do that by voice. Open ${esc(screen)} to do it.</p>`, spoken: `I can’t do that by voice. Open ${screen.replace(' → ', ', then ')} to do it.` });
@@ -70,7 +74,7 @@ async function askMock(db, auth, question, c, source) {
   return { answerHtml: `<p>${esc(line)}</p>`, answerText: line, spokenText: line, proposals: [], trace: [], followups: HELP_SUGGESTIONS.slice(0, 4) };
 }
 
-const SCREENS = 'Today (what needs the coach, Assist drafts to approve, the morning briefing, business charts), Clients (each client’s profile: Overview, Program, Food, Progress, Notes, Messages), Assist, Inbox (Messages and Check-ins), and More: Programs (and each program’s workouts), Exercise library, Nutrition, Payments, Leads, Automations, Settings (profile, language, voice, reminders) and Plan & billing.';
+const SCREENS = 'Today (what needs the coach, Assist drafts to approve, business charts), Clients (each client’s profile: Overview, Program, Food, Progress, Notes, Messages), Assist, Inbox (Messages and Check-ins), and More: Programs (and each program’s workouts), Exercise library, Nutrition, Payments, Leads, Automations, Settings (profile, language, voice, reminders) and Plan & billing.';
 
 /**
  * The fixed part of Assist's instructions (cached by Claude for an hour): the same for every
@@ -93,9 +97,10 @@ function systemPrompt(coach, { lang }) {
     'Facts about the coach’s business (clients, workouts, check-ins, nutrition, messages, payments, leads, programs, exercises) must come from the snapshot below or from the tools. Speed matters: when the snapshot already answers the question, answer right away without calling tools. Otherwise call the tools you need straight away, all at once in parallel when you can, without writing anything before the tool calls. For anything detailed about one client, use client_details; before building or changing workouts, check exact exercise names with exercise_library (and program_details for an existing program). Never invent clients, numbers, dates or events. If the data doesn’t say, say so.',
     'Some tools also show the coach a card with the data, so don’t repeat long lists the card already shows; add the insight.',
     'Changes: use the propose_* tools. A proposal does nothing until the coach approves it: the app shows a card and, when the coach is talking, reads it back and asks for a yes or no. So after creating one, say just one short, natural line (like "Okay, here’s what I’ve got."), not instructions. Do what was asked in as few proposals as possible (one program with its workouts, not one proposal per workout). When asked to write a message or reply for a client, look at client_details or client_messages first so it sounds personal and like the coach, then propose it. If the coach says yes/send/go ahead to something you proposed earlier and it is still waiting, tell them it’s on screen to confirm.',
-    'Moving around: when the coach asks to see, open, show or go to something in the app, call open_screen (they can keep talking to you while it’s open). When they ask to talk, use voice or switch to voice mode, call set_assist_mode with voice; when they ask to type or stop talking, call it with text. To play the morning briefing, call start_briefing.',
+    'Moving around: when the coach asks to see, open, show or go to something in the app, call open_screen (they can keep talking to you while it’s open). When they ask to talk, use voice or switch to voice mode, call set_assist_mode with voice; when they ask to type or stop talking, call it with text.',
     'Nutrition plans: use propose_nutrition_plan with what the coach asked for. Assist drafts it from the client’s details with the calculator (never below resting needs) and the coach approves it. Never invent calorie numbers yourself.',
-    'Money stays on its screen: you don’t charge clients, refund, or change packages and prices. For those, open the Payments screen for them (open_screen) and say they can do it there. Deleting a client’s whole account is also done on their profile by the owner.',
+    'Packages and prices: you can set up a new package (propose_create_package) or change one (propose_update_package); the coach confirms. Use the business tool to see their current packages first. You never charge clients, refund, or move money; for those, open the Payments screen (open_screen) and say they can do it there. Deleting a client’s whole account is also done on their profile by the owner.',
+    'Follow through: when the coach asks you to do something, do all of it in this turn with the tools (look up what you need, then propose the change). Never say something is done, sent, created or scheduled unless a tool result says so. If a tool returns an error, fix the input and try again once, or say plainly what’s missing.',
     'Never diagnose or assess pain, injuries or medical conditions; suggest a physical therapist, sports-medicine doctor or another qualified professional. No supplement advice or medical nutrition advice. Use neutral words about food (no "good" or "bad" foods).',
     'No markdown symbols (no **, #, or tables) and no emojis. Use short lines starting with "- " for lists.',
   ].filter(Boolean).join('\n');
@@ -176,12 +181,20 @@ async function askClaude(db, auth, question, c, source, provider, history, { emi
   const coach = await coachContext(db);
   const tools = [...toolDefinitions(), ...moreToolDefinitions(), ...actionReadToolDefinitions(), ...proposalToolDefinitions(), ...uiToolDefinitions()];
   const messages = [...historyMessages(history), { role: 'user', content: question }];
-  const assistModel = config.ai.assistModel || provider.model;
+  const action = isActionRequest(question);
+  // Questions: the fast model, no thinking (voice: low effort). Commands: thinking on and room to
+  // finish, so long actions (a whole program) aren't cut off. A cut-off step is redone once on the
+  // escalation model with even more room.
+  const baseModel = config.ai.assistModel || provider.model;
+  const plan = action
+    ? { model: config.ai.actionModel || baseModel, maxTokens: 6000, effort: 'medium', think: true }
+    : { model: baseModel, maxTokens: c.voice ? 1024 : 1600, effort: c.voice ? 'low' : null, think: false };
   const systemText = systemPrompt(coach, c);
   const systemExtra = extraPrompt(c, snapshot);
   const cards = [], trace = new Set(), proposals = [], used = [], followups = [];
-  let text = '', usage = { inputTokens: 0, outputTokens: 0, costMicros: 0 }, model = provider.model, briefing = false;
+  let text = '', usage = { inputTokens: 0, outputTokens: 0, costMicros: 0 }, model = provider.model, briefing = false, outcome = 'answered', escalated = false, pendingTools = false;
   const ui = {};
+  const add = r => { model = r.model; for (const k of Object.keys(usage)) usage[k] += r.usage[k] || 0; };
   // Speech starts while the answer is still being written (voice mode, nothing health-related asked).
   const speech = emit && c.voice && !checkText(question).flagged ? new SpeechStream(emit) : null;
   for (let step = 0; step < MAX_STEPS; step++) {
@@ -189,12 +202,22 @@ async function askClaude(db, auth, question, c, source, provider, history, { emi
     speech?.newStep();
     if (proposals.length) speech?.stop(); // the proposal is read back instead
     const onText = emit ? piece => { streamedText = true; emit({ type: 'delta', text: piece }); speech?.push(piece); } : null;
-    const r = await provider.chat({ system: systemText, systemExtra, messages, tools, maxTokens: c.voice ? 700 : 1200, model: assistModel, cache: true, effort: c.voice ? 'low' : null, onText });
-    model = r.model; for (const k of Object.keys(usage)) usage[k] += r.usage[k] || 0;
-    const content = r.json.content || [];
+    let r = await provider.chat({ system: systemText, systemExtra, messages, tools, maxTokens: plan.maxTokens, model: plan.model, cache: true, effort: plan.effort, think: plan.think, onText });
+    add(r);
+    if (r.json.stop_reason === 'max_tokens' && (r.json.content || []).some(b => b.type === 'tool_use')) {
+      // The action was cut off mid-way: redo this step with more room on the escalation model.
+      if (escalated) { outcome = 'truncated'; text = c.lang === 'es' ? 'Eso era demasiado para hacerlo de una vez. ¿Lo hacemos por partes? Por ejemplo, primero el programa y luego cada entrenamiento.' : 'That was too much to do in one go. Can we do it in parts? For example, the program first, then each workout.'; pendingTools = false; break; }
+      escalated = true;
+      if (streamedText) emit({ type: 'reset' });
+      speech?.newStep();
+      r = await provider.chat({ system: systemText, systemExtra, messages, tools, maxTokens: 12000, model: config.ai.escalateModel || plan.model, cache: true, effort: 'medium', think: true, onText: null });
+      add(r);
+      if (r.json.stop_reason === 'max_tokens') { outcome = 'truncated'; text = c.lang === 'es' ? 'Eso era demasiado para hacerlo de una vez. ¿Lo hacemos por partes?' : 'That was too much to do in one go. Can we do it in parts?'; pendingTools = false; break; }
+    }
+    const content = (r.json.content || []).map(({ truncated, ...b }) => b); // eslint-disable-line no-unused-vars
     text = content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim() || text;
     const calls = content.filter(b => b.type === 'tool_use');
-    if (!calls.length || r.json.stop_reason !== 'tool_use') { speech?.push('', true); break; }
+    if (!calls.length || r.json.stop_reason !== 'tool_use') { pendingTools = false; speech?.push('', true); break; }
     // This step was a lead-in to tool calls: the screen clears it and waits for the real answer.
     if (streamedText) emit({ type: 'reset' });
     messages.push({ role: 'assistant', content });
@@ -234,14 +257,26 @@ async function askClaude(db, auth, question, c, source, provider, history, { emi
       results.push({ type: 'tool_result', tool_use_id: call.id, content: JSON.stringify(o.out).slice(0, 12000) });
     });
     messages.push({ role: 'user', content: results });
+    pendingTools = true;
   }
+  if (pendingTools) {
+    // Out of steps with tool results not yet answered: one last step without tools to wrap up.
+    outcome = 'step_limit';
+    try {
+      const r = await provider.chat({ system: systemText, systemExtra, messages, tools, toolChoice: { type: 'none' }, maxTokens: 800, model: plan.model, cache: true, effort: plan.effort, think: false });
+      add(r);
+      text = (r.json.content || []).filter(b => b.type === 'text').map(b => b.text).join(' ').trim() || text;
+    } catch { /* keep what we have */ }
+  }
+  if (outcome === 'answered' && proposals.length) outcome = 'proposed';
   if (/briefing/i.test(question) && /\b(start|play|read)\b/i.test(question)) briefing = true;
   return {
     answerHtml: `${text ? textToHtml(text) : ''}${cards.join('')}`,
+    cardsHtml: cards.join(''),
     answerText: text,
     spokenText: proposals.length ? readBack(proposals.at(-1), c.lang) : speakable(text || (c.lang === 'es' ? 'Esto es lo que encontré.' : 'Here’s what I found.'), c.voice ? 330 : 220, c.voice ? 3 : 2),
     streamedSay: speech && !proposals.length ? scrubFounder(speech.said.trim()) : '',
-    trace: [...trace], followups: [...new Set(followups)].slice(0, 3), proposals, tools: used, usage, model, ...(briefing ? { action: 'briefing' } : {}),
+    trace: [...trace], followups: [...new Set(followups)].slice(0, 3), proposals, tools: used, usage, model, outcome, ...(briefing ? { action: 'briefing' } : {}),
     ...(ui.navigate ? { navigate: ui.navigate } : {}), ...(ui.mode ? { mode: ui.mode } : {}),
   };
 }
@@ -253,36 +288,103 @@ async function askClaude(db, auth, question, c, source, provider, history, { emi
  * @param {{ voice?: boolean, tz?: string, now?: Date }} opts
  */
 export async function ask(db, auth, question, { voice = false, tz = 'UTC', now = new Date(), history = [], lang = 'en', pendingProposalId = null, emit = null, fast = false } = {}) {
+  const started = Date.now();
   const q = String(question || '').trim().slice(0, 600);
   const c = { tz, now, voice, lang: lang === 'es' ? 'es' : 'en' };
+  const es = c.lang === 'es';
   const provider = AI.active;
   const useClaude = provider.name === 'anthropic' && typeof provider.chat === 'function';
   // Everything the answer needs is looked up at the same time.
-  const [decided, over, snapshot] = await Promise.all([
+  const [decided, overRaw, snapshot] = await Promise.all([
     // A short "yes" / "no" right after Assist read a proposal back approves or cancels it.
     decidePending(db, auth, pendingProposalId, q, { lang: c.lang, via: voice ? 'voice' : 'typed' }),
     useClaude ? AI.overBudget(db) : false,
     useClaude && (fast || voice) ? daySnapshot(db, auth.businessId, c).catch(() => '') : '',
   ]);
-  if (decided) return { question: q, ...decided, ...(decided.decided?.navigate ? { navigate: decided.decided.navigate } : {}), safety: { flagged: false } };
-  const source = voice ? 'voice' : 'typed';
-  let out, providerName = 'mock', fallback = null;
-  if (useClaude && !over) {
-    try { out = await askClaude(db, auth, q, c, source, provider, history, { emit, snapshot }); providerName = 'anthropic'; }
-    catch (e) { console.error('[assist] Claude failed, using offline answers:', e.message); fallback = 'error'; emit?.({ type: 'reset' }); }
+  if (decided) {
+    await logRun(db, auth, { q, voice, outcome: decided.decided?.confirmed ? 'done' : 'answered', ms: Date.now() - started });
+    return { question: q, ...decided, ...(decided.decided?.navigate ? { navigate: decided.decided.navigate } : {}), safety: { flagged: false } };
   }
-  if (!out) out = await askMock(db, auth, q, c, source);
+  // OneJump's own team (HQ_ADMIN_EMAILS) isn't held to the monthly AI budget.
+  const over = overRaw && !(await isHq(auth.userId));
+  const source = voice ? 'voice' : 'typed';
+  let out, providerName = 'mock', fallback = null, error = null;
+  if (useClaude && !over) {
+    for (let attempt = 0; attempt < 2 && !out; attempt++) {
+      try { out = await askClaude(db, auth, q, c, source, provider, history, { emit, snapshot }); providerName = 'anthropic'; }
+      catch (e) { error = String(e.message || e).slice(0, 500); console.error(`[assist] Claude failed (try ${attempt + 1}):`, error); emit?.({ type: 'reset' }); }
+    }
+    if (!out) {
+      // Never fall back to the offline phrase matcher here: it can't do most commands, which made
+      // Assist look like it ignored them. Say what happened instead.
+      fallback = 'error';
+      const line = es ? 'Perdón, no pude terminar eso: se cortó la conexión con la IA. Inténtalo otra vez en unos segundos.' : 'Sorry, I couldn’t finish that. My connection to the AI dropped. Try again in a few seconds.';
+      out = { answerHtml: `<p>${esc(line)}</p>`, answerText: line, spokenText: line, proposals: [], trace: [], followups: [], outcome: 'error' };
+    }
+  } else if (useClaude && over) {
+    fallback = 'budget';
+    const line = es ? 'Ya usaste el presupuesto de IA de este mes, así que no puedo hacer eso ahora. Se renueva el día 1.' : 'You’ve used this month’s AI budget, so I can’t do that right now. It resets on the 1st.';
+    out = { answerHtml: `<p>${esc(line)}</p>`, answerText: line, spokenText: line, proposals: [], trace: [], followups: [], outcome: 'over_budget' };
+  } else {
+    out = await askMock(db, auth, q, c, source); // no API key: the offline answers
+    out.outcome = out.proposals?.length ? 'proposed' : 'offline';
+  }
+  // Internal changes (notes, leads, programs, workouts, own exercises) are done right away when the
+  // coach has auto-approve on (the default). Anything a client sees still waits for the coach.
+  const done = await autoApprove(db, auth, out, c);
+  if (done.length) out.outcome = 'done';
   const safety = checkText(q);
   if (safety.flagged && !out.proposals?.length) out.spokenText = speakable(out.spokenText);
   db.aIUsage.create({ data: { kind: voice ? 'ask_voice' : 'ask', provider: fallback ? `mock-${fallback}` : providerName, model: out.model || (providerName === 'mock' ? 'mock-assist-1' : config.ai.assistModel || provider.model), inputTokens: out.usage?.inputTokens || 0, outputTokens: out.usage?.outputTokens || 0, costMicros: out.usage?.costMicros || 0 } }).catch(() => null);
-  const { usage, model, ...rest } = out;
-  void usage; void model;
+  await logRun(db, auth, { q, voice, model: out.model, tools: out.tools, proposals: [...(out.proposals || []).map(p => p.type), ...done.map(d => d.type)], outcome: out.outcome || 'answered', error, ms: Date.now() - started });
+  const { usage, model, outcome, cardsHtml, ...rest } = out;
+  void usage; void model; void outcome; void cardsHtml;
   for (const k of ['answerHtml', 'answerText', 'spokenText']) rest[k] = scrubFounder(rest[k]);
   out.spokenText = scrubFounder(out.spokenText);
   // The proposal the next yes/no answers: the last one, if it can be approved out loud.
   const last = (out.proposals || []).at(-1);
   if (last && !out.spokenText) out.spokenText = readBack(last, c.lang);
-  return { question: q, ...rest, spokenText: out.spokenText, streamedSay: rest.streamedSay || '', awaiting: last && voiceApprovable(last) ? last.id : null, safety: { flagged: safety.flagged } };
+  return { question: q, ...rest, ...(done.length ? { done } : {}), spokenText: out.spokenText, streamedSay: rest.streamedSay || '', awaiting: last && voiceApprovable(last) ? last.id : null, safety: { flagged: safety.flagged } };
+}
+
+async function isHq(userId) {
+  if (!config.hqAdminEmails.length || !userId) return false;
+  const u = await users.byId(userId).catch(() => null);
+  return !!u && config.hqAdminEmails.includes(String(u.email).toLowerCase());
+}
+
+/** Runs the internal-only proposals right away (if the coach allows it) and rewrites the answer to say so. */
+async function autoApprove(db, auth, out, c) {
+  const auto = (out.proposals || []).filter(p => AUTO_APPROVE.has(p.type));
+  if (!auto.length) return [];
+  const b = await db.business.findFirst({ select: { settings: true } });
+  if (b?.settings?.assistAutoApprove === false) return [];
+  const done = [];
+  for (const p of auto) {
+    try {
+      const r = await confirmProposal(db, auth, p.id, { via: 'auto' });
+      done.push({ id: p.id, type: p.type, message: r.message || '', ...(r.navigate ? { navigate: r.navigate } : {}) });
+    } catch (e) { done.push({ id: p.id, type: p.type, error: String(e.message || e) }); }
+  }
+  const ok = done.filter(d => !d.error);
+  out.proposals = out.proposals.filter(p => !ok.some(d => d.id === p.id));
+  const es = c.lang === 'es';
+  const lines = done.map(d => d.error || (es ? translateLine(d.message) : d.message)).filter(Boolean);
+  const said = `${ok.length ? (es ? 'Listo. ' : 'Done. ') : ''}${lines.join(' ')}`.trim();
+  if (!out.proposals.length) {
+    out.answerText = said; out.answerHtml = `<p>${esc(said)}</p>${out.cardsHtml || ''}`;
+    out.spokenText = speakable(said, 330, 3); out.streamedSay = '';
+  } else {
+    out.answerHtml = `<p>${esc(said)}</p>${out.answerHtml || ''}`;
+  }
+  if (ok[0]?.navigate && !out.navigate) out.navigate = ok[0].navigate;
+  return done;
+}
+const translateLine = m => String(m || '').replace(/ is ready in your programs\.$/, ' ya está en tus programas.').replace(/ is in your new leads\.$/, ' está en tus nuevos prospectos.').replace(/^Note saved to (.+)’s profile\.$/, 'Nota guardada en el perfil de $1.');
+
+/** One row per question (kept 30 days): how it ended, so failures can be found and fixed. */
+function logRun(db, auth, { q, voice, model = null, tools = [], proposals = [], outcome, error = null, ms }) {
+  return db.assistRun.create({ data: { userId: auth.userId || null, question: q.slice(0, 2000), voice: !!voice, model: model || null, tools: tools?.length ? tools : undefined, proposals: proposals?.length ? proposals : undefined, outcome, error, ms } }).catch(() => null);
 }
 
 /**

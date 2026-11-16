@@ -783,3 +783,37 @@ model Job {
 
   @@index([status, runAt])
 }
+
+// ---------------------------------------------------------------- Assist reliability and time saved
+
+// One row per question to Assist: what it did and how it ended, so failures can be found and fixed.
+// Kept 30 days (nightly cleanup). Coach-only.
+model AssistRun {
+  id         String   @id @default(uuid())
+  businessId String
+  userId     String?
+  question   String   @db.Text
+  voice      Boolean  @default(false)
+  model      String?
+  tools      Json? // tool names in the order they ran
+  proposals  Json? // proposal types created
+  outcome    String // answered | proposed | done | error | over_budget | offline | truncated | step_limit
+  error      String?  @db.Text
+  ms         Int?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
+  @@index([outcome, createdAt])
+}
+
+// Minutes Assist saved the coach (an estimate per action), for the weekly "time saved" card.
+model AssistSaving {
+  id         String   @id @default(uuid())
+  businessId String
+  userId     String?
+  kind       String // proposal type, checkin_reply, message_draft, queue_batch
+  minutes    Int
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}

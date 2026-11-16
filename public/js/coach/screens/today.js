@@ -35,12 +35,12 @@ export default {
   nav: 'today',
   title: () => 'Today',
   async load() {
-    const [d, b, biz] = await Promise.all([api.get('/api/today'), api.get('/api/briefing/status').catch(() => ({ ready: false })), loadBusiness()]);
-    return { ...d, briefingReady: d.pro && b.ready, biz };
+    // The morning briefing was removed (owner's request, Nov 15).
+    const [d, biz] = await Promise.all([api.get('/api/today'), loadBusiness()]);
+    return { ...d, biz };
   },
   mount() {
-    // Opened from the 7 AM notification: /app?briefing=1
-    if (new URLSearchParams(location.search).get('briefing') === '1') { history.replaceState(null, '', '/app'); import('../voice.js').then(m => m.openBriefing()); }
+    if (new URLSearchParams(location.search).get('briefing') === '1') history.replaceState(null, '', '/app');
   },
   render(d) {
     const f = ui('qfilter', 'all');
@@ -51,9 +51,8 @@ export default {
     <div class="page-head">
       <div><div class="eyebrow">${fmtLongDay(new Date())}</div><h1 class="h1" style="margin-top:6px">${greeting()}, ${esc(coachFirst())}.</h1>
       <p class="sub">${d.open ? `${plural(d.open, 'thing needs', 'things need')} you. Assist has drafted ${d.drafted} of them.` : 'You’re all caught up. Nice.'}</p></div>
-      <div class="row wrap"><button class="btn" data-act="briefing">${icon('speaker')} Morning briefing${d.pro ? '' : ` ${lock('PRO')}`}</button><button class="btn" data-act="copilot" data-q="Give me a summary of my business this month.">${arc()} Summarize my month</button><button class="btn" data-act="invite">${icon('user')} Invite client</button><button class="btn primary" data-act="newMenu">${icon('plus')} New</button></div>
+      <div class="row wrap"><button class="btn" data-act="copilot" data-q="Give me a summary of my business this month.">${arc()} Summarize my month</button><button class="btn" data-act="invite">${icon('user')} Invite client</button><button class="btn primary" data-act="newMenu">${icon('plus')} New</button></div>
     </div>
-    ${d.briefingReady ? `<div class="brief-banner" data-brief-banner role="status">${icon('speaker')}<div class="grow"><div class="strong small">Your morning briefing is ready</div><div class="tiny muted">About 40 seconds: who needs you, check-ins, payments and one piece of good news.</div></div><button class="btn assist sm" data-act="briefingPlay">${icon('play')} Play</button></div>` : ''}
 
     <section class="kpis" aria-label="Key numbers">
       <div class="kpi"><span class="eyebrow">Active clients</span><span class="big-num">${k.activeClients}</span><span class="delta up">${k.newThisMonth ? `+${k.newThisMonth} this month` : 'No new this month'} · ${k.newClients} new</span></div>

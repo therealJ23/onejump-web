@@ -38,3 +38,4 @@ router.get('/overview', async (_req, res) => {
 
 /** OneJump's own trends and a realistic forecast of this month's plan revenue. */
 router.get('/insights', async (_req, res) => res.json(await platformInsights()));
+router.get('/assist-runs', async (req, res) => res.json(await admin.assistRunsSince(new Date(Date.now() - Math.min(30, Number(req.query.days) || 7) * 864e5))));

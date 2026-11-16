@@ -23,9 +23,11 @@ const isHaiku5 = model => /^claude-haiku-5/.test(String(model));
  * Model-specific request options. Haiku 5.x thinks by default (adaptive); for Assist's short,
  * tool-driven answers that's only extra waiting, so thinking is turned off and effort is set.
  */
-export function modelOptions(model, { effort = null } = {}) {
-  if (!isHaiku5(model)) return {};
-  return { thinking: { type: 'disabled' }, ...(effort ? { output_config: { effort } } : {}) };
+export function modelOptions(model, { effort = null, think = false } = {}) {
+  if (isHaiku5(model)) return { ...(think ? {} : { thinking: { type: 'disabled' } }), ...(effort ? { output_config: { effort } } : {}) };
+  // Other 5.x models: effort only (they decide how much to think).
+  if (/^claude-(sonnet|opus)-5/.test(String(model)) && effort) return { output_config: { effort } };
+  return {};
 }
 
 /** Cost in micro-dollars, counting 5-minute (1.25×) and 1-hour (2×) cache writes and cache reads (0.1×). */
@@ -63,7 +65,7 @@ export class AnthropicProvider {
    * question (today's date, voice or text, a snapshot of the coach's day).
    * onText(piece): streams the answer as it's written. Nothing is changed in the caller's arrays.
    */
-  async chat({ system, systemExtra = '', messages, tools = [], maxTokens = 900, model = this.model, cache = false, effort = null, onText = null }) {
+  async chat({ system, systemExtra = '', messages, tools = [], maxTokens = 900, model = this.model, cache = false, effort = null, think = false, toolChoice = null, onText = null }) {
     const mark = (o, ttl) => ({ ...o, cache_control: ttl ? { type: 'ephemeral', ttl } : { type: 'ephemeral' } });
     let sys = systemExtra ? [{ type: 'text', text: String(system) }, { type: 'text', text: String(systemExtra) }] : system, tl = tools, msgs = messages;
     if (cache) {
@@ -75,7 +77,7 @@ export class AnthropicProvider {
         msgs = [...messages.slice(0, -1), { ...last, content: [...content.slice(0, -1), mark(content.at(-1))] }];
       }
     }
-    const build = m => ({ model: m, max_tokens: maxTokens, system: sys, messages: msgs, ...(tl.length ? { tools: tl } : {}), ...modelOptions(m, { effort }), ...(onText ? { stream: true } : {}) });
+    const build = m => ({ model: m, max_tokens: maxTokens, system: sys, messages: msgs, ...(tl.length ? { tools: tl } : {}), ...(tl.length && toolChoice ? { tool_choice: toolChoice } : {}), ...modelOptions(m, { effort, think }), ...(onText ? { stream: true } : {}) });
     return this.withFallback(model, m => (onText ? this.postStream(build(m), onText) : this.post(build(m))));
   }
 
@@ -141,6 +143,7 @@ export class AnthropicProvider {
               const b = { ...ev.content_block };
               if (b.type === 'text') b.text = b.text || '';
               if (b.type === 'tool_use') { partialJson[ev.index] = ''; b.input = {}; }
+              if (b.type === 'thinking') { b.thinking = b.thinking || ''; b.signature = b.signature || ''; }
               blocks[ev.index] = b;
               break;
             }
@@ -149,11 +152,14 @@ export class AnthropicProvider {
               if (!b) break;
               if (ev.delta?.type === 'text_delta') { b.text += ev.delta.text; streamed = true; onText(ev.delta.text, ev.index); }
               else if (ev.delta?.type === 'input_json_delta') partialJson[ev.index] += ev.delta.partial_json || '';
+              // Thinking (actions): kept whole, signature included, so it can be sent back in the tool loop.
+              else if (ev.delta?.type === 'thinking_delta') b.thinking += ev.delta.thinking || '';
+              else if (ev.delta?.type === 'signature_delta') b.signature = (b.signature || '') + (ev.delta.signature || '');
               break;
             }
             case 'content_block_stop': {
               const b = blocks[ev.index];
-              if (b?.type === 'tool_use') { try { b.input = partialJson[ev.index] ? JSON.parse(partialJson[ev.index]) : {}; } catch { b.input = {}; } }
+              if (b?.type === 'tool_use') { try { b.input = partialJson[ev.index] ? JSON.parse(partialJson[ev.index]) : {}; } catch { b.input = {}; b.truncated = true; } }
               break;
             }
             case 'message_delta': stopReason = ev.delta?.stop_reason ?? stopReason; usage = { ...usage, ...ev.usage }; break;

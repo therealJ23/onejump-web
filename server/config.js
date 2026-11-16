@@ -68,6 +68,10 @@ export const config = {
     anthropicModel: env.ANTHROPIC_MODEL || 'claude-haiku-5-5',
     // Ask Assist (conversations) can use a smarter model than the drafts, e.g. ASSIST_MODEL=claude-sonnet-5-5.
     assistModel: (env.ASSIST_MODEL || '').trim() || env.ANTHROPIC_MODEL || 'claude-haiku-5-5',
+    /** Commands that change things (thinking on). Empty = the Assist model. */
+    actionModel: (env.ASSIST_ACTION_MODEL || '').trim(),
+    /** Used once when a long action gets cut off. */
+    escalateModel: (env.ASSIST_ESCALATE_MODEL || '').trim() || 'claude-sonnet-5-5',
     openaiKey: env.OPENAI_API_KEY || '',
     openaiModel: env.OPENAI_MODEL || 'gpt-4o-mini',
     monthlyBudgetUsd: Number(env.AI_MONTHLY_BUDGET_USD || 5),
