@@ -1,0 +1,3 @@
+sha=025d6f71c4e17d2f7a4bbb227d5c69cf92bcf1a9
+exit=0
+xcode=Xcode 16.4

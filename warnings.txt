@@ -1,0 +1,2 @@
+/Users/runner/work/onejump-web/onejump-web/mobile-app/OneJump/Core/Voice/VoiceConversation.swift:132:27: warning: reference to captured var 'self' in concurrently-executing code; this is an error in the Swift 6 language mode
+/Users/runner/work/onejump-web/onejump-web/mobile-app/OneJump/Core/Voice/VoiceService.swift:705:23: warning: capture of 'self' with non-sendable type 'VoiceNoteRecorder?' in a '@Sendable' closure
