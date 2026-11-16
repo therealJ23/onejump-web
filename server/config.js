@@ -73,7 +73,7 @@ export const config = {
     /** Commands that change things (thinking on). Empty = the Assist model. */
     actionModel: (env.ASSIST_ACTION_MODEL || '').trim(),
     /** Used once when a long action gets cut off. */
-    escalateModel: (env.ASSIST_ESCALATE_MODEL || '').trim() || 'claude-sonnet-5-5',
+    escalateModel: (env.ASSIST_ESCALATE_MODEL || '').trim() || null, // default: the same model with more room (Sonnet was slow enough to time out)
     openaiKey: env.OPENAI_API_KEY || '',
     openaiModel: env.OPENAI_MODEL || 'gpt-4o-mini',
     monthlyBudgetUsd: Number(env.AI_MONTHLY_BUDGET_USD || 5),

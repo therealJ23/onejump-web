@@ -360,6 +360,7 @@ async function libraryList(db) {
   return Promise.all(list.map(async e => ({
     id: e.id, name: L(e.name), group: GROUP[e.pattern] || 'core', equipment: L(e.equipment || '—'),
     custom: !!e.businessId, mediaType: e.mediaKey ? e.mediaType : null, level: e.level || null, pattern: e.pattern,
+    hasVideo: !!(e.mediaKey && e.mediaType === 'video') || !!e.videoKey,
     imageUrl: e.photoKey ? await StorageService.signedUrl(e.photoKey) : patternImage(e.pattern),
     imageCredit: e.photoKey && e.photoCredit ? `${e.photoCredit.author} · ${e.photoCredit.license} · wger.de` : null,
     howTo: (Array.isArray(e.howTo) ? e.howTo : e.howTo ? String(e.howTo).split(/\n+/) : HOWTO[e.pattern] || HOWTO.iso || []).map(x => L(x)),

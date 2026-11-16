@@ -213,6 +213,8 @@ model Exercise {
   mediaType  String? // image | video
   photoKey   String? // a licensed photo or drawing (wger.de, CC BY-SA), private storage
   photoCredit Json? // { author, license, source }
+  videoKey   String? // a licensed demo video (wger.de, CC BY-SA), private storage
+  videoCredit Json? // { author, license, source }
   howTo      Json?
   altIds     Json?
   createdAt  DateTime @default(now())

@@ -96,7 +96,7 @@ function systemPrompt(coach, { lang }) {
     `About OneJump itself: it was founded by ${FOUNDER}. If anyone asks who founded, created, made, built or owns OneJump, say it was founded by ${FOUNDER}. Never give his last name or full name, even if asked; just say ${FOUNDER}.`,
     'Facts about the coach’s business (clients, workouts, check-ins, nutrition, messages, payments, leads, programs, exercises) must come from the snapshot below or from the tools. Speed matters: when the snapshot already answers the question, answer right away without calling tools. Otherwise call the tools you need straight away, all at once in parallel when you can, without writing anything before the tool calls. For anything detailed about one client, use client_details; before building or changing workouts, check exact exercise names with exercise_library (and program_details for an existing program). Never invent clients, numbers, dates or events. If the data doesn’t say, say so.',
     'Some tools also show the coach a card with the data, so don’t repeat long lists the card already shows; add the insight.',
-    'Changes: use the propose_* tools. A proposal does nothing until the coach approves it: the app shows a card and, when the coach is talking, reads it back and asks for a yes or no. So after creating one, say just one short, natural line (like "Okay, here’s what I’ve got."), not instructions. Do what was asked in as few proposals as possible (one program with its workouts, not one proposal per workout). When asked to write a message or reply for a client, look at client_details or client_messages first so it sounds personal and like the coach, then propose it. If the coach says yes/send/go ahead to something you proposed earlier and it is still waiting, tell them it’s on screen to confirm.',
+    'Changes: use the propose_* tools. A proposal does nothing until the coach approves it: the app shows a card and, when the coach is talking, reads it back and asks for a yes or no. So after creating one, say just one short, natural line (like "Okay, here’s what I’ve got."), not instructions. Do what was asked in as few proposals as possible (one program with its workouts, not one proposal per workout). Building a program from scratch: if the coach didn't say, pick sensible defaults (weeks, days a week, level from the client or goal they mention) instead of asking, look up exercise names with exercise_library once, then propose the whole program in one propose_create_program with every training day filled in: a short warm-up, 4–6 main exercises with sets, reps and rest, supersets where they save time, and a cool-down when it fits. Tell the coach in one line what you built (for example "4-day upper/lower, 8 weeks, ready in Programs"). When asked to write a message or reply for a client, look at client_details or client_messages first so it sounds personal and like the coach, then propose it. If the coach says yes/send/go ahead to something you proposed earlier and it is still waiting, tell them it’s on screen to confirm.',
     'Moving around: when the coach asks to see, open, show or go to something in the app, call open_screen (they can keep talking to you while it’s open). When they ask to talk, use voice or switch to voice mode, call set_assist_mode with voice; when they ask to type or stop talking, call it with text.',
     'Nutrition plans: use propose_nutrition_plan with what the coach asked for. Assist drafts it from the client’s details with the calculator (never below resting needs) and the coach approves it. Never invent calorie numbers yourself.',
     'Packages and prices: you can set up a new package (propose_create_package) or change one (propose_update_package); the coach confirms. Use the business tool to see their current packages first. You never charge clients, refund, or move money; for those, open the Payments screen (open_screen) and say they can do it there. Deleting a client’s whole account is also done on their profile by the owner.',
@@ -177,7 +177,7 @@ export function speechRemainder(spokenText, streamedSay = '') {
 }
 
 /** Claude path: tool use, at most MAX_STEPS rounds. emit(event) streams the answer when given. */
-async function askClaude(db, auth, question, c, source, provider, history, { emit = null, snapshot = '' } = {}) {
+async function askClaude(db, auth, question, c, source, provider, history, { emit = null, snapshot = '', simple = false } = {}) {
   const coach = await coachContext(db);
   const tools = [...toolDefinitions(), ...moreToolDefinitions(), ...actionReadToolDefinitions(), ...proposalToolDefinitions(), ...uiToolDefinitions()];
   const messages = [...historyMessages(history), { role: 'user', content: question }];
@@ -186,9 +186,13 @@ async function askClaude(db, auth, question, c, source, provider, history, { emi
   // finish, so long actions (a whole program) aren't cut off. A cut-off step is redone once on the
   // escalation model with even more room.
   const baseModel = config.ai.assistModel || provider.model;
-  const plan = action
-    ? { model: config.ai.actionModel || baseModel, maxTokens: 6000, effort: 'medium', think: true }
-    : { model: baseModel, maxTokens: c.voice ? 1024 : 1600, effort: c.voice ? 'low' : null, think: false };
+  // Thinking counts toward max_tokens, so commands get plenty of room at low effort (fast, and
+  // enough to follow through). `simple` is the second try after a failure: no thinking at all.
+  const plan = simple
+    ? { model: baseModel, maxTokens: action ? 6000 : 1600, effort: 'low', think: false }
+    : action
+      ? { model: config.ai.actionModel || baseModel, maxTokens: 10000, effort: 'low', think: true }
+      : { model: baseModel, maxTokens: c.voice ? 1024 : 1600, effort: c.voice ? 'low' : null, think: false };
   const systemText = systemPrompt(coach, c);
   const systemExtra = extraPrompt(c, snapshot);
   const cards = [], trace = new Set(), proposals = [], used = [], followups = [];
@@ -204,13 +208,14 @@ async function askClaude(db, auth, question, c, source, provider, history, { emi
     const onText = emit ? piece => { streamedText = true; emit({ type: 'delta', text: piece }); speech?.push(piece); } : null;
     let r = await provider.chat({ system: systemText, systemExtra, messages, tools, maxTokens: plan.maxTokens, model: plan.model, cache: true, effort: plan.effort, think: plan.think, onText });
     add(r);
-    if (r.json.stop_reason === 'max_tokens' && (r.json.content || []).some(b => b.type === 'tool_use')) {
+    const cut = r.json.stop_reason === 'max_tokens' && ((r.json.content || []).some(b => b.type === 'tool_use') || !(r.json.content || []).some(b => b.type === 'text' && b.text?.trim()));
+    if (cut) {
       // The action was cut off mid-way: redo this step with more room on the escalation model.
       if (escalated) { outcome = 'truncated'; text = c.lang === 'es' ? 'Eso era demasiado para hacerlo de una vez. ¿Lo hacemos por partes? Por ejemplo, primero el programa y luego cada entrenamiento.' : 'That was too much to do in one go. Can we do it in parts? For example, the program first, then each workout.'; pendingTools = false; break; }
       escalated = true;
       if (streamedText) emit({ type: 'reset' });
       speech?.newStep();
-      r = await provider.chat({ system: systemText, systemExtra, messages, tools, maxTokens: 12000, model: config.ai.escalateModel || plan.model, cache: true, effort: 'medium', think: true, onText: null });
+      r = await provider.chat({ system: systemText, systemExtra, messages, tools, maxTokens: 20000, model: config.ai.escalateModel || plan.model, cache: true, effort: 'low', think: plan.think, onText: null });
       add(r);
       if (r.json.stop_reason === 'max_tokens') { outcome = 'truncated'; text = c.lang === 'es' ? 'Eso era demasiado para hacerlo de una vez. ¿Lo hacemos por partes?' : 'That was too much to do in one go. Can we do it in parts?'; pendingTools = false; break; }
     }
@@ -311,7 +316,8 @@ export async function ask(db, auth, question, { voice = false, tz = 'UTC', now =
   let out, providerName = 'mock', fallback = null, error = null;
   if (useClaude && !over) {
     for (let attempt = 0; attempt < 2 && !out; attempt++) {
-      try { out = await askClaude(db, auth, q, c, source, provider, history, { emit, snapshot }); providerName = 'anthropic'; }
+      // The second try is the plain version (no thinking), which avoids whatever tripped the first.
+      try { out = await askClaude(db, auth, q, c, source, provider, history, { emit, snapshot, simple: attempt > 0 }); providerName = 'anthropic'; }
       catch (e) { error = String(e.message || e).slice(0, 500); console.error(`[assist] Claude failed (try ${attempt + 1}):`, error); emit?.({ type: 'reset' }); }
     }
     if (!out) {

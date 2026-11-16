@@ -42,10 +42,12 @@ export async function wgerIndex(fetchImpl = fetch, { maxPages = 20 } = {}) {
     const j = await r.json();
     for (const ex of j.results || []) {
       const img = (ex.images || []).find(i => i.is_main && isOpenLicense(i)) || (ex.images || []).find(isOpenLicense);
-      if (!img?.image) continue;
+      const vid = (ex.videos || []).find(v => v.is_main && isOpenLicense(v) && v.video) || (ex.videos || []).find(v => isOpenLicense(v) && v.video);
+      if (!img?.image && !vid) continue;
       const tr = (ex.translations || []).find(t => t.language === ENGLISH);
       if (!tr?.name) continue;
-      const entry = { url: img.image, author: String(img.license_author || 'wger.de contributors').slice(0, 120), license: img.license_title || (Number(img.license) === 1 ? 'CC BY-SA 3.0' : 'CC BY-SA 4.0'), source: `https://wger.de/en/exercise/${ex.id}/view/` };
+      const credit = x => ({ author: String(x.license_author || 'wger.de contributors').slice(0, 120), license: x.license_title || (Number(x.license) === 1 ? 'CC BY-SA 3.0' : 'CC BY-SA 4.0'), source: `https://wger.de/en/exercise/${ex.id}/view/` });
+      const entry = { url: img?.image || null, ...(img?.image ? credit(img) : {}), video: vid ? { url: vid.video, size: Number(vid.size) || null, ...credit(vid) } : null };
       for (const n of [tr.name, ...(tr.aliases || []).map(a => a.alias || a)]) { const k = norm(n); if (k && !index.has(k)) index.set(k, entry); }
     }
     if (!j.next) break;
@@ -60,16 +62,34 @@ export function matchExercise(index, e) {
   return null;
 }
 
+const MAX_VIDEO = 25 * 1024 * 1024;
+
 export async function importWgerPhotos({ fetchImpl = fetch, log = console.log, force = false } = {}) {
   const list = await exercisesGlobal.list();
-  const todo = list.filter(e => force || !e.photoKey);
-  if (!todo.length) return { matched: 0, stored: 0, total: list.length };
+  const todo = list.filter(e => force || !e.photoKey || !e.videoKey);
+  if (!todo.length) return { matched: 0, stored: 0, videos: 0, total: list.length };
   const index = await wgerIndex(fetchImpl);
-  let matched = 0, stored = 0;
+  let matched = 0, stored = 0, videos = 0;
   for (const e of todo) {
     const m = matchExercise(index, e);
     if (!m) continue;
     matched++;
+    // The demo video (MP4/WebM up to 25 MB), when wger has an open-licensed one.
+    if (m.video && (force || !e.videoKey) && !(m.video.size > MAX_VIDEO)) {
+      try {
+        const r = await fetchImpl(m.video.url, { signal: AbortSignal.timeout(60000) });
+        const buf = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+        const isMp4 = buf && buf.length > 12 && buf.subarray(4, 8).toString('latin1') === 'ftyp';
+        const isWebm = buf && buf.length > 4 && buf.readUInt32BE(0) === 0x1a45dfa3;
+        if (buf && (isMp4 || isWebm) && buf.length <= MAX_VIDEO) {
+          const key = `exercise-videos/${e.id}.${isMp4 ? 'mp4' : 'webm'}`;
+          await StorageService.put(key, buf, isMp4 ? 'video/mp4' : 'video/webm');
+          await exercisesGlobal.setVideo(e.id, key, { author: m.video.author, license: m.video.license, source: m.video.source });
+          videos++;
+        }
+      } catch (err) { log(`[library] video for ${e.name} failed: ${err.message}`); }
+    }
+    if (!m.url || (!force && e.photoKey)) continue;
     try {
       const r = await fetchImpl(m.url, { signal: AbortSignal.timeout(20000) });
       if (!r.ok) continue;
@@ -82,6 +102,6 @@ export async function importWgerPhotos({ fetchImpl = fetch, log = console.log, f
       stored++;
     } catch (err) { log(`[library] photo for ${e.name} failed: ${err.message}`); }
   }
-  log(`[library] wger photos: ${stored} stored, ${matched} matched, ${list.length} exercises`);
-  return { matched, stored, total: list.length };
+  log(`[library] wger: ${stored} photos and ${videos} videos stored, ${matched} matched, ${list.length} exercises`);
+  return { matched, stored, videos, total: list.length };
 }

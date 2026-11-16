@@ -140,9 +140,11 @@ export const jobs = {
 // ------------------------------------------------------------- internal admin (aggregates only)
 /** OneJump's global exercise library (businessId = null): for the photo importer. */
 export const exercisesGlobal = {
-  list: () => db().exercise.findMany({ where: { businessId: null }, select: { id: true, name: true, equipment: true, pattern: true, photoKey: true } }),
+  list: () => db().exercise.findMany({ where: { businessId: null }, select: { id: true, name: true, equipment: true, pattern: true, photoKey: true, videoKey: true } }),
   setPhoto: (id, photoKey, photoCredit) => db().exercise.updateMany({ where: { id, businessId: null }, data: { photoKey, photoCredit } }),
+  setVideo: (id, videoKey, videoCredit) => db().exercise.updateMany({ where: { id, businessId: null }, data: { videoKey, videoCredit } }),
   withPhotos: () => db().exercise.count({ where: { businessId: null, photoKey: { not: null } } }),
+  withVideos: () => db().exercise.count({ where: { businessId: null, videoKey: { not: null } } }),
 };
 
 /** Assist's command log is kept 30 days. */

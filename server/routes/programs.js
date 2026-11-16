@@ -2,9 +2,61 @@
 import { Router } from 'express';
 import { body, z, name } from '../lib/validate.js';
 import { must, conflict, badRequest } from '../lib/errors.js';
-import { countSets, exerciseMap, patternImage } from '../core/training.js';
+import { countSets, exerciseMap, patternImage, normalizeBlocks, estimateMinutes } from '../core/training.js';
+import { SAMPLE_PROGRAMS, sampleByKey } from '../seed/samplePrograms.js';
+import { StorageService } from '../storage/StorageService.js';
 
 export const router = Router();
+
+// ---------------------------------------------------------------- sample programs
+// Ready-made programs to start from. Only copied into the coach's list when they pick one.
+const keyOf = n => String(n || '').toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+async function libraryByName(db) {
+  const list = await db.exercise.findMany({ select: { id: true, name: true, pattern: true, photoKey: true, videoKey: true, businessId: true } });
+  const m = new Map();
+  for (const e of list) if (!e.businessId || !m.has(keyOf(e.name))) m.set(keyOf(e.name), e); // OneJump's own first
+  return m;
+}
+router.get('/samples', async (req, res) => {
+  const lib = await libraryByName(req.db);
+  const photo = async e => (e?.photoKey ? StorageService.signedUrl(e.photoKey) : patternImage(e?.pattern));
+  const samples = await Promise.all(SAMPLE_PROGRAMS.map(async p => ({
+    key: p.key, name: p.name, level: p.level, weeks: p.weeks, daysPerWeek: p.daysPerWeek, description: p.description,
+    imageUrl: patternImage(p.pattern),
+    workouts: await Promise.all(p.workouts.map(async w => {
+      const items = w.items.filter(i => (i[4] || 'main') === 'main');
+      return {
+        name: w.name, day: w.day, minutes: w.minutes, exercises: w.items.length,
+        preview: await Promise.all(items.slice(0, 6).map(async ([n, sets, reps]) => {
+          const e = lib.get(keyOf(n));
+          return { name: e?.name || n, sets, reps, imageUrl: await photo(e), hasVideo: !!e?.videoKey };
+        })),
+      };
+    })),
+  })));
+  res.json({ samples });
+});
+router.post('/samples/:key', body(z.object({ name: z.string().trim().max(120).optional() })), async (req, res) => {
+  const p = sampleByKey(req.params.key);
+  if (!p) throw badRequest('That sample isn’t available.');
+  const lib = await libraryByName(req.db);
+  const prog = await req.db.program.create({ data: { name: req.body.name || p.name, weeks: p.weeks, daysPerWeek: p.daysPerWeek, level: p.level, description: p.description, source: 'manual' } });
+  const rows = p.workouts.map(w => {
+    const blocks = [];
+    for (const [n, sets, reps, rest, section = 'main', group = ''] of w.items) {
+      const e = lib.get(keyOf(n));
+      if (!e) continue;
+      const item = { exerciseId: e.id, notes: '', sets: Array.from({ length: sets }, () => ({ reps: String(reps), load: '', rpe: '', rest: String(rest) })) };
+      const prev = blocks.at(-1);
+      if (group && prev?.group === group && prev.section === section) { prev.items.push(item); prev.kind = prev.items.length > 2 ? 'circuit' : 'superset'; }
+      else blocks.push({ kind: 'single', section, group, items: [item] });
+    }
+    const clean = normalizeBlocks(blocks);
+    return { programId: prog.id, name: w.name, day: w.day, blocks: clean, estMinutes: w.minutes || estimateMinutes(clean) };
+  });
+  await req.db.workout.createMany({ data: rows });
+  res.status(201).json({ program: { id: prog.id, name: prog.name } });
+});
 
 router.get('/', async (req, res) => {
   const [programs, clients] = await Promise.all([

@@ -38,8 +38,10 @@ export async function shapeExercise(e, byId, { withMedia = false } = {}) {
   return {
     id: e.id, name: e.name, muscle: e.muscle, equipment: e.equipment, level: e.level, pattern: e.pattern, kneeLoad: e.kneeLoad, overhead: e.overhead,
     custom: !!e.businessId, videoUrl: e.videoUrl, howTo: e.howTo || HOWTO[e.pattern] || HOWTO.iso,
-    mediaType: e.mediaKey ? e.mediaType : null,
-    mediaUrl: withMedia && e.mediaKey ? await StorageService.signedUrl(e.mediaKey) : null,
+    // The coach's own photo or video wins; otherwise OneJump's free demo video (credited).
+    mediaType: e.mediaKey ? e.mediaType : e.videoKey ? 'video' : null,
+    mediaUrl: withMedia && e.mediaKey ? await StorageService.signedUrl(e.mediaKey) : withMedia && e.videoKey ? await StorageService.signedUrl(e.videoKey) : null,
+    mediaCredit: !e.mediaKey && e.videoKey && e.videoCredit ? e.videoCredit : null,
     // The picture for lists and the picker: a licensed photo (credited) or the built-in drawing.
     imageUrl: e.photoKey ? await StorageService.signedUrl(e.photoKey) : patternImage(e.pattern),
     imageCredit: e.photoKey && e.photoCredit ? e.photoCredit : null,

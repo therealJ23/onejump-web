@@ -39,8 +39,8 @@ describe('the Assist loop', () => {
   it('actions get thinking and room to finish; questions stay fast', async () => {
     const { calls, provider } = fakeClaude([text('Okay.')]);
     await withProvider(provider, () => ask(f.dbA, auth, 'Build a 3-day program for beginners', { voice: true }));
-    expect(calls[0]).toMatchObject({ think: true, effort: 'medium' });
-    expect(calls[0].maxTokens).toBeGreaterThanOrEqual(6000);
+    expect(calls[0]).toMatchObject({ think: true, effort: 'low' });
+    expect(calls[0].maxTokens).toBeGreaterThanOrEqual(8000);
     const q = fakeClaude([text('Mike is on track.')]);
     await withProvider(q.provider, () => ask(f.dbA, auth, 'How is Mike doing?', { voice: true }));
     expect(q.calls[0]).toMatchObject({ think: false, effort: 'low' });
@@ -48,15 +48,15 @@ describe('the Assist loop', () => {
     expect(modelOptions('claude-haiku-5-5', {})).toEqual({ thinking: { type: 'disabled' } });
   });
 
-  it('a step cut off mid-action is redone once with more room on the escalation model', async () => {
+  it('a step cut off mid-action is redone once with more room (same model unless ASSIST_ESCALATE_MODEL is set)', async () => {
     const { calls, provider } = fakeClaude([
       { stop_reason: 'max_tokens', content: [{ type: 'tool_use', id: 'cut', name: 'propose_create_program', input: {} }] },
       tool('propose_add_note', { client_name: f.mike.name, text: 'Started the new block' }, 'ok1'),
       text('Done.'),
     ]);
     const r = await withProvider(provider, () => ask(f.dbA, auth, 'Add a note to Mike: started the new block'));
-    expect(calls[1].maxTokens).toBe(12000);
-    expect(calls[1].model).toBe(config.ai.escalateModel);
+    expect(calls[1].maxTokens).toBe(20000);
+    expect(calls[1].model).toBe(config.ai.escalateModel || calls[0].model);
     expect(r.done?.[0]?.type).toBe('add_note'); // internal: done right away
     const run = await f.dbA.assistRun.findFirst({ where: { question: 'Add a note to Mike: started the new block' }, orderBy: { createdAt: 'desc' } });
     expect(run.outcome).toBe('done');
@@ -75,6 +75,8 @@ describe('the Assist loop', () => {
     const { calls, provider } = fakeClaude([new Error('Anthropic 529: overloaded')]);
     const r = await withProvider(provider, () => ask(f.dbA, auth, 'Send Marcus the drafted message'));
     expect(calls.length).toBe(2);
+    expect(calls[0].think).toBe(true);
+    expect(calls[1]).toMatchObject({ think: false, effort: 'low' }); // the second try is the plain version
     expect(r.answerText).toMatch(/couldn’t finish/);
     expect(r.proposals).toEqual([]);
     const run = await f.dbA.assistRun.findFirst({ where: { question: 'Send Marcus the drafted message', outcome: 'error' }, orderBy: { createdAt: 'desc' } });

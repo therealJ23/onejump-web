@@ -1,6 +1,7 @@
 // Turns AIService output into saved drafts (AIInsight rows, status "pending") that the
 // coach approves, edits or dismisses. Approval is handled in server/core/actions.js.
 import { AI } from './AIService.js';
+import { savedMinutes } from '../core/timeSaved.js';
 import { checkinContext, messageContext, riskContext, workoutContext, adjustContext, progressContext, coachContext } from './context.js';
 
 export const MINUTES = { checkin_summary: 8, message_draft: 4, risk: 10, workout: 20, adjustment: 12, automation: 3, lead_reply: 5 };
@@ -19,24 +20,24 @@ export async function checkinSummary(db, checkIn, { force = false } = {}) {
   const client = await db.client.findFirst({ where: { id: checkIn.clientId } });
   if (!client) return null;
   const r = await AI.analyzeCheckIn(await checkinContext(db, client, checkIn), { db });
-  return saveInsight(db, { clientId: client.id, kind: 'checkin_summary', source: 'checkin', sourceId: checkIn.id, summary: r.data.summary, draft: r.data, minutesSaved: MINUTES.checkin_summary, model: r.model, promptVersion: r.promptVersion });
+  return saveInsight(db, { clientId: client.id, kind: 'checkin_summary', source: 'checkin', sourceId: checkIn.id, summary: r.data.summary, draft: r.data, minutesSaved: savedMinutes('checkin_summary', { text: r.data.reply || r.data.text || r.data.draft || '' }), model: r.model, promptVersion: r.promptVersion });
 }
 
 /** A message draft for the inbox, Today queue or an automation. */
 export async function messageDraft(db, client, intent, { current = '', kind = 'message_draft', source = 'inbox', sourceId = null, extra = {}, minutes } = {}) {
   const r = await AI.draftMessage(await messageContext(db, client, intent, current, extra), { db });
-  return saveInsight(db, { clientId: client.id, kind, source, sourceId, summary: null, draft: { text: r.data.text, intent, safety: r.data.safety, ...extra }, minutesSaved: minutes ?? MINUTES[kind] ?? 4, model: r.model, promptVersion: r.promptVersion });
+  return saveInsight(db, { clientId: client.id, kind, source, sourceId, summary: null, draft: { text: r.data.text, intent, safety: r.data.safety, ...extra }, minutesSaved: minutes ?? savedMinutes(kind, { text: r.data.text }), model: r.model, promptVersion: r.promptVersion });
 }
 
 /** Retention radar: plain-words explanation + suggested action + outreach draft. */
 export async function riskInsight(db, client, risk, signals) {
   const r = await AI.analyzeClientRisk(await riskContext(db, client, risk, signals), { db });
-  return saveInsight(db, { clientId: client.id, kind: 'risk', source: 'risk', sourceId: `${client.id}:${new Date().toISOString().slice(0, 10)}`, summary: r.data.explanation, draft: { ...r.data, reasons: risk.reasons, score: risk.score, level: risk.level }, minutesSaved: MINUTES.risk, model: r.model, promptVersion: r.promptVersion });
+  return saveInsight(db, { clientId: client.id, kind: 'risk', source: 'risk', sourceId: `${client.id}:${new Date().toISOString().slice(0, 10)}`, summary: r.data.explanation, draft: { ...r.data, reasons: risk.reasons, score: risk.score, level: risk.level }, minutesSaved: savedMinutes('risk', { text: r.data.draft || '' }), model: r.model, promptVersion: r.promptVersion });
 }
 
 export async function workoutDraft(db, brief, client = null) {
   const r = await AI.generateWorkout(await workoutContext(db, brief, client), { db });
-  return saveInsight(db, { clientId: client?.id || null, kind: 'workout', source: 'builder', summary: r.data.rationale, draft: { ...r.data, brief }, minutesSaved: MINUTES.workout, model: r.model, promptVersion: r.promptVersion });
+  return saveInsight(db, { clientId: client?.id || null, kind: 'workout', source: 'builder', summary: r.data.rationale, draft: { ...r.data, brief }, minutesSaved: savedMinutes('workout', { blocks: r.data.blocks, exercises: r.data.exercises }), model: r.model, promptVersion: r.promptVersion });
 }
 
 /** Suggested program adjustments; cached for the day unless forced. */
@@ -62,5 +63,5 @@ export async function progressNote(db, client, { force = false } = {}) {
 export async function leadReply(db, dm, { price = null, bookingLink = null } = {}) {
   const coach = await coachContext(db);
   const r = await AI.parseLead({ coach: { ...coach, price, bookingLink }, dm }, { db });
-  return saveInsight(db, { kind: 'lead_reply', source: 'lead', summary: r.data.goal, draft: r.data, minutesSaved: MINUTES.lead_reply, model: r.model, promptVersion: r.promptVersion });
+  return saveInsight(db, { kind: 'lead_reply', source: 'lead', summary: r.data.goal, draft: r.data, minutesSaved: savedMinutes('lead_reply', { text: r.data.reply || r.data.text || '' }), model: r.model, promptVersion: r.promptVersion });
 }

@@ -5,6 +5,7 @@
 // through the normal service functions with the coach's own tenant-scoped access.
 // Proposals expire after 10 minutes and can be confirmed once. Money is never proposed; deleting
 // (programs, workouts, exercises) is, because the coach confirms it. More actions: ./actions.js.
+import { savedMinutes } from '../core/timeSaved.js';
 import { must, conflict, badRequest, HttpError } from '../lib/errors.js';
 import { audit } from '../db/system.js';
 import { sendMessage } from '../core/messaging.js';
@@ -44,7 +45,7 @@ export const MINUTES_SAVED = {
   create_package: 8, update_package: 4, create_lead: 3, create_event: 2, move_event: 1,
   checkin_reply: 6, message_draft: 3,
 };
-export function recordSaving(db, auth, kind, minutes = MINUTES_SAVED[kind] ?? 2) {
+export function recordSaving(db, auth, kind, minutes = savedMinutes(kind)) {
   if (!minutes) return;
   db.assistSaving.create({ data: { userId: auth?.userId || null, kind, minutes } }).catch(() => null);
 }
@@ -224,7 +225,7 @@ export async function confirmProposal(db, auth, id, { text, via = 'tap' } = {}) 
     await db.assistProposal.update({ where: { id }, data: { result } });
     audit({ businessId: auth.businessId, actorUserId: auth.userId, action: `assist_${p.type}_confirmed`, target: p.id, meta: { source: p.source, via } });
     // Drafts that went through an AIInsight already count their minutes there.
-    if (!(p.payload?.insightId && ['send_message', 'reply_checkin'].includes(p.type))) recordSaving(db, auth, p.type, p.type === 'create_program' ? 20 + 8 * ((p.payload?.workouts || []).length) : undefined);
+    if (!(p.payload?.insightId && ['send_message', 'reply_checkin'].includes(p.type))) recordSaving(db, auth, p.type, savedMinutes(p.type, { ...p.payload, text: text != null && String(text).trim() ? String(text) : p.payload?.text }));
     return { status: 'confirmed', ...result };
   } catch (e) {
     // Part of it may already have happened (e.g. some reminders sent), so it is never re-armed:

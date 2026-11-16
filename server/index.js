@@ -23,7 +23,8 @@ if (config.isProd && process.env.WGER_PHOTOS !== 'off') {
   setTimeout(async () => {
     try {
       const { exercisesGlobal } = await import('./db/system.js');
-      if (await exercisesGlobal.withPhotos()) return;
+      // Photos and (Nov 16) demo videos: runs while either is still missing.
+      if ((await exercisesGlobal.withPhotos()) && (await exercisesGlobal.withVideos())) return;
       const { importWgerPhotos } = await import('./library/wgerPhotos.js');
       await importWgerPhotos();
     } catch (e) { console.error('[library] wger photos:', e.message); }

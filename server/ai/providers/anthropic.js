@@ -93,13 +93,28 @@ export class AnthropicProvider {
     }
   }
 
-  async send(body) {
-    return this.fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(45000),
-    });
+  /**
+   * One HTTP call. A plain call may take up to 2 minutes (thinking on a long command takes a while);
+   * a streamed one is cut only when nothing arrives for `idleMs` (the caller pokes `alive()` on
+   * every chunk), with a 3-minute ceiling. A fixed 45-second cut used to end long commands
+   * mid-answer, which showed up as "my connection to the AI dropped" (Nov 16).
+   */
+  async send(body, { stream = false, idleMs = 40000 } = {}) {
+    const ctrl = new AbortController();
+    const total = setTimeout(() => ctrl.abort(new Error('Anthropic timeout (total)')), stream ? 180000 : 120000);
+    let idle = stream ? setTimeout(() => ctrl.abort(new Error('Anthropic timeout (idle)')), idleMs) : null;
+    const alive = () => { if (!stream) return; clearTimeout(idle); idle = setTimeout(() => ctrl.abort(new Error('Anthropic timeout (idle)')), idleMs); };
+    const done = () => { clearTimeout(total); clearTimeout(idle); };
+    try {
+      const res = await this.fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': this.apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+      if (!stream) done();
+      return Object.assign(res, { alive, done });
+    } catch (e) { done(); throw e; }
   }
 
   async failure(res) {
@@ -131,12 +146,13 @@ export class AnthropicProvider {
     for (let attempt = 0; attempt < 2; attempt++) {
       let streamed = false;
       try {
-        const res = await this.send(body);
-        if (res.status === 429 || res.status >= 500) { lastErr = new Error(`Anthropic ${res.status}`); await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
-        if (!res.ok) throw await this.failure(res);
+        const res = await this.send(body, { stream: true });
+        if (res.status === 429 || res.status >= 500) { res.done?.(); lastErr = new Error(`Anthropic ${res.status}`); await new Promise(r => setTimeout(r, 1200 * (attempt + 1))); continue; }
+        if (!res.ok) { res.done?.(); throw await this.failure(res); }
         const blocks = [], partialJson = [];
         let model = body.model, stopReason = null, usage = {};
         const handle = ev => {
+          res.alive?.();
           switch (ev.type) {
             case 'message_start': model = ev.message?.model || model; usage = { ...ev.message?.usage }; break;
             case 'content_block_start': {
@@ -167,7 +183,7 @@ export class AnthropicProvider {
             default: break;
           }
         };
-        await readEvents(res.body, handle);
+        try { await readEvents(res.body, handle); } finally { res.done?.(); }
         const json = { model, stop_reason: stopReason, content: blocks.filter(Boolean), usage };
         return { json, model, usage: costOf(body.model || this.model, usage) };
       } catch (e) { lastErr = e; if (streamed || attempt === 1 || !/timeout|fetch failed|ECONN/i.test(String(e))) break; }
