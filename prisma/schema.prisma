@@ -375,6 +375,29 @@ model Message {
   @@index([businessId, clientId, createdAt])
 }
 
+// The coach's calendar: sessions, check-in calls, consultations and blocked time. An event with a
+// client shows in that client's app; one without (blocks, personal time) is the coach's only.
+model CalendarEvent {
+  id          String   @id @default(uuid())
+  businessId  String
+  clientId    String?
+  leadId      String?
+  type        String // session | call | consult | block
+  title       String
+  start       DateTime
+  end         DateTime
+  location    String?
+  notes       String?  @db.Text
+  status      String   @default("scheduled") // scheduled | done | cancelled
+  source      String   @default("manual") // manual | assist
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId, start])
+  @@index([businessId, clientId])
+}
+
 // An emoji reaction on a message, one per person per message (a new one replaces it).
 model MessageReaction {
   id         String   @id @default(uuid())

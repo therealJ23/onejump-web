@@ -9,8 +9,9 @@ import { photoUrl } from '../core/avatars.js';
 import { dbForBusiness } from '../db/tenant.js';
 import { body, z, score10 } from '../lib/validate.js';
 import { must, badRequest, conflict, HttpError } from '../lib/errors.js';
-import { todayKey, addDays, weekStart, DAY } from '../lib/time.js';
+import { todayKey, addDays, weekStart, DAY, localYMD } from '../lib/time.js';
 import { exerciseMap, programWeek, patternImage, exerciseImages } from '../core/training.js';
+import { clientMonth, moveAssignment } from '../core/calendar.js';
 import { storeUpload, gifAttachment, shapeAttachments, reactionsFor, react, previewText, MAX_VIDEO_BYTES } from '../core/chatMedia.js';
 import { refreshClientStats, weightSeries, keyLift, personalBests } from '../core/stats.js';
 import { sendMessage, notify, clientEvent, ensureThread } from '../core/messaging.js';
@@ -232,6 +233,21 @@ router.post('/messages/gif', body(z.object({ gif: z.object({ id: z.string().max(
 router.post('/messages/:id/react', body(z.object({ emoji: z.string().max(16).nullable() })), async (req, res) => {
   const { client } = await ctx(req);
   res.json(await react(req.db, { messageId: req.params.id, clientId: client.id, userId: req.auth.userId, emoji: req.body.emoji }));
+});
+
+// The client's training calendar, and moving a workout to another day (unless the coach turned it off).
+router.get('/calendar', async (req, res) => {
+  const { client } = await ctx(req);
+  const b = await req.db.business.findFirst({ select: { timezone: true, settings: true } });
+  const tz = b?.timezone || 'UTC';
+  const month = /^\d{4}-\d{2}$/.test(String(req.query.month || '')) ? req.query.month : localYMD(tz).slice(0, 7);
+  res.json({ ...(await clientMonth(req.db, client.id, month, tz)), canReschedule: b?.settings?.clientCanReschedule !== false });
+});
+router.patch('/assignments/:id', body(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) })), async (req, res) => {
+  const b = await req.db.business.findFirst({ select: { timezone: true, settings: true } });
+  if (b?.settings?.clientCanReschedule === false) return res.status(403).json({ error: 'Your coach plans your days, so ask them to move it.' });
+  const a = await moveAssignment(req.db, req.params.id, req.body.date, { tz: b?.timezone || 'UTC', client: true });
+  res.json({ assignment: { id: a.id, date: a.scheduledFor.toISOString().slice(0, 10) } });
 });
 
 router.get('/progress', async (req, res) => {

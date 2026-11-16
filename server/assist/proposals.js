@@ -32,6 +32,8 @@ export const PROPOSAL_TTL_MS = 10 * 60e3;
  * them right away unless the coach turned auto-approve off (Business.settings.assistAutoApprove).
  */
 export const AUTO_APPROVE = new Set(['add_note', 'create_lead', 'update_lead', 'create_program', 'update_program', 'duplicate_program', 'save_workout', 'create_exercise', 'restore_exercise']);
+/** Calendar changes count as internal only when no client is involved (blocked time, personal events). */
+export const isAutoApprovable = p => AUTO_APPROVE.has(p.type) || (['create_event', 'move_event'].includes(p.type) && !p.payload?.clientId);
 
 /** Estimated minutes the coach would have spent doing it by hand (for the "time saved" card). */
 export const MINUTES_SAVED = {
@@ -123,8 +125,9 @@ export const PROPOSE = {
     const voiceOk = !r.draft.needsProfessional;
     return { proposal: await save(db, auth, { type: 'nutrition_plan', summary: `Nutrition plan for ${client.name}`, payload: { clientId: client.id, clientName: client.name, draft: r.draft, notes: r.notes, scopeReminder: r.scopeReminder, estimate: r.estimate, line: describeDraft(r.draft, firstOf(client.name), lang), voiceOk }, source }) };
   },
-  async book_appointment() {
-    return { error: 'Scheduling isn’t set up in OneJump yet, so I can’t book sessions. Add it to your calendar for now.' };
+  /** Older name for booking a session: same as create_event. */
+  async book_appointment(db, auth, a, opts) {
+    return ACTION_PROPOSE.create_event(db, auth, { type: 'session', client_name: a.client_name, date: a.date, start_time: a.start_time, minutes: a.minutes }, opts);
   },
   ...ACTION_PROPOSE,
 };
@@ -140,7 +143,6 @@ export function proposalToolDefinitions() {
     { name: 'propose_reply_checkin', description: 'Propose sending the reply to a client’s latest check-in (Assist’s draft, or the coach’s own words) and marking it reviewed. The coach must approve.', input_schema: { type: 'object', properties: { client_name: { type: 'string' }, text: { type: 'string', description: 'The coach’s exact words, if they dictated the reply. Leave empty to use Assist’s draft.' } }, required: ['client_name'] } },
     { name: 'propose_assign_program', description: 'Propose starting a client on one of the coach’s programs (call the programs tool first if unsure of the name). The coach must approve.', input_schema: { type: 'object', properties: { client_name: { type: 'string' }, program_name: { type: 'string' }, start_date: { type: 'string', description: 'YYYY-MM-DD, optional; default is the next Monday' } }, required: ['client_name', 'program_name'] } },
     { name: 'propose_nutrition_plan', description: 'Have Assist draft a starting nutrition plan for one client (targets from the calculator, never below resting needs, daily habits, an optional meal plan) using the client’s details. Pass what the coach asked for. The coach must approve before the client sees it.', input_schema: { type: 'object', properties: { client_name: { type: 'string' }, request: { type: 'string', description: 'What the coach asked for: goal, preferences, foods, meal plan or not, number of days' } }, required: ['client_name'] } },
-    { name: 'propose_book_appointment', description: 'Book a session with a client.', input_schema: { type: 'object', properties: { client_name: { type: 'string' }, when: { type: 'string' } }, required: ['client_name'] } },
     ...actionToolDefinitions(),
   ];
 }

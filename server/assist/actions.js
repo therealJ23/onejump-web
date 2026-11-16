@@ -19,6 +19,8 @@ import { checkText } from '../ai/safety.js';
 import { checkNutritionLanguage } from '../nutrition/language.js';
 import { hiddenExerciseIds, createExercise, removeExercise, PATTERNS } from '../routes/exercises.js';
 import { payments } from '../payments/PaymentService.js';
+import { coachRange, createEvent, updateEvent } from '../core/calendar.js';
+import { zonedToUtc, wallParts, localYMD, dateToYmd, addDays, ymdToDate } from '../lib/time.js';
 
 const TTL_MS = 10 * 60e3;
 const firstOf = n => String(n || '').split(' ')[0];
@@ -340,6 +342,38 @@ export const ACTION_PROPOSE = {
     return { proposal: await save(db, auth, { type: 'set_automation', summary: T(lang, `Automation: ${label}`, `Automatización: ${label}`), payload: { automationId: hit.id, key: hit.key, name: label, changes, lines, button: T(lang, 'Save', 'Guardar'), voiceOk: true, say: T(lang, `I’ll ${changes.enabled === false ? 'turn off' : changes.enabled ? 'turn on' : 'update'} ${label}. Should I do it?`, `Voy a ${changes.enabled === false ? 'apagar' : changes.enabled ? 'encender' : 'actualizar'} ${label}. ¿Lo hago?`) }, source }) };
   },
 
+  // Calendar. An event with a client shows in their app, so it waits for the coach; a block of
+  // the coach's own time is done right away (see isAutoApprovable in proposals.js).
+  async create_event(db, auth, a, { source, lang }) {
+    const tz = (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
+    const type = ['session', 'call', 'consult', 'block'].includes(a.type) ? a.type : (a.client_name ? 'session' : 'block');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date || '') || !/^\d{1,2}:\d{2}$/.test(a.start_time || '')) return { error: T(lang, 'What day and time? (Use YYYY-MM-DD and HH:MM.)', '¿Qué día y a qué hora? (Usa AAAA-MM-DD y HH:MM.)') };
+    const [hh, mm] = a.start_time.split(':').map(Number);
+    const minutes = Math.max(15, Math.min(720, Math.round(Number(a.minutes) || (type === 'call' ? 30 : 60))));
+    const start = zonedToUtc(a.date, hh, mm, tz), end = new Date(start.getTime() + minutes * 6e4);
+    let client = null;
+    if (a.client_name) {
+      const r = await clientByName(db, a.client_name);
+      if (!r.client) return { error: r.matches?.length > 1 ? T(lang, `Which client: ${r.matches.slice(0, 3).map(m => m.name).join(', ')}?`, `¿Qué cliente: ${r.matches.slice(0, 3).map(m => m.name).join(', ')}?`) : T(lang, `I couldn’t find a client called ${a.client_name}.`, `No encontré a ${a.client_name}.`) };
+      client = r.client;
+    }
+    const clash = await db.calendarEvent.findFirst({ where: { status: { not: 'cancelled' }, start: { lt: end }, end: { gt: start } }, select: { title: true } });
+    const label = { session: T(lang, 'Session', 'Sesión'), call: T(lang, 'Check-in call', 'Llamada de check-in'), consult: T(lang, 'Consultation', 'Consulta'), block: T(lang, 'Busy', 'Ocupado') }[type];
+    const title = clean(a.title) || (client ? `${label} · ${client.name.split(' ')[0]}` : label);
+    const when = `${a.date} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}, ${minutes} min`;
+    return { proposal: await save(db, auth, { type: 'create_event', summary: title, payload: { type, title, start: start.toISOString(), end: end.toISOString(), clientId: client?.id || null, clientName: client?.name || null, location: clean(a.location) || null, notes: clean(a.notes) || null, lines: [when, ...(a.location ? [clean(a.location)] : []), ...(clash ? [T(lang, `Overlaps: ${clash.title}`, `Se cruza con: ${clash.title}`)] : [])], button: T(lang, 'Add to calendar', 'Agregar al calendario'), voiceOk: true, say: T(lang, `${title}, ${when}. Should I add it?`, `${title}, ${when}. ¿Lo agrego?`) }, source }) };
+  },
+  async move_event(db, auth, a, { source, lang }) {
+    const e = await db.calendarEvent.findFirst({ where: { id: String(a.event_id || '') } });
+    if (!e) return { error: T(lang, 'Which event? Look it up with the calendar tool first.', '¿Qué evento? Búscalo primero con la herramienta de calendario.') };
+    const tz = (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
+    if (a.cancel) return { proposal: await save(db, auth, { type: 'move_event', summary: T(lang, `Cancel ${e.title}`, `Cancelar ${e.title}`), payload: { eventId: e.id, cancel: true, clientId: e.clientId, lines: [e.title], button: T(lang, 'Cancel it', 'Cancelarlo'), voiceOk: true, say: T(lang, `Cancel ${e.title}?`, `¿Cancelo ${e.title}?`) }, source }) };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date || '') || !/^\d{1,2}:\d{2}$/.test(a.start_time || '')) return { error: T(lang, 'To when? (YYYY-MM-DD and HH:MM.)', '¿Para cuándo? (AAAA-MM-DD y HH:MM.)') };
+    const [hh, mm] = a.start_time.split(':').map(Number);
+    const start = zonedToUtc(a.date, hh, mm, tz), end = new Date(start.getTime() + (e.end - e.start));
+    const when = `${a.date} ${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    return { proposal: await save(db, auth, { type: 'move_event', summary: T(lang, `Move ${e.title}`, `Mover ${e.title}`), payload: { eventId: e.id, start: start.toISOString(), end: end.toISOString(), clientId: e.clientId, lines: [T(lang, `New time: ${when}`, `Nueva hora: ${when}`)], button: T(lang, 'Move it', 'Moverlo'), voiceOk: true, say: T(lang, `Move ${e.title} to ${when}?`, `¿Muevo ${e.title} a ${when}?`) }, source }) };
+  },
   // Packages and prices (what clients buy). Creating or changing one is confirmed by the coach;
   // charging, refunds and moving money are never done by Assist.
   async create_package(db, auth, a, { source, lang }) {
@@ -530,6 +564,15 @@ export const ACTION_EXECUTE = {
     await db.automation.update({ where: { id: p.automationId }, data: p.changes });
     return { message: `${p.name} is ${p.changes.enabled === false ? 'off' : p.changes.enabled ? 'on' : 'updated'}.` };
   },
+  async create_event(db, auth, p) {
+    const e = await createEvent(db, auth, { type: p.type, title: p.title, start: p.start, end: p.end, clientId: p.clientId, location: p.location, notes: p.notes, source: 'assist' });
+    return { eventId: e.id, navigate: { screen: 'calendar' }, message: `${p.title} is on your calendar.` };
+  },
+  async move_event(db, auth, p) {
+    if (p.cancel) { await updateEvent(db, auth, p.eventId, { status: 'cancelled' }); return { message: 'Cancelled.' }; }
+    const e = await updateEvent(db, auth, p.eventId, { start: p.start, end: p.end });
+    return { eventId: e.id, navigate: { screen: 'calendar' }, message: `${e.title} is moved.` };
+  },
   async create_package(db, auth, p) {
     if (auth.role !== 'OWNER') throw conflict('Only the workspace owner can set up packages.');
     let plan = await db.clientPlan.create({ data: { name: p.name, priceCents: p.priceCents, interval: p.interval, description: p.description, sessionsIncluded: p.sessionsIncluded } });
@@ -558,7 +601,7 @@ export const ACTION_EXECUTE = {
 };
 
 /** Where the coach finishes it by hand if confirming fails. */
-export const ACTION_SCREEN = { create_program: 'Programs', update_program: 'Programs', delete_program: 'Programs', duplicate_program: 'Programs', save_workout: 'the program', delete_workout: 'the program', create_exercise: 'the Exercise library', delete_exercise: 'the Exercise library', restore_exercise: 'the Exercise library', add_client: 'Clients', update_client: 'the client’s profile', message_clients: 'Messages', review_checkin: 'Check-ins', payment_reminder: 'Payments', update_lead: 'Leads', convert_lead: 'Leads', set_automation: 'Automations', update_settings: 'Settings', create_package: 'Payments', update_package: 'Payments' };
+export const ACTION_SCREEN = { create_program: 'Programs', update_program: 'Programs', delete_program: 'Programs', duplicate_program: 'Programs', save_workout: 'the program', delete_workout: 'the program', create_exercise: 'the Exercise library', delete_exercise: 'the Exercise library', restore_exercise: 'the Exercise library', add_client: 'Clients', update_client: 'the client’s profile', message_clients: 'Messages', review_checkin: 'Check-ins', payment_reminder: 'Payments', update_lead: 'Leads', convert_lead: 'Leads', set_automation: 'Automations', update_settings: 'Settings', create_package: 'Payments', update_package: 'Payments', create_event: 'Calendar', move_event: 'Calendar' };
 
 const ex = { type: 'array', description: 'Exercises in order, by their names in the library (check exercise_library).', items: { type: 'object', properties: { exercise: { type: 'string' }, sets: { type: 'integer' }, reps: { type: 'string', description: 'e.g. "8-10", "12", "30s"' }, rest_seconds: { type: 'integer' }, load: { type: 'string', description: 'e.g. "135 lb", "RPE 8", "bodyweight"' }, section: { type: 'string', enum: ['warmup', 'main', 'cooldown'] }, group: { type: 'string', description: 'Same letter for exercises done back to back as a superset or circuit (e.g. "A" for both)' }, notes: { type: 'string' } }, required: ['exercise'] } };
 
@@ -583,6 +626,8 @@ export function actionToolDefinitions() {
     P('update_lead', 'Move a lead to another stage (new, contacted, consult, trial, active, retained, lost) or change their goal or contact.', { lead_name: { type: 'string' }, stage: { type: 'string', enum: ['new', 'contacted', 'consult', 'trial', 'active', 'retained', 'lost'] }, goal: { type: 'string' }, contact: { type: 'string' } }, ['lead_name']),
     P('convert_lead', 'Turn a lead into a client (emails their invite if there’s an email).', { lead_name: { type: 'string' }, email: { type: 'string' } }, ['lead_name']),
     P('set_automation', 'Turn an automation on or off, or change its message (check-in reminder, failed payment, missed workouts, milestones, gone quiet).', { automation: { type: 'string' }, enabled: { type: 'boolean' }, message: { type: 'string' } }, ['automation']),
+    P('create_event', 'Put something on the coach’s calendar: a session with a client, a check-in call, a consultation (e.g. with a lead), or blocked time. Check the calendar tool for open slots first. Times are the coach’s local time.', { type: { type: 'string', enum: ['session', 'call', 'consult', 'block'] }, date: { type: 'string', description: 'YYYY-MM-DD' }, start_time: { type: 'string', description: 'HH:MM, 24-hour' }, minutes: { type: 'integer' }, client_name: { type: 'string' }, title: { type: 'string' }, location: { type: 'string' }, notes: { type: 'string' } }, ['date', 'start_time']),
+    P('move_event', 'Move an event on the calendar to a new day/time, or cancel it (cancel=true). Use the event id from the calendar tool.', { event_id: { type: 'string' }, date: { type: 'string' }, start_time: { type: 'string' }, cancel: { type: 'boolean' } }, ['event_id']),
     P('create_package', 'Set up a new package clients can buy (name, price, billing, what’s included). It shows on the coach’s booking page.', { name: { type: 'string' }, price: { type: 'number', description: 'In US dollars, e.g. 199' }, interval: { type: 'string', enum: ['month', 'week', 'once'] }, minimum_months: { type: 'integer' }, sessions_included: { type: 'integer' }, includes: { type: 'array', items: { type: 'string' }, description: 'What’s included, short phrases' }, description: { type: 'string' } }, ['name', 'price']),
     P('update_package', 'Change one of the coach’s packages: name, price (applies to new sign-ups), billing, details, or hide it from new sign-ups (active=false).', { package_name: { type: 'string' }, new_name: { type: 'string' }, price: { type: 'number' }, interval: { type: 'string', enum: ['month', 'week', 'once'] }, description: { type: 'string' }, active: { type: 'boolean' } }, ['package_name']),
     P('update_settings', 'Change the business name, Assist’s writing style (Supportive, Direct, Data-driven, Playful) or the time zone.', { business_name: { type: 'string' }, writing_style: { type: 'string', enum: ['Supportive', 'Direct', 'Data-driven', 'Playful'] }, timezone: { type: 'string' } }),
@@ -591,7 +636,7 @@ export function actionToolDefinitions() {
 
 // ---------------------------------------------------------------- reading, moving around, and the guide
 
-export const SCREENS = ['today', 'clients', 'client', 'assist', 'inbox', 'messages', 'checkins', 'programs', 'program', 'library', 'exercise', 'nutrition', 'payments', 'leads', 'automations', 'settings', 'billing', 'more'];
+export const SCREENS = ['today', 'calendar', 'clients', 'client', 'assist', 'inbox', 'messages', 'checkins', 'programs', 'program', 'library', 'exercise', 'nutrition', 'payments', 'leads', 'automations', 'settings', 'billing', 'more'];
 
 const GUIDE = {
   overview: 'OneJump is coaching software for personal trainers and online coaches, founded by Jansell. The iPhone app has five tabs: Today (what needs you, Assist’s drafts to approve, the morning briefing, business charts), Clients (each client’s profile with Overview, Program, Food, Progress and Notes), Assist (talk or type to me), Inbox (messages and check-ins) and More (Programs, Exercise library, Nutrition, Payments, Leads, Automations, Settings, Plan and billing).',
@@ -608,6 +653,24 @@ const GUIDE = {
 };
 
 export const ACTION_READ_TOOLS = {
+  calendar: {
+    description: 'The coach’s calendar for a date range (sessions, check-in calls, consultations, blocked time, workouts due per day) and their open slots. Use it before booking or moving anything.',
+    input: { from: { type: 'string', description: 'YYYY-MM-DD, default today' }, to: { type: 'string', description: 'YYYY-MM-DD, default 6 days after from' } },
+    trace: ['Calendar'],
+    async run(db, a = {}, c = {}) {
+      const tz = (await db.business.findFirst({ select: { timezone: true } }))?.timezone || c.tz || 'UTC';
+      const from = /^\d{4}-\d{2}-\d{2}$/.test(a.from || '') ? a.from : localYMD(tz, c.now || new Date());
+      const to = /^\d{4}-\d{2}-\d{2}$/.test(a.to || '') ? a.to : dateToYmd(addDays(ymdToDate(from), 6));
+      const r = await coachRange(db, { from, to, tz, now: c.now || new Date() });
+      const t = d => { const p = wallParts(tz, new Date(d)); return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')} ${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`; };
+      return {
+        timezone: tz,
+        events: r.events.map(e => ({ id: e.id, type: e.type, title: e.title, start: t(e.start), end: t(e.end), client: e.client?.name || null, location: e.location })),
+        workoutsDue: r.workoutsDue,
+        openSlots: r.openSlots.slice(0, 12).map(o => ({ start: t(o.start), end: t(o.end) })),
+      };
+    },
+  },
   exercise_library: {
     description: 'The coach’s exercise library (OneJump’s plus their own), optionally filtered. Use it to find exact exercise names before building workouts.',
     input: { search: { type: 'string', description: 'Words to match in the name, muscle or equipment' }, only_mine: { type: 'boolean', description: 'Only the coach’s own exercises' }, removed: { type: 'boolean', description: 'Exercises the coach removed from their library' } },

@@ -183,8 +183,14 @@ const monthEs = s => MON[s] || s;
 
 async function sessionsToday(db, { tz, now }) {
   const today = todayKey(tz, now);
+  // Calendar events today first (sessions, calls, consultations), then the workouts clients do on their own.
+  const { zonedToUtc, dateToYmd: ymdOf } = await import('../lib/time.js');
+  const dayStart = zonedToUtc(ymdOf(today), 0, 0, tz), dayEnd = new Date(dayStart.getTime() + 864e5);
+  const events = await db.calendarEvent.findMany({ where: { status: { not: 'cancelled' }, start: { gte: dayStart, lt: dayEnd } }, orderBy: { start: 'asc' }, take: 20 });
+  const evClients = new Map((await db.client.findMany({ where: { id: { in: events.map(e => e.clientId).filter(Boolean) } }, select: { id: true, name: true } })).map(c => [c.id, c]));
+  const eventRows = events.map(e => ({ clientId: e.clientId || null, name: e.clientId ? evClients.get(e.clientId)?.name || e.title : e.title, time: L(time(e.start, tz)), type: L(e.title), icon: { session: 'figure.strengthtraining.traditional', call: 'phone', consult: 'person.badge.plus', block: 'clock' }[e.type] || 'calendar', eventId: e.id, start: e.start, end: e.end, kind: e.type }));
   const rows = await db.workoutAssignment.findMany({ where: { scheduledFor: today }, orderBy: { status: 'asc' }, take: 30 });
-  if (!rows.length) return [];
+  if (!rows.length) return eventRows;
   const [clients, workouts] = await Promise.all([
     db.client.findMany({ where: { id: { in: rows.map(r => r.clientId) } }, select: { id: true, name: true } }),
     db.workout.findMany({ where: { id: { in: rows.map(r => r.workoutId) } }, select: { id: true, name: true, estMinutes: true } }),
@@ -193,7 +199,7 @@ async function sessionsToday(db, { tz, now }) {
   return rows.filter(r => C.has(r.clientId)).map(r => {
     const w = W.get(r.workoutId), done = r.status === 'completed';
     return { clientId: r.clientId, name: C.get(r.clientId).name, time: done ? L('Done', 'Hecho') : L('Today', 'Hoy'), type: L(`${w?.name || 'Workout'}${w?.estMinutes ? ` · ${w.estMinutes} min` : ''}`), icon: done ? 'checkmark.circle' : 'dumbbell' };
-  });
+  }).reduce((list, r) => (list.push(r), list), eventRows);
 }
 
 async function threadList(db, { tz, now }) {

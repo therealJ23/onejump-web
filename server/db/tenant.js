@@ -16,7 +16,7 @@ const SYSTEM_MODELS = new Set(['User', 'MagicLink', 'UserSession', 'Job', 'FoodC
 /** Rows with businessId = null are OneJump's shared library: readable by everyone, writable by no tenant. */
 const SHARED_MODELS = new Set(['Exercise']);
 /** Tables whose rows belong to one client: a CLIENT session is filtered to clientId = its own. */
-const CLIENT_OWNED = new Set(['CheckIn', 'WorkoutSession', 'WorkoutAssignment', 'Measurement', 'ProgressPhoto', 'Thread', 'Message', 'MessageReaction', 'Payment', 'Subscription',
+const CLIENT_OWNED = new Set(['CheckIn', 'WorkoutSession', 'WorkoutAssignment', 'Measurement', 'ProgressPhoto', 'Thread', 'Message', 'MessageReaction', 'CalendarEvent', 'Payment', 'Subscription',
   'NutritionPlan', 'Habit', 'HabitCheck', 'FoodEntry', 'FoodEntryItem', 'FoodFavorite']);
 /** Coach-only tables: a CLIENT session can't read or write them. */
 const CLIENT_DENIED = new Set(['Lead', 'AIInsight', 'Automation', 'AutomationRun', 'AuditLog', 'ClientEvent', 'Note', 'Invite', 'Notification', 'AIUsage', 'SupportRequest', 'Membership',

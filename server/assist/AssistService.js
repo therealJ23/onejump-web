@@ -9,7 +9,7 @@ import { checkText } from '../ai/safety.js';
 import { coachContext } from '../ai/context.js';
 import { TOOLS, toolDefinitions } from './tools.js';
 import { RENDER, HELP_SUGGESTIONS, esc, speakable, clientLink } from './render.js';
-import { PROPOSE, proposalToolDefinitions, shapeProposal, confirmProposal, AUTO_APPROVE } from './proposals.js';
+import { PROPOSE, proposalToolDefinitions, shapeProposal, confirmProposal, isAutoApprovable } from './proposals.js';
 import { users } from '../db/system.js';
 import { route } from './intents.js';
 import { MORE_TOOLS, moreToolDefinitions } from './moreTools.js';
@@ -74,7 +74,7 @@ async function askMock(db, auth, question, c, source) {
   return { answerHtml: `<p>${esc(line)}</p>`, answerText: line, spokenText: line, proposals: [], trace: [], followups: HELP_SUGGESTIONS.slice(0, 4) };
 }
 
-const SCREENS = 'Today (what needs the coach, Assist drafts to approve, business charts), Clients (each client’s profile: Overview, Program, Food, Progress, Notes, Messages), Assist, Inbox (Messages and Check-ins), and More: Programs (and each program’s workouts), Exercise library, Nutrition, Payments, Leads, Automations, Settings (profile, language, voice, reminders) and Plan & billing.';
+const SCREENS = 'Today (what needs the coach, Assist drafts to approve, business charts), Calendar (sessions, check-in calls, consultations, blocked time), Clients (each client’s profile: Overview, Program, Food, Progress, Notes, Messages), Assist, Inbox (Messages and Check-ins), and More: Programs (and each program’s workouts), Exercise library, Nutrition, Payments, Leads, Automations, Settings (profile, language, voice, reminders) and Plan & billing.';
 
 /**
  * The fixed part of Assist's instructions (cached by Claude for an hour): the same for every
@@ -355,7 +355,7 @@ async function isHq(userId) {
 
 /** Runs the internal-only proposals right away (if the coach allows it) and rewrites the answer to say so. */
 async function autoApprove(db, auth, out, c) {
-  const auto = (out.proposals || []).filter(p => AUTO_APPROVE.has(p.type));
+  const auto = (out.proposals || []).filter(isAutoApprovable);
   if (!auto.length) return [];
   const b = await db.business.findFirst({ select: { settings: true } });
   if (b?.settings?.assistAutoApprove === false) return [];

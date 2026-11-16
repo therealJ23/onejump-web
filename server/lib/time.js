@@ -37,3 +37,26 @@ export const startOfMonthUtc = (d = new Date()) => new Date(Date.UTC(d.getUTCFul
 export function trainingWeekdays(daysPerWeek) {
   return ({ 1: [0], 2: [0, 3], 3: [0, 2, 4], 4: [0, 1, 3, 4], 5: [0, 1, 2, 3, 4], 6: [0, 1, 2, 3, 4, 5], 7: [0, 1, 2, 3, 4, 5, 6] })[Math.max(1, Math.min(7, daysPerWeek))];
 }
+
+/** A local wall-clock time in a time zone → the UTC instant ("2026-11-17", 8, 30, "America/New_York"). */
+export function zonedToUtc(ymd, hour = 0, minute = 0, tz = 'UTC') {
+  const [y, mo, d] = String(ymd).split('-').map(Number);
+  let guess = Date.UTC(y, mo - 1, d, hour, minute);
+  // Two passes handle the offset (and a DST change between the guess and the answer).
+  for (let i = 0; i < 2; i++) {
+    const p = wallParts(tz, new Date(guess));
+    const shown = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute);
+    guess += Date.UTC(y, mo - 1, d, hour, minute) - shown;
+  }
+  return new Date(guess);
+}
+
+/** Year, month, day, hour and minute of an instant on the wall clock of a time zone. */
+export function wallParts(tz = 'UTC', d = new Date()) {
+  try {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(d).map(x => [x.type, x.value]));
+    return { year: Number(p.year), month: Number(p.month), day: Number(p.day), hour: Number(p.hour), minute: Number(p.minute) };
+  } catch {
+    return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate(), hour: d.getUTCHours(), minute: d.getUTCMinutes() };
+  }
+}

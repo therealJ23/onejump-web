@@ -31,6 +31,7 @@ import { router as leadRoutes } from './routes/leads.js';
 import { router as workspaceRoutes } from './routes/workspace.js';
 import { router as adminRoutes } from './routes/admin.js';
 import { router as gifRoutes } from './routes/gifs.js';
+import { router as calendarRoutes } from './routes/calendar.js';
 import { router as webhookRoutes } from './routes/webhooks.js';
 import { router as devRoutes } from './routes/dev.js';
 import { router as assistRoutes } from './routes/assist.js';
@@ -105,6 +106,7 @@ export function createApp({ sessionStore } = {}) {
   app.use('/api/checkins', requireCoach, checkinRoutes);
   app.use('/api/threads', requireCoach, messageRoutes);
   app.use('/api/today', requireCoach, todayRoutes);
+  app.use('/api/calendar', requireCoach, calendarRoutes);
   app.use('/api/insights', requireCoach, insightRoutes);
   app.use('/api/automations', requireCoach, automationRoutes);
   app.use('/api/payments', requireCoach, paymentRoutes);
