@@ -25,6 +25,7 @@ import { todayKey, weekStart, addDays, startOfMonthUtc, DAY } from '../lib/time.
 import { L, day, time, weekday, when, ago, since, money, plural, firstOf, initials, avatar, spark, signed } from './format.js';
 import { withClientPhotos, photoUrl } from '../core/avatars.js';
 import { voiceFields } from '../voice/voiceNotes.js';
+import { shapeAttachments, reactionsFor, previewText } from '../core/chatMedia.js';
 
 const ACTIVE = ['ACTIVE', 'NEW'];
 const PLAN_LABEL = { TRIAL: L('Pro trial', 'Prueba de Pro'), STARTER: L('Starter'), PRO: L('Pro'), STUDIO: L('Studio') };
@@ -201,8 +202,8 @@ async function threadList(db, { tz, now }) {
   const out = [];
   for (const t of threads) {
     if (!clients.has(t.clientId)) continue;
-    const m = await db.message.findFirst({ where: { threadId: t.id }, orderBy: { createdAt: 'desc' }, select: { body: true, senderRole: true, createdAt: true, audioKey: true } });
-    out.push({ id: t.clientId, unread: (t.coachUnread || 0) > 0, last: m ? { fromMe: m.senderRole !== 'CLIENT', text: (m.body || '').slice(0, 160), time: when(m.createdAt, tz, now), isVoice: !!m.audioKey } : null });
+    const m = await db.message.findFirst({ where: { threadId: t.id }, orderBy: { createdAt: 'desc' }, select: { body: true, senderRole: true, createdAt: true, audioKey: true, attachments: true } });
+    out.push({ id: t.clientId, unread: (t.coachUnread || 0) > 0, last: m ? { fromMe: m.senderRole !== 'CLIENT', text: previewText(m).slice(0, 160), time: when(m.createdAt, tz, now), isVoice: !!m.audioKey } : null });
   }
   return out;
 }
@@ -442,7 +443,7 @@ async function programWeekRows(db, clientId, { tz, now }) {
 
 // ---------------------------------------------------------------- one thread, one check-in
 
-export async function threadFor(db, clientId, { now = new Date() } = {}) {
+export async function threadFor(db, clientId, { now = new Date(), userId = null } = {}) {
   const tz = (await db.business.findFirst({ select: { timezone: true } }))?.timezone || 'UTC';
   const c = await db.client.findFirst({ where: { id: clientId }, select: { id: true } });
   if (!c) return null;
@@ -452,11 +453,14 @@ export async function threadFor(db, clientId, { now = new Date() } = {}) {
     await db.thread.update({ where: { id: t.id }, data: { coachUnread: 0 } });
     await db.message.updateMany({ where: { threadId: t.id, senderRole: 'CLIENT', readAt: null }, data: { readAt: new Date() } });
   }
+  const reactions = await reactionsFor(db, messages.map(m => m.id), userId);
+  const media = Object.fromEntries(await Promise.all(messages.filter(m => m.attachments).map(async m => [m.id, await shapeAttachments(m)])));
   return {
     id: clientId,
     messages: messages.reverse().map(m => {
       const v = voiceFields(m, { coach: true });
-      return { id: m.id, fromMe: m.senderRole !== 'CLIENT', text: m.body || '', time: when(m.createdAt, tz, now), isVoice: !!v.voice, ...(v.voice ? { durationS: v.voice.durationS, summary: v.voice.summary || null, flag: v.voice.flag || null } : {}) };
+      return { id: m.id, fromMe: m.senderRole !== 'CLIENT', text: m.body || '', time: when(m.createdAt, tz, now), isVoice: !!v.voice, ...(v.voice ? { durationS: v.voice.durationS, summary: v.voice.summary || null, flag: v.voice.flag || null } : {}),
+        attachments: media[m.id] || [], reactions: reactions[m.id] || [] };
     }),
   };
 }

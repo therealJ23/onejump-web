@@ -45,6 +45,8 @@ export const config = {
   isTest,
   appUrl: (env.APP_URL || 'http://localhost:3000').replace(/\/$/, ''),
   iosAppUrl: (env.IOS_APP_URL || '').trim(),
+  /** GIF search in chat (developers.giphy.com). Empty = no GIF picker. */
+  giphyKey: (env.GIPHY_API_KEY || '').trim(),
   /**
    * Apple App Review sign-in for ONE demo client: that email logs in on the iPhone with this fixed
    * 6-digit code instead of an emailed one. Off unless both are set. Use a client in a demo business.

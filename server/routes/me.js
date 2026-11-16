@@ -11,6 +11,7 @@ import { body, z, score10 } from '../lib/validate.js';
 import { must, badRequest, conflict, HttpError } from '../lib/errors.js';
 import { todayKey, addDays, weekStart, DAY } from '../lib/time.js';
 import { exerciseMap, programWeek, patternImage, exerciseImages } from '../core/training.js';
+import { storeUpload, gifAttachment, shapeAttachments, reactionsFor, react, previewText, MAX_VIDEO_BYTES } from '../core/chatMedia.js';
 import { refreshClientStats, weightSeries, keyLift, personalBests } from '../core/stats.js';
 import { sendMessage, notify, clientEvent, ensureThread } from '../core/messaging.js';
 import { checkText } from '../ai/safety.js';
@@ -189,7 +190,9 @@ router.get('/thread', async (req, res) => {
   }
   const b = await req.db.business.findFirst({ select: { plan: true, planStatus: true, trialEndsAt: true } });
   const coachInfo = await memberships.coachNameFor(req.auth.businessId);
-  res.json({ messages: msgs.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'me' : 'coach', body: m.body, at: m.createdAt, ...voiceFields(m) })), coach: { name: coachInfo?.name || '', photoUrl: await photoUrl(coachInfo?.avatarKey) }, features: { voiceNotes: isPro(effectivePlan(b)), voiceProvider: VoiceService.provider } });
+  const reactions = await reactionsFor(req.db, msgs.map(m => m.id), req.auth.userId);
+  const media = Object.fromEntries(await Promise.all(msgs.filter(m => m.attachments).map(async m => [m.id, await shapeAttachments(m)])));
+  res.json({ messages: msgs.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'me' : 'coach', body: m.body, at: m.createdAt, attachments: media[m.id] || [], reactions: reactions[m.id] || [], ...voiceFields(m) })), coach: { name: coachInfo?.name || '', photoUrl: await photoUrl(coachInfo?.avatarKey) }, features: { voiceNotes: isPro(effectivePlan(b)), voiceProvider: VoiceService.provider } });
 });
 
 router.post('/messages', body(z.object({ body: z.string().trim().min(1).max(3000) })), async (req, res) => {
@@ -200,6 +203,35 @@ router.post('/messages', body(z.object({ body: z.string().trim().min(1).max(3000
   await notify(coach, { kind: 'message', title: `${client.name}: “${req.body.body.slice(0, 60)}${req.body.body.length > 60 ? '…' : ''}”`, body: s.flagged ? `Mentions ${s.term}` : 'New message', link: `/app/inbox/${client.id}` });
   await raiseFlag(coach, { clientId: client.id, clientName: client.name, businessId: req.auth.businessId, sourceType: 'message', sourceId: m.id, text: req.body.body });
   res.status(201).json({ message: { id: m.id, from: 'me', body: m.body, at: m.createdAt } });
+});
+
+// Photos, videos and GIFs to the coach, and reactions. A caption goes through the same health
+// check as a typed message, so the coach sees a flag when it mentions pain or a medical topic.
+const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_VIDEO_BYTES, files: 1, fields: 8, fieldSize: 4096 } });
+async function clientSent(req, m, label) {
+  const { coach, client } = await ctx(req);
+  await clientEvent(coach, client.id, 'message');
+  const caption = m.body || '';
+  const s = checkText(caption);
+  await notify(coach, { kind: 'message', title: `${client.name} sent ${label}${caption ? `: “${caption.slice(0, 50)}${caption.length > 50 ? '…' : ''}”` : ''}`, body: s.flagged ? `Mentions ${s.term}` : 'New message', link: `/app/inbox/${client.id}` });
+  if (caption) await raiseFlag(coach, { clientId: client.id, clientName: client.name, businessId: req.auth.businessId, sourceType: 'message', sourceId: m.id, text: caption });
+}
+router.post('/messages/media', mediaUpload.single('media'), body(z.object({ body: z.string().trim().max(2000).optional().default(''), durationS: z.coerce.number().optional(), width: z.coerce.number().optional(), height: z.coerce.number().optional() })), async (req, res) => {
+  const { client } = await ctx(req);
+  const a = await storeUpload(req.auth.businessId, req.file, req.body);
+  const m = await sendMessage(req.db, { clientId: client.id, body: req.body.body, senderUserId: req.auth.userId, senderRole: 'CLIENT', attachments: [a] });
+  await clientSent(req, m, a.kind === 'video' ? 'a video' : 'a photo');
+  res.status(201).json({ message: { id: m.id, from: 'me', body: m.body, at: m.createdAt, attachments: await shapeAttachments(m), reactions: [] } });
+});
+router.post('/messages/gif', body(z.object({ gif: z.object({ id: z.string().max(64).optional(), url: z.string().url().max(500), previewUrl: z.string().max(500).optional(), width: z.coerce.number().optional(), height: z.coerce.number().optional(), title: z.string().max(200).optional() }), body: z.string().trim().max(2000).optional().default('') })), async (req, res) => {
+  const { client } = await ctx(req);
+  const m = await sendMessage(req.db, { clientId: client.id, body: req.body.body, senderUserId: req.auth.userId, senderRole: 'CLIENT', attachments: [gifAttachment(req.body.gif)] });
+  await clientSent(req, m, 'a GIF');
+  res.status(201).json({ message: { id: m.id, from: 'me', body: m.body, at: m.createdAt, attachments: await shapeAttachments(m), reactions: [] } });
+});
+router.post('/messages/:id/react', body(z.object({ emoji: z.string().max(16).nullable() })), async (req, res) => {
+  const { client } = await ctx(req);
+  res.json(await react(req.db, { messageId: req.params.id, clientId: client.id, userId: req.auth.userId, emoji: req.body.emoji }));
 });
 
 router.get('/progress', async (req, res) => {

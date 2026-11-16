@@ -22,5 +22,5 @@ router.get('/coach', async (req, res) => {
   if (process.env.NODE_ENV !== 'test') warmBriefing(req.db, req.auth).catch(e => console.error('[briefing] warm-up failed:', e.message));
 });
 router.get('/coach/clients/:id', async (req, res) => res.json(must(await clientDetail(req.db, req.params.id), 'That client')));
-router.get('/coach/threads/:clientId', async (req, res) => res.json(must(await threadFor(req.db, req.params.clientId), 'That client')));
+router.get('/coach/threads/:clientId', async (req, res) => res.json(must(await threadFor(req.db, req.params.clientId, { userId: req.auth.userId }), 'That client')));
 router.get('/coach/checkins/:id', async (req, res) => res.json(must(await checkInReport(req.db, req.params.id), 'That check-in')));

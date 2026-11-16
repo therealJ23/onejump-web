@@ -14,8 +14,10 @@ import { VoiceService } from '../voice/VoiceService.js';
 import { sendVoiceNote, voiceFields, fmtDuration } from '../voice/voiceNotes.js';
 import { StorageService, sniffAudio } from '../storage/StorageService.js';
 import { playableAudioUrl } from '../voice/webmToWav.js';
+import { storeUpload, gifAttachment, shapeAttachments, reactionsFor, react, previewText, MAX_VIDEO_BYTES } from '../core/chatMedia.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024, files: 1, fields: 8, fieldSize: 4096 } });
+const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_VIDEO_BYTES, files: 1, fields: 8, fieldSize: 4096 } });
 
 export const router = Router();
 
@@ -29,8 +31,8 @@ router.get('/', async (req, res) => {
   for (const t of threads) {
     const c = byId.get(t.clientId);
     if (!c || !t.lastMessageAt) continue;
-    const m = await req.db.message.findFirst({ where: { threadId: t.id }, orderBy: { createdAt: 'desc' }, select: { body: true, senderRole: true, createdAt: true, audioKey: true, durationS: true, transcriptSummary: true } });
-    const text = m?.audioKey ? `🎤 Voice note · ${fmtDuration(m.durationS)} — ${m.transcriptSummary || m.body}` : m?.body;
+    const m = await req.db.message.findFirst({ where: { threadId: t.id }, orderBy: { createdAt: 'desc' }, select: { body: true, senderRole: true, createdAt: true, audioKey: true, durationS: true, transcriptSummary: true, attachments: true } });
+    const text = m?.audioKey ? `🎤 Voice note · ${fmtDuration(m.durationS)} — ${m.transcriptSummary || m.body}` : m ? previewText(m) : '';
     out.push({ clientId: c.id, name: c.name, status: c.status, unread: t.coachUnread, last: m ? { body: text.slice(0, 160), fromCoach: m.senderRole !== 'CLIENT', at: m.createdAt } : null });
   }
   res.json({ threads: out, unread: out.filter(t => t.unread).length });
@@ -45,11 +47,13 @@ router.get('/:clientId', async (req, res) => {
     await req.db.message.updateMany({ where: { threadId: t.id, senderRole: 'CLIENT', readAt: null }, data: { readAt: new Date() } });
   }
   const program = c.programId ? await req.db.program.findFirst({ where: { id: c.programId }, select: { name: true } }) : null;
+  const reactions = await reactionsFor(req.db, messages.map(m => m.id), req.auth.userId);
+  const media = Object.fromEntries(await Promise.all(messages.filter(m => m.attachments).map(async m => [m.id, await shapeAttachments(m)])));
   const k = await req.db.checkIn.findFirst({ where: { clientId: c.id, submittedAt: { gte: new Date(Date.now() - 8 * DAY) } }, orderBy: { submittedAt: 'desc' }, select: { id: true, status: true } });
   res.json({
     client: { id: c.id, name: c.name, program: program?.name || null, week: programWeek(c), adherence: c.adherence, risk: c.riskLevel ? { level: c.riskLevel, score: c.riskScore } : null, checkin: k, status: c.status },
     features: { voiceNotes: isPro(await planOf(req.db)), voiceProvider: VoiceService.provider },
-    messages: messages.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'them' : 'me', body: m.body, at: m.createdAt, assist: !!m.aiInsightId, edited: m.aiEdited, system: !m.senderUserId && m.senderRole === 'COACH', ...voiceFields(m, { coach: true }) })),
+    messages: messages.map(m => ({ id: m.id, from: m.senderRole === 'CLIENT' ? 'them' : 'me', body: m.body, at: m.createdAt, attachments: media[m.id] || [], reactions: reactions[m.id] || [], assist: !!m.aiInsightId, edited: m.aiEdited, system: !m.senderUserId && m.senderRole === 'COACH', ...voiceFields(m, { coach: true }) })),
   });
 });
 
@@ -84,6 +88,24 @@ router.post('/:clientId/messages', body(z.object({ body: z.string().trim().min(1
   }
   const m = await sendMessage(req.db, { clientId: c.id, body: req.body.body, senderUserId: req.auth.userId, senderRole: 'COACH', aiInsightId, aiEdited });
   res.status(201).json({ message: { id: m.id, from: 'me', body: m.body, at: m.createdAt, assist: !!aiInsightId, edited: aiEdited } });
+});
+
+// Photos, videos and GIFs from the coach (their own content, so no approval step), and reactions.
+router.post('/:clientId/media', mediaUpload.single('media'), body(z.object({ body: z.string().trim().max(2000).optional().default(''), durationS: z.coerce.number().optional(), width: z.coerce.number().optional(), height: z.coerce.number().optional() })), async (req, res) => {
+  const c = must(await req.db.client.findFirst({ where: { id: req.params.clientId } }), 'That client');
+  const a = await storeUpload(req.auth.businessId, req.file, req.body);
+  const m = await sendMessage(req.db, { clientId: c.id, body: req.body.body, senderUserId: req.auth.userId, senderRole: 'COACH', attachments: [a] });
+  res.status(201).json({ message: { id: m.id, from: 'me', body: m.body, at: m.createdAt, attachments: await shapeAttachments(m), reactions: [] } });
+});
+const gifSchema = z.object({ id: z.string().max(64).optional(), url: z.string().url().max(500), previewUrl: z.string().max(500).optional(), width: z.coerce.number().optional(), height: z.coerce.number().optional(), title: z.string().max(200).optional() });
+router.post('/:clientId/gif', body(z.object({ gif: gifSchema, body: z.string().trim().max(2000).optional().default('') })), async (req, res) => {
+  const c = must(await req.db.client.findFirst({ where: { id: req.params.clientId } }), 'That client');
+  const m = await sendMessage(req.db, { clientId: c.id, body: req.body.body, senderUserId: req.auth.userId, senderRole: 'COACH', attachments: [gifAttachment(req.body.gif)] });
+  res.status(201).json({ message: { id: m.id, from: 'me', body: m.body, at: m.createdAt, attachments: await shapeAttachments(m), reactions: [] } });
+});
+router.post('/:clientId/messages/:id/react', body(z.object({ emoji: z.string().max(16).nullable() })), async (req, res) => {
+  const c = must(await req.db.client.findFirst({ where: { id: req.params.clientId } }), 'That client');
+  res.json(await react(req.db, { messageId: req.params.id, clientId: c.id, userId: req.auth.userId, emoji: req.body.emoji }));
 });
 
 const INTENTS = ['reply-last', 'motivate', 'professional', 'consistency', 'recovery', 'shorter', 'checkin-reminder', 'payment', 'missed'];

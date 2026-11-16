@@ -367,11 +367,26 @@ model Message {
   audioKey          String? // voice note: private file (voice/{businessId}/{uuid})
   durationS         Int?
   transcriptSummary String? // one-line Assist summary of a voice note, for the coach
+  attachments  Json? // [{ kind: image | video | gif, key?, url?, width?, height?, durationS?, title? }]
   readAt       DateTime?
   createdAt    DateTime  @default(now())
   thread       Thread    @relation(fields: [threadId], references: [id])
 
   @@index([businessId, clientId, createdAt])
+}
+
+// An emoji reaction on a message, one per person per message (a new one replaces it).
+model MessageReaction {
+  id         String   @id @default(uuid())
+  businessId String
+  clientId   String
+  messageId  String
+  userId     String
+  emoji      String   @db.VarChar(16)
+  createdAt  DateTime @default(now())
+
+  @@unique([messageId, userId])
+  @@index([businessId, clientId])
 }
 
 model Notification {

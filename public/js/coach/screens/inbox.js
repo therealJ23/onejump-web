@@ -9,6 +9,7 @@ import { toast, toastError, busy, openModal, closeModal, modalHead } from '../..
 import { editorBlock } from '../../shared/editor.js';
 import { refreshCounts } from '../shell.js';
 import { voiceNoteButton, voiceNoteBody, recordVoiceNote } from '../../shared/voiceNote.js';
+import { mediaHtml, reactionsHtml, attachButton, wireAttach } from '../../shared/chatMedia.js';
 
 const CHIPS = [['reply-last', 'Reply to last message'], ['motivate', 'Motivational'], ['professional', 'Professional'], ['consistency', 'Why consistency matters'], ['recovery', 'Recovery recommendation'], ['shorter', 'Make it shorter']];
 const dayLabel = v => { const n = daysAgo(v); return n === 0 ? 'Today' : n === 1 ? 'Yesterday' : fmtDate(v); };
@@ -24,7 +25,7 @@ function convo(conv) {
   let lastDay = '';
   const msgs = conv.messages.map(m => {
     const d = dayLabel(m.at), sep = d !== lastDay ? `<div class="day-sep">${d}</div>` : ''; lastDay = d;
-    return sep + `<div class="bubble ${m.from}${m.voice ? ' voice' : ''}">${m.voice ? voiceNoteBody(m, `/api/threads/${c.id}/messages/${m.id}/audio`) : esc(m.body)}<span class="time">${fmtTime(m.at)}${m.voice ? ' · voice note' : ''}${m.assist ? (m.edited ? ' · edited from an Assist draft' : ' · Assist draft') : ''}${m.system ? ' · automation' : ''}</span></div>`;
+    return sep + `<div class="bubble ${m.from}${m.voice ? ' voice' : ''}">${m.voice ? voiceNoteBody(m, `/api/threads/${c.id}/messages/${m.id}/audio`) : `${mediaHtml(m.attachments)}${m.body ? esc(m.body) : ''}`}<span class="time">${fmtTime(m.at)}${m.voice ? ' · voice note' : ''}${m.assist ? (m.edited ? ' · edited from an Assist draft' : ' · Assist draft') : ''}${m.system ? ' · automation' : ''}</span>${reactionsHtml(m.reactions)}</div>`;
   }).join('') || `<div class="empty" style="margin:auto">${icon('message')}<div class="h3" style="color:var(--ink)">Start the conversation</div><p>Say hi to ${esc(first(c.name))}, or let Assist draft something.</p></div>`;
   const meta = [c.program && `${esc(c.program)} · week ${c.week || 1}`, c.adherence != null && `adherence ${c.adherence}%`, c.checkin && `check-in ${c.checkin.status === 'submitted' ? 'needs review' : 'reviewed'}`].filter(Boolean).join(' · ');
   return `<div class="convo">
@@ -35,7 +36,7 @@ function convo(conv) {
         ${CHIPS.map(([k, l]) => `<button type="button" class="chip" data-act="msgDraft" data-intent="${k}">${l}</button>`).join('')}
       </div>
       <div id="draft-label" class="tiny assist-text" hidden>${small(arc(), 13)} Assist draft. Edit anything before you send.</div>
-      <div class="row top"><label class="grow"><span class="sr">Message to ${esc(c.name)}</span><textarea class="textarea" id="msg-text" name="body" rows="2" style="min-height:52px" placeholder="Write to ${esc(first(c.name))}…" data-input="typed"></textarea></label>${micButton('msg-text', { style: 'height:52px;width:52px' })}${conv.features?.voiceNotes ? voiceNoteButton({ style: 'height:52px;width:52px' }) : ''}<button class="btn primary" type="submit" style="height:52px">${icon('send')}<span class="hide-sm">Send</span></button></div>
+      <div class="row top"><label class="grow"><span class="sr">Message to ${esc(c.name)}</span><textarea class="textarea" id="msg-text" name="body" rows="2" style="min-height:52px" placeholder="Write to ${esc(first(c.name))}…" data-input="typed"></textarea></label>${attachButton()}${micButton('msg-text', { style: 'height:52px;width:52px' })}${conv.features?.voiceNotes ? voiceNoteButton({ style: 'height:52px;width:52px' }) : ''}<button class="btn primary" type="submit" style="height:52px">${icon('send')}<span class="hide-sm">Send</span></button></div>
       <div class="tiny faint">Enter to send · Shift+Enter for a new line</div>
     </form></div>`;
 }
@@ -67,6 +68,11 @@ export default {
       send: fd => api.post(`/api/threads/${d.conv.client.id}/voice-notes`, fd),
       onSent: async () => { toast(`Voice note sent to ${first(d.conv.client.name)}.`); await ctx.refresh({ keepScroll: true, silent: true }); },
     }));
+    if (d.conv) wireAttach(root, {
+      send: fd => api.post(`/api/threads/${d.conv.client.id}/media`, fd),
+      onSent: async () => { await ctx.refresh({ keepScroll: true, silent: true }); },
+      onError: e => toastError(e),
+    });
     const ta = root.querySelector('#msg-text');
     ta?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); ta.form.requestSubmit(); } });
     if (d.conv) refreshCounts();

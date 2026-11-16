@@ -30,6 +30,7 @@ import { router as billingRoutes } from './routes/billing.js';
 import { router as leadRoutes } from './routes/leads.js';
 import { router as workspaceRoutes } from './routes/workspace.js';
 import { router as adminRoutes } from './routes/admin.js';
+import { router as gifRoutes } from './routes/gifs.js';
 import { router as webhookRoutes } from './routes/webhooks.js';
 import { router as devRoutes } from './routes/dev.js';
 import { router as assistRoutes } from './routes/assist.js';
@@ -94,6 +95,7 @@ export function createApp({ sessionStore } = {}) {
   app.get('/api/health', (_req, res) => res.json({ ok: true, ai: config.ai.provider, payments: config.payments.provider, email: config.email.provider, storage: StorageService.provider(), voice: config.voice.provider, tts: config.voice.tts === 'deepgram' && config.voice.deepgramKey ? 'deepgram' : 'browser' }));
   app.use('/api/auth', authRoutes);
   app.use('/api/account', requireUser, accountRoutes);
+  app.use('/api/gifs', requireUser, gifRoutes);
   app.use('/api/join', joinRoutes);
   app.use('/api/onboarding', requireOwner, onboardingRoutes);
   app.use('/api/clients', requireCoach, clientNutritionRoutes, clientRoutes);

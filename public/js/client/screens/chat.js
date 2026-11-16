@@ -7,11 +7,12 @@ import { avatar } from '../../shared/components.js';
 import { toast, toastError } from '../../shared/ui.js';
 import { voiceNoteButton, voiceNoteBody, recordVoiceNote } from '../../shared/voiceNote.js';
 import { brandRow } from './today.js';
+import { mediaHtml, reactionsHtml, attachButton, wireAttach } from '../../shared/chatMedia.js';
 
 const dayLabel = v => { const n = daysAgo(v); return n === 0 ? 'Today' : n === 1 ? 'Yesterday' : fmtDate(v); };
 function bubbles(list) {
   let last = '';
-  return list.map(m => { const d = dayLabel(m.at), sep = d !== last ? `<div class="day-sep">${d}</div>` : ''; last = d; return `${sep}<div class="bubble ${m.from === 'me' ? 'me' : 'them'}${m.voice ? ' voice' : ''}">${m.voice ? voiceNoteBody(m, `/api/me/messages/${m.id}/audio`) : esc(m.body)}<span class="time">${fmtTime(m.at)}${m.voice ? ' · voice note' : ''}</span></div>`; }).join('');
+  return list.map(m => { const d = dayLabel(m.at), sep = d !== last ? `<div class="day-sep">${d}</div>` : ''; last = d; return `${sep}<div class="bubble ${m.from === 'me' ? 'me' : 'them'}${m.voice ? ' voice' : ''}">${m.voice ? voiceNoteBody(m, `/api/me/messages/${m.id}/audio`) : `${mediaHtml(m.attachments)}${m.body ? esc(m.body) : ''}`}<span class="time">${fmtTime(m.at)}${m.voice ? ' · voice note' : ''}</span>${reactionsHtml(m.reactions)}</div>`; }).join('');
 }
 let poll = null;
 /** The newest message in view (the app scrolls inside .scroll on phones, the window elsewhere). */
@@ -24,11 +25,16 @@ export default {
   render(d) {
     return `<div class="row between" style="padding-top:4px">${brandRow()}<span class="row" style="gap:8px">${d.coach?.photoUrl ? avatar({ name: d.coach.name, photoUrl: d.coach.photoUrl }, 'sm') : ''}<span class="strong">${d.coach?.name ? esc(d.coach.name) : 'Your coach'}</span></span></div>
     <div class="stack s8" id="msgs" aria-live="polite">${d.messages.length ? bubbles(d.messages) : `<div class="empty">${icon('message')}<div class="h3" style="color:var(--ink)">Say hi</div><p>Questions about a workout, how you’re feeling, anything. Your coach usually replies within a day.</p></div>`}</div>
-    <form class="row cchat" data-form="send"><label class="grow"><span class="sr">Message your coach</span><input class="input" id="cchat-in" name="body" placeholder="Message your coach" autocomplete="off" maxlength="3000" style="border-radius:999px"></label>${micButton('cchat-in')}${d.features?.voiceNotes ? voiceNoteButton() : ''}<button class="btn primary icon" type="submit" aria-label="Send">${icon('send')}</button></form>
+    <form class="row cchat" data-form="send"><label class="grow"><span class="sr">Message your coach</span><input class="input" id="cchat-in" name="body" placeholder="Message your coach" autocomplete="off" maxlength="3000" style="border-radius:999px"></label>${attachButton()}${micButton('cchat-in')}${d.features?.voiceNotes ? voiceNoteButton() : ''}<button class="btn primary icon" type="submit" aria-label="Send">${icon('send')}</button></form>
     ${d.features?.voiceNotes ? '<p class="tiny faint" style="text-align:center;margin:0">Voice notes: your coach gets the audio and a written transcript.</p>' : ''}`;
   },
   mount(root, _d, _p, ctx) {
     requestAnimationFrame(toBottom); // after the router's scroll-to-top
+    wireAttach(root, {
+      send: fd => api.post('/api/me/messages/media', fd),
+      onSent: r => { ctx.data.messages.push(r.message); const list = document.getElementById('msgs'); if (list) list.innerHTML = bubbles(ctx.data.messages); toBottom(); },
+      onError: e => toastError(e),
+    });
     root.querySelector('[data-voice-note]')?.addEventListener('click', () => {
       const form = root.querySelector('form.cchat');
       recordVoiceNote(form, {
