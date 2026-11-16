@@ -211,6 +211,8 @@ model Exercise {
   videoUrl   String?
   mediaKey   String? // the coach's own photo or video (private storage)
   mediaType  String? // image | video
+  photoKey   String? // a licensed photo or drawing (wger.de, CC BY-SA), private storage
+  photoCredit Json? // { author, license, source }
   howTo      Json?
   altIds     Json?
   createdAt  DateTime @default(now())

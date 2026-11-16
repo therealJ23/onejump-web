@@ -17,6 +17,18 @@ const server = app.listen(config.port, () => {
   console.log(`OneJump running at ${config.appUrl} (AI: ${config.ai.provider}, payments: ${config.payments.provider}, email: ${config.email.provider})`);
 });
 const jobs = config.jobsEnabled ? startJobs() : null;
+// Exercise pictures from wger.de (credited, CC BY-SA): once, a minute after the first start, when
+// no exercise has one yet. WGER_PHOTOS=off skips it.
+if (config.isProd && process.env.WGER_PHOTOS !== 'off') {
+  setTimeout(async () => {
+    try {
+      const { exercisesGlobal } = await import('./db/system.js');
+      if (await exercisesGlobal.withPhotos()) return;
+      const { importWgerPhotos } = await import('./library/wgerPhotos.js');
+      await importWgerPhotos();
+    } catch (e) { console.error('[library] wger photos:', e.message); }
+  }, 60000).unref();
+}
 
 async function shutdown(signal) {
   console.log(`${signal} received, shutting down`);

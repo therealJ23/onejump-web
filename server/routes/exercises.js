@@ -8,6 +8,7 @@ import { body, z, name } from '../lib/validate.js';
 import { must, badRequest } from '../lib/errors.js';
 import { HOWTO } from '../seed/exercises.js';
 import { StorageService, sniffImage, sniffVideo } from '../storage/StorageService.js';
+import { patternImage } from '../core/training.js';
 
 export const router = Router();
 
@@ -39,6 +40,9 @@ export async function shapeExercise(e, byId, { withMedia = false } = {}) {
     custom: !!e.businessId, videoUrl: e.videoUrl, howTo: e.howTo || HOWTO[e.pattern] || HOWTO.iso,
     mediaType: e.mediaKey ? e.mediaType : null,
     mediaUrl: withMedia && e.mediaKey ? await StorageService.signedUrl(e.mediaKey) : null,
+    // The picture for lists and the picker: a licensed photo (credited) or the built-in drawing.
+    imageUrl: e.photoKey ? await StorageService.signedUrl(e.photoKey) : patternImage(e.pattern),
+    imageCredit: e.photoKey && e.photoCredit ? e.photoCredit : null,
     alternatives: (Array.isArray(e.altIds) ? e.altIds : []).map(id => byId.get(id)).filter(Boolean).map(a => ({ id: a.id, name: a.name, equipment: a.equipment, level: a.level, kneeLoad: a.kneeLoad })),
   };
 }

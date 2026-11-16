@@ -10,7 +10,7 @@ import { dbForBusiness } from '../db/tenant.js';
 import { body, z, score10 } from '../lib/validate.js';
 import { must, badRequest, conflict, HttpError } from '../lib/errors.js';
 import { todayKey, addDays, weekStart, DAY } from '../lib/time.js';
-import { exerciseMap, programWeek } from '../core/training.js';
+import { exerciseMap, programWeek, patternImage, exerciseImages } from '../core/training.js';
 import { refreshClientStats, weightSeries, keyLift, personalBests } from '../core/stats.js';
 import { sendMessage, notify, clientEvent, ensureThread } from '../core/messaging.js';
 import { checkText } from '../ai/safety.js';
@@ -42,12 +42,20 @@ async function touch(coach, client) {
   }
 }
 
+/** Swaps the drawings for licensed photos where an exercise has one. */
+async function withPhotos(w, ex) {
+  const imgs = await exerciseImages(ex, w.exercises.map(e => e.exerciseId));
+  for (const e of w.exercises) if (imgs[e.exerciseId]) e.imageUrl = imgs[e.exerciseId];
+  return w;
+}
+
 /** Fills in exercise names and the targets the client sees. */
 function shapeWorkout(w, ex) {
   return {
     id: w.id, name: w.name, estMinutes: w.estMinutes,
     exercises: w.blocks.flatMap(b => b.items.map((it, idx) => ({
       exerciseId: it.exerciseId, name: ex.get(it.exerciseId)?.name || 'Exercise', muscle: ex.get(it.exerciseId)?.muscle, equipment: ex.get(it.exerciseId)?.equipment,
+      imageUrl: patternImage(ex.get(it.exerciseId)?.pattern), section: b.section || 'main',
       howTo: ex.get(it.exerciseId)?.howTo || null, videoUrl: ex.get(it.exerciseId)?.videoUrl || null,
       group: b.items.length > 1 ? (b.kind === 'circuit' ? 'Circuit' : 'Superset') : '', groupIndex: idx, notes: it.notes, tempo: it.tempo,
       sets: it.sets.map(s => ({ target: `${s.reps}${s.load && !['BW', 'Band', 'Box'].includes(s.load) ? ' × ' + s.load : ''}`, reps: parseInt(s.reps) || '', weight: parseFloat(s.load) || '', rest: Number(s.rest) || 0, rpe: s.rpe })),
@@ -75,8 +83,9 @@ router.get('/today', async (req, res) => {
     if (!a) return null;
     const w = await req.db.workout.findFirst({ where: { id: a.workoutId } });
     if (!w) return null;
-    const s = shapeWorkout(w, ex);
-    return { assignmentId: a.id, date: a.scheduledFor, status: a.status, note: a.coachNote, workout: { id: w.id, name: w.name, estMinutes: w.estMinutes, count: s.exercises.length, first: s.exercises[0]?.name || null } };
+    const s = await withPhotos(shapeWorkout(w, ex), ex);
+    const main = s.exercises.find(e => e.section !== 'warmup') || s.exercises[0];
+    return { assignmentId: a.id, date: a.scheduledFor, status: a.status, note: a.coachNote, workout: { id: w.id, name: w.name, estMinutes: w.estMinutes, count: s.exercises.length, first: s.exercises[0]?.name || null, imageUrl: main?.imageUrl || null } };
   };
   // streak: consecutive days back from today with a workout done or a rest day (no missed workouts)
   const past = await req.db.workoutAssignment.findMany({ where: { scheduledFor: { gte: addDays(today, -60), lte: today } }, select: { scheduledFor: true, status: true }, orderBy: { scheduledFor: 'desc' } });
@@ -112,7 +121,7 @@ router.get('/workouts/:assignmentId', async (req, res) => {
   const w = must(await req.db.workout.findFirst({ where: { id: a.workoutId } }), 'That workout');
   const session = await req.db.workoutSession.findFirst({ where: { assignmentId: a.id }, orderBy: { startedAt: 'desc' } });
   const b = await req.db.business.findFirst({ select: { plan: true, planStatus: true, trialEndsAt: true } });
-  res.json({ assignment: { id: a.id, date: a.scheduledFor, status: a.status, note: a.coachNote }, workout: shapeWorkout(w, await exerciseMap(req.db)), session, features: { voice: isPro(effectivePlan(b)), voiceProvider: VoiceService.provider } });
+  res.json({ assignment: { id: a.id, date: a.scheduledFor, status: a.status, note: a.coachNote }, workout: await (async () => { const ex = await exerciseMap(req.db); return withPhotos(shapeWorkout(w, ex), ex); })(), session, features: { voice: isPro(effectivePlan(b)), voiceProvider: VoiceService.provider } });
 });
 
 const loggedSet = z.object({ weight: z.union([z.coerce.number().min(0).max(2000), z.literal('')]).optional(), reps: z.union([z.coerce.number().int().min(0).max(1000), z.literal('')]).optional(), done: z.boolean().default(true) });

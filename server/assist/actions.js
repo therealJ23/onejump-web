@@ -108,8 +108,14 @@ async function blocksFrom(db, items, lang) {
     const sets = Math.max(1, Math.min(10, Math.round(Number(it.sets) || 3)));
     const reps = clean(it.reps || '10').slice(0, 20);
     const rest = clean(it.rest_seconds ?? it.rest ?? '60').replace(/[^0-9]/g, '').slice(0, 4) || '60';
-    blocks.push({ kind: 'single', items: [{ exerciseId: e.id, notes: clean(it.notes).slice(0, 200), sets: Array.from({ length: sets }, () => ({ reps, load: '', rpe: '', rest })) }] });
-    lines.push(`${e.name}: ${sets} × ${reps}`);
+    const section = ['warmup', 'main', 'cooldown'].includes(it.section) ? it.section : 'main';
+    const group = clean(it.group).toUpperCase().slice(0, 2);
+    const item = { exerciseId: e.id, notes: clean(it.notes).slice(0, 200), sets: Array.from({ length: sets }, () => ({ reps, load: clean(it.load).slice(0, 20), rpe: '', rest })) };
+    // Same group letter next to each other = one superset (3+ = a circuit).
+    const prev = blocks.at(-1);
+    if (group && prev?.group === group && prev.section === section && prev.items.length < 6) { prev.items.push(item); prev.kind = prev.items.length > 2 ? 'circuit' : 'superset'; }
+    else blocks.push({ kind: 'single', section, group, items: [item] });
+    lines.push(`${group ? `${group}${blocks.at(-1).items.length} ` : ''}${e.name}: ${sets} × ${reps}${section !== 'main' ? ` (${section === 'warmup' ? 'warm-up' : 'cool-down'})` : ''}`);
   }
   if (missing.length) return { error: T(lang, `These aren’t in your exercise library: ${missing.join(', ')}. Check the names with exercise_library, or add them with propose_create_exercise first.`, `Estos no están en tu biblioteca de ejercicios: ${missing.join(', ')}. Revisa los nombres con exercise_library o agrégalos primero con propose_create_exercise.`) };
   return { blocks: normalizeBlocks(blocks), lines };
@@ -554,7 +560,7 @@ export const ACTION_EXECUTE = {
 /** Where the coach finishes it by hand if confirming fails. */
 export const ACTION_SCREEN = { create_program: 'Programs', update_program: 'Programs', delete_program: 'Programs', duplicate_program: 'Programs', save_workout: 'the program', delete_workout: 'the program', create_exercise: 'the Exercise library', delete_exercise: 'the Exercise library', restore_exercise: 'the Exercise library', add_client: 'Clients', update_client: 'the client’s profile', message_clients: 'Messages', review_checkin: 'Check-ins', payment_reminder: 'Payments', update_lead: 'Leads', convert_lead: 'Leads', set_automation: 'Automations', update_settings: 'Settings', create_package: 'Payments', update_package: 'Payments' };
 
-const ex = { type: 'array', description: 'Exercises in order, by their names in the library (check exercise_library).', items: { type: 'object', properties: { exercise: { type: 'string' }, sets: { type: 'integer' }, reps: { type: 'string', description: 'e.g. "8-10", "12", "30s"' }, rest_seconds: { type: 'integer' }, notes: { type: 'string' } }, required: ['exercise'] } };
+const ex = { type: 'array', description: 'Exercises in order, by their names in the library (check exercise_library).', items: { type: 'object', properties: { exercise: { type: 'string' }, sets: { type: 'integer' }, reps: { type: 'string', description: 'e.g. "8-10", "12", "30s"' }, rest_seconds: { type: 'integer' }, load: { type: 'string', description: 'e.g. "135 lb", "RPE 8", "bodyweight"' }, section: { type: 'string', enum: ['warmup', 'main', 'cooldown'] }, group: { type: 'string', description: 'Same letter for exercises done back to back as a superset or circuit (e.g. "A" for both)' }, notes: { type: 'string' } }, required: ['exercise'] } };
 
 /** Proposal tool definitions (Anthropic Messages API). */
 export function actionToolDefinitions() {

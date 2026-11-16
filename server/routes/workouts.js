@@ -10,7 +10,7 @@ export const router = Router();
 
 const setSchema = z.object({ reps: z.coerce.string().max(20).default(''), load: z.coerce.string().max(20).default(''), rpe: z.coerce.string().max(10).default(''), rest: z.coerce.string().max(10).default('') });
 const itemSchema = z.object({ id: z.string().max(40).optional(), exerciseId: idRule, tempo: z.string().max(20).optional().default(''), notes: z.string().max(200).optional().default(''), sets: z.array(setSchema).min(1).max(12) });
-const blockSchema = z.object({ id: z.string().max(40).optional(), kind: z.enum(['single', 'superset', 'circuit']), items: z.array(itemSchema).min(1).max(6) });
+const blockSchema = z.object({ id: z.string().max(40).optional(), kind: z.enum(['single', 'superset', 'circuit']), section: z.enum(['warmup', 'main', 'cooldown']).optional(), rounds: z.coerce.number().int().min(1).max(20).optional(), items: z.array(itemSchema).min(1).max(6) });
 const blocksSchema = z.array(blockSchema).max(30);
 
 async function checkExercises(db, blocks) {
@@ -119,3 +119,16 @@ router.post('/generate/:insightId/dismiss', async (req, res) => {
   res.json({ ok: true });
 });
 
+
+// Week planner: move a program workout to another day (swapping with what's there). A workout
+// that repeats every week (week = null) moves in every week.
+router.patch('/:id/schedule', body(z.object({ day: z.coerce.number().int().min(1).max(7), week: z.coerce.number().int().min(1).max(52).nullable().optional() })), async (req, res) => {
+  const w = must(await req.db.workout.findFirst({ where: { id: req.params.id } }), 'That workout');
+  if (!w.programId) throw badRequest('Only workouts in a program have a day.');
+  const week = req.body.week === undefined ? w.week : req.body.week;
+  const there = await req.db.workout.findFirst({ where: { programId: w.programId, day: req.body.day, week: week ?? null, NOT: { id: w.id } } });
+  if (there) await req.db.workout.update({ where: { id: there.id }, data: { day: w.day, week: w.week } });
+  const moved = await req.db.workout.update({ where: { id: w.id }, data: { day: req.body.day, week: week ?? null } });
+  await req.db.program.update({ where: { id: w.programId }, data: { updatedAt: new Date() } });
+  res.json({ workout: { id: moved.id, day: moved.day, week: moved.week }, swapped: there ? { id: there.id, day: w.day, week: w.week } : null, everyWeek: moved.week == null });
+});

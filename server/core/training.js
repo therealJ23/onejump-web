@@ -3,10 +3,17 @@ import { randomUUID } from 'node:crypto';
 import { todayKey, weekStart, addDays, trainingWeekdays } from '../lib/time.js';
 
 /** Gives every block and item a stable id (the builder and logging rely on them). */
+export const SECTIONS = ['warmup', 'main', 'cooldown'];
+/** The built-in picture for an exercise's movement pattern (public/img/exercises/*.jpg). */
+const PATTERN_IMAGES = new Set(['squat', 'hinge', 'lunge', 'push', 'pull', 'core', 'carry', 'jump', 'cardio', 'iso']);
+export const patternImage = pattern => `/img/exercises/${PATTERN_IMAGES.has(pattern) ? pattern : 'iso'}.jpg`;
 export function normalizeBlocks(blocks = []) {
   return (blocks || []).map(b => ({
     id: b.id || `b_${randomUUID().slice(0, 8)}`,
     kind: ['single', 'superset', 'circuit'].includes(b.kind) ? (b.items?.length > 1 ? b.kind : 'single') : 'single',
+    // Warm-up / main / cool-down (older workouts have none: they're all main).
+    section: SECTIONS.includes(b.section) ? b.section : 'main',
+    ...(Number.isInteger(b.rounds) && b.rounds > 0 && b.rounds <= 20 ? { rounds: b.rounds } : {}),
     items: (b.items || []).map(it => ({
       id: it.id || `i_${randomUUID().slice(0, 8)}`,
       exerciseId: it.exerciseId,
@@ -22,7 +29,7 @@ export const estimateMinutes = blocks => Math.max(10, Math.round((blocks || []).
 
 /** Exercises visible to this workspace (global library + custom), as a Map by id. */
 export async function exerciseMap(db) {
-  const list = await db.exercise.findMany({ select: { id: true, name: true, muscle: true, equipment: true, level: true, pattern: true, kneeLoad: true, overhead: true, businessId: true, altIds: true, videoUrl: true, howTo: true } });
+  const list = await db.exercise.findMany({ select: { id: true, name: true, muscle: true, equipment: true, level: true, pattern: true, kneeLoad: true, overhead: true, businessId: true, altIds: true, videoUrl: true, howTo: true, photoKey: true } });
   return new Map(list.map(e => [e.id, e]));
 }
 
@@ -75,4 +82,16 @@ export async function tailorWorkoutForClient(db, workout, clientId, transform) {
   const blocks = transform(JSON.parse(JSON.stringify(workout.blocks)));
   const copy = await db.workout.create({ data: { programId: workout.programId, clientId, name: workout.name, week: workout.week, day: workout.day, estMinutes: workout.estMinutes, blocks, source: 'assist' } });
   return copy;
+}
+
+/** Picture URLs for a set of exercise ids: the licensed photo when there is one, else the drawing. */
+export async function exerciseImages(ex, ids) {
+  const { StorageService } = await import('../storage/StorageService.js');
+  const out = {};
+  for (const id of new Set(ids)) {
+    const e = ex.get(id);
+    if (!e) continue;
+    out[id] = e.photoKey ? await StorageService.signedUrl(e.photoKey) : patternImage(e.pattern);
+  }
+  return out;
 }

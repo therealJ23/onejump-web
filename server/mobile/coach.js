@@ -9,7 +9,8 @@ import { buildToday } from '../core/queue.js';
 import { businessCharts } from '../core/businessCharts.js';
 import { clientList, clientProfile } from '../core/clientViews.js';
 import { weightSeries, personalBests } from '../core/stats.js';
-import { exerciseMap } from '../core/training.js';
+import { exerciseMap, patternImage } from '../core/training.js';
+import { StorageService } from '../storage/StorageService.js';
 import { revenueSummary, monthlyCents } from '../core/money.js';
 import { missingCheckinClients } from '../core/checkinStatus.js';
 import { draftText } from '../core/actions.js';
@@ -349,12 +350,14 @@ async function libraryList(db) {
   const byId = new Map(all.map(e => [e.id, e]));
   // The coach's own exercises first in mind: never cut them off by the 400 limit.
   const list = [...all.filter(e => e.businessId && !hidden.has(e.id)), ...all.filter(e => !e.businessId && !hidden.has(e.id))].slice(0, 600).sort((a, b) => a.name.localeCompare(b.name));
-  return list.map(e => ({
+  return Promise.all(list.map(async e => ({
     id: e.id, name: L(e.name), group: GROUP[e.pattern] || 'core', equipment: L(e.equipment || '—'),
     custom: !!e.businessId, mediaType: e.mediaKey ? e.mediaType : null, level: e.level || null, pattern: e.pattern,
+    imageUrl: e.photoKey ? await StorageService.signedUrl(e.photoKey) : patternImage(e.pattern),
+    imageCredit: e.photoKey && e.photoCredit ? `${e.photoCredit.author} · ${e.photoCredit.license} · wger.de` : null,
     howTo: (Array.isArray(e.howTo) ? e.howTo : e.howTo ? String(e.howTo).split(/\n+/) : HOWTO[e.pattern] || HOWTO.iso || []).map(x => L(x)),
     alternatives: (Array.isArray(e.altIds) ? e.altIds : []).map(id => byId.get(id)).filter(Boolean).slice(0, 4).map(a => L(a.name)),
-  }));
+  })));
 }
 
 // ---------------------------------------------------------------- one client
