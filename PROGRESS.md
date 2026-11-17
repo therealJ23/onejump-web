@@ -2,6 +2,15 @@
 
 _Last updated: November 7, 2026_
 
+## Nov 16 (evening): iPhone build 8 (uploaded 8:20 PM ✅)
+- Assist "connection dropped" fix (server, live): no fixed 45-second cut on AI calls (streams stop only after 40 s of silence), commands think at low effort with room to finish, the retry after a failure runs without thinking.
+- GIFs: tap a GIF to send it (the animated view was swallowing taps).
+- Pictures everywhere: exercise library rows, exercise page (photo + credit when there's no video), picker, workout editor, logged foods, food search results, demo recipes.
+- Free demo videos from wger.de (CC BY-SA, credited) imported once on the server; a coach's own video still wins.
+- Programs → "Start from a sample": 6 ready-made programs with exercise pictures, copied only when picked.
+- Assist builds a full program from scratch in one go (defaults instead of questions); new suggestion chip.
+- Time saved counted from the work (words at typing speed + lookup; per workout and exercise for programs) instead of fixed numbers.
+
 ## Nov 16: iPhone build 7 (uploaded to App Store Connect 3:09 PM ✅)
 - Coach: Calendar tab (3-day timeline + month, sessions/calls/consults/blocked time, Assist's free slots, event editor); profile photo on Today opens More; "Ask Assist" bar and an approve-all queue (swipe right to send, pain/medical drafts must be opened first); morning briefing removed.
 - Chat (both sides): photos, videos (up to 3 min), GIFs (GIPHY), emoji reactions (long-press), client photos in the inbox and thread, coach photo for clients.
